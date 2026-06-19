@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Top Summary Card -->
+    <div class="card shadow border-0 rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-uppercase tracking-wider text-muted font-monospace small">Student Answer Sheet</span>
+                <h2 class="mb-0 text-primary fw-bold">{{ exam.title }}</h2>
+            </div>
+            <div>
+                {% if attempt.result_status == 'Pass' %}
+                    <span class="badge bg-success px-4 py-2 fs-5 rounded-pill shadow-sm">Pass</span>
+                {% else %}
+                    <span class="badge bg-danger px-4 py-2 fs-5 rounded-pill shadow-sm">Fail</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row mb-4">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace">Student Name</p>
+                    <h5 class="fw-bold text-dark mb-0">{{ attempt.student_name }}</h5>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace">Submitted At</p>
+                    <h5 class="fw-bold text-dark mb-0">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M:%S UTC') if attempt.submitted_at else 'N/A' }}</h5>
+                </div>
+            </div>
+
+            <!-- Stats Block -->
+            <div class="row g-3 text-center border-top pt-4">
+                <div class="col-md-3 border-end">
+                    <span class="text-muted small text-uppercase font-monospace d-block mb-1">Final Score</span>
+                    <h3 class="fw-bold text-dark mb-0">{{ attempt.total_marks_obtained }}</h3>
+                    <span class="text-muted small">out of {{ questions|sum(attribute='marks') }}</span>
+                </div>
+                <div class="col-md-3 border-end">
+                    <span class="text-muted small text-uppercase font-monospace d-block mb-1">Correct</span>
+                    <h3 class="fw-bold text-success mb-0">{{ attempt.correct_count }}</h3>
+                </div>
+                <div class="col-md-3 border-end">
+                    <span class="text-muted small text-uppercase font-monospace d-block mb-1">Incorrect</span>
+                    <h3 class="fw-bold text-danger mb-0">{{ attempt.wrong_count }}</h3>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small text-uppercase font-monospace d-block mb-1">Unanswered</span>
+                    <h3 class="fw-bold text-secondary mb-0">{{ attempt.unanswered_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Question Section -->
+    <h3 class="text-dark fw-bold mb-4">Question Breakdown</h3>
+    {% for q in questions %}
+        {% set ans = student_answers.get(q.id) %}
+        {% set is_correct = (ans is not None and ans.selected_option_id == q.correct_option_id) %}
+        {% set is_unanswered = (ans is None or ans.selected_option_id is None) %}
+
+        <div class="card shadow-sm border-0 rounded-4 mb-4 overflow-hidden">
+            <!-- Question Card Header -->
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0">Question {{ loop.index }}</h5>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Status Badge -->
+                    {% if is_unanswered %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1.5 rounded-pill">Unanswered</span>
+                        <span class="badge bg-light text-muted border px-3 py-1.5 rounded-pill">0 / {{ q.marks }} Marks</span>
+                    {% elif is_correct %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill">✓ Correct</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill">+{{ q.marks }} Marks</span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 rounded-pill">✗ Incorrect</span>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 rounded-pill">
+                            {% if exam.negative_marking_enabled %}
+                                -{{ exam.negative_marks }} Marks
+                            {% else %}
+                                0 Marks
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card-body p-4">
+                <!-- Question Text -->
+                <div class="fs-5 text-dark mb-4 fw-medium" style="white-space: pre-wrap;">{{ q.question_text }}</div>
+                
+                <!-- Options list -->
+                <div class="list-group">
+                    {% for option in q.options|sort(attribute='option_order') %}
+                        {% set is_opt_correct = (option.id == q.correct_option_id) %}
+                        {% set is_opt_selected = (ans is not None and ans.selected_option_id == option.id) %}
+                        
+                        <div class="list-group-item py-3 px-4 border rounded-3 mb-2 d-flex justify-content-between align-items-center
+                            {% if is_opt_correct %}
+                                border-success bg-success-subtle bg-opacity-25 text-success-emphasis
+                            {% elif is_opt_selected %}
+                                border-danger bg-danger-subtle bg-opacity-25 text-danger-emphasis
+                            {% else %}
+                                border-light-subtle bg-light bg-opacity-50 text-dark
+                            {% endif %}"
+                            style="transition: all 0.2s ease;">
+                            
+                            <div class="d-flex align-items-center">
+                                <span class="fs-6">{{ option.option_text }}</span>
+                            </div>
+                            
+                            <!-- Option Badges -->
+                            <div>
+                                {% if is_opt_correct %}
+                                    <span class="badge bg-success text-white px-3 py-1.5 rounded-pill small">
+                                        Correct Option {% if is_opt_selected %}(Your Selection){% endif %}
+                                    </span>
+                                {% elif is_opt_selected %}
+                                    <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill small">Your Selection</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Navigation Buttons -->
+    <div class="d-flex justify-content-between mt-4 mb-5">
+        <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-outline-secondary btn-lg px-4 rounded-pill shadow-sm">
+            &larr; Back to Results
+        </a>
+        <a href="/" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm fw-bold">
+            Return to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

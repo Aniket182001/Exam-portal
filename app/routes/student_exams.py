@@ -373,3 +373,39 @@ def view_result(attempt_token):
         exam=attempt.exam,
         attempt=attempt
     )
+
+@student_exams_bp.route("/attempt/<attempt_token>/answer-sheet", methods=["GET"])
+def view_answer_sheet(attempt_token):
+    attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
+    
+    if attempt.status == "in_progress":
+        remaining_seconds = get_remaining_seconds(attempt)
+        if remaining_seconds == 0:
+            handle_attempt_timeout(attempt)
+        else:
+            flash("Your exam is still in progress. Please complete your exam first.", "info")
+            # Find the first unanswered question
+            questions = Question.query.filter_by(exam_id=attempt.exam_id).order_by(Question.display_order.asc()).all()
+            answered_question_ids = {ans.question_id for ans in attempt.answers}
+            
+            first_unanswered_number = None
+            for idx, q in enumerate(questions, start=1):
+                if q.id not in answered_question_ids:
+                    first_unanswered_number = idx
+                    break
+                    
+            if first_unanswered_number is not None:
+                return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=first_unanswered_number))
+            else:
+                return redirect(url_for('student_exams.review', attempt_token=attempt_token))
+                
+    questions = Question.query.filter_by(exam_id=attempt.exam_id).order_by(Question.display_order.asc()).all()
+    student_answers = {ans.question_id: ans for ans in attempt.answers}
+    
+    return render_template(
+        "student/answer_sheet.html",
+        exam=attempt.exam,
+        attempt=attempt,
+        questions=questions,
+        student_answers=student_answers
+    )

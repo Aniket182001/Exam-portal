@@ -76,7 +76,8 @@
             </div>
 
             <!-- Footer Return Actions -->
-            <div class="card-footer bg-white border-top py-3 text-center">
+            <div class="card-footer bg-white border-top py-3 text-center d-flex justify-content-center gap-3">
+                <a href="{{ url_for('student_exams.view_answer_sheet', attempt_token=attempt.attempt_token) }}" class="btn btn-primary px-4 rounded-pill shadow-sm fw-bold">View Answer Sheet</a>
                 <a href="/" class="btn btn-outline-primary px-4 rounded-pill shadow-sm">Return to Home</a>
             </div>
         </div>
