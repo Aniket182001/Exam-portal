@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to Exams</a>
+    <div class="d-flex justify-content-between align-items-center">
+        <h2>Questions for: <span class="text-primary">{{ exam.title }}</span></h2>
+        <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-primary">Add New Question</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if questions %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">No.</th>
+                        <th style="width: 50%">Question Text</th>
+                        <th style="width: 15%">Options</th>
+                        <th style="width: 10%">Marks</th>
+                        <th style="width: 20%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for question in questions %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            {{ question.question_text[:80] + '...' if question.question_text|length > 80 else question.question_text }}
+                        </td>
+                        <td>{{ question.options|length }}</td>
+                        <td>{{ question.marks }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_questions.edit_question', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form action="{{ url_for('admin_questions.delete_question', question_id=question.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this question and all its options? This cannot be undone.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted mb-0">No questions found for this exam. Click "Add New Question" to create one.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -34,6 +34,7 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-info">Questions</a>
                             <a href="{{ url_for('admin_exams.edit_exam', id=exam.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                             <form action="{{ url_for('admin_exams.toggle_exam', id=exam.id) }}" method="POST" class="d-inline">
                                 {% if exam.is_active %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="mb-3">
+            <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-secondary">&larr; Back to Questions</a>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">{{ action }} Question for {{ exam.title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="questionForm">
+                    <div class="mb-3">
+                        <label for="question_text" class="form-label">Question Text *</label>
+                        <textarea class="form-control" id="question_text" name="question_text" rows="4" required>{{ question.question_text if question else '' }}</textarea>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="marks" class="form-label">Marks *</label>
+                            <input type="number" step="0.5" class="form-control" id="marks" name="marks" value="{{ question.marks if question else '1.0' }}" required min="0.5">
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Options</h5>
+                            <button type="button" class="btn btn-sm btn-success" id="addOptionBtn">+ Add Option</button>
+                        </div>
+                        <div class="card-body" id="optionsContainer">
+                            <!-- Options will be dynamically inserted here -->
+                        </div>
+                        <div class="card-footer text-muted small">
+                            A minimum of 2 and maximum of 5 options are required. Select the radio button to mark the correct answer.
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">Save Question</button>
+                        <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const optionsContainer = document.getElementById('optionsContainer');
+    const addOptionBtn = document.getElementById('addOptionBtn');
+    const form = document.getElementById('questionForm');
+    
+    // Initial data passed from server (if editing or validation failure)
+    let initialOptions = [];
+    let initialCorrectIdx = -1;
+    
+    {% if question %}
+        {% for opt in question.options %}
+            initialOptions.push({{ opt.option_text|tojson }});
+            {% if opt.id == question.correct_option_id %}
+                initialCorrectIdx = {{ loop.index0 }};
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        // Default 2 options for new questions
+        initialOptions = ["", ""];
+        initialCorrectIdx = 0;
+    {% endif %}
+
+    let optionCount = 0;
+
+    function renderOption(text, isCorrect) {
+        const idx = optionCount;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'input-group mb-3 option-row';
+        
+        wrapper.innerHTML = `
+            <div class="input-group-text">
+                <input class="form-check-input mt-0" type="radio" name="correct_option_index" value="${idx}" ${isCorrect ? 'checked' : ''} aria-label="Correct answer" required>
+            </div>
+            <input type="text" class="form-control" name="option_text[]" value="${text}" placeholder="Option text" required>
+            <button class="btn btn-outline-danger remove-btn" type="button" title="Remove Option">&times;</button>
+        `;
+        
+        optionsContainer.appendChild(wrapper);
+        optionCount++;
+        updateButtons();
+    }
+
+    function updateButtons() {
+        const rows = document.querySelectorAll('.option-row');
+        // Enable/disable add button
+        addOptionBtn.disabled = rows.length >= 5;
+        
+        // Enable/disable remove buttons
+        const removeBtns = document.querySelectorAll('.remove-btn');
+        removeBtns.forEach(btn => {
+            btn.disabled = rows.length <= 2;
+        });
+        
+        // Re-index radio buttons to ensure they correspond to their array position
+        rows.forEach((row, index) => {
+            const radio = row.querySelector('input[type="radio"]');
+            radio.value = index;
+        });
+    }
+
+    // Initialize options
+    initialOptions.forEach((text, idx) => renderOption(text, idx === initialCorrectIdx));
+
+    addOptionBtn.addEventListener('click', function() {
+        const rows = document.querySelectorAll('.option-row');
+        if (rows.length < 5) {
+            renderOption('', false);
+        }
+    });
+
+    optionsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-btn')) {
+            const rows = document.querySelectorAll('.option-row');
+            if (rows.length > 2) {
+                e.target.closest('.option-row').remove();
+                updateButtons();
+            }
+        }
+    });
+
+    form.addEventListener('submit', function(e) {
+        const rows = document.querySelectorAll('.option-row');
+        if (rows.length < 2 || rows.length > 5) {
+            e.preventDefault();
+            alert('Please provide between 2 and 5 options.');
+            return false;
+        }
+        
+        const checked = document.querySelector('input[name="correct_option_index"]:checked');
+        if (!checked) {
+            e.preventDefault();
+            alert('Please select the correct answer using the radio buttons.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

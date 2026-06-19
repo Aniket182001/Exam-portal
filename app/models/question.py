@@ -7,6 +7,7 @@ class Question(db.Model):
     exam_id = db.Column(db.Integer, db.ForeignKey('exams.id'), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
     marks = db.Column(db.Float, default=1.0, nullable=False)
+    display_order = db.Column(db.Integer, default=0, nullable=False)
     correct_option_id = db.Column(db.Integer, nullable=True) # nullable initially to avoid circular dependency
 
     # Relationships
