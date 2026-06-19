@@ -93,6 +93,13 @@ def start_exam(exam_code):
     
     return redirect(f"/attempt/{attempt_token}/question/1")
 
+def get_remaining_seconds(attempt):
+    now = datetime.now(timezone.utc)
+    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
+    end_time = started_at_utc + timedelta(minutes=attempt.exam.duration_minutes)
+    remaining = int((end_time - now).total_seconds())
+    return max(0, remaining)
+
 @student_exams_bp.route("/attempt/<attempt_token>/question/<int:question_number>", methods=["GET", "POST"])
 def question_attempt(attempt_token, question_number):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
@@ -102,14 +109,12 @@ def question_attempt(attempt_token, question_number):
         
     exam = attempt.exam
     
-    # Calculate time remaining Authoritatively from Server timestamps
-    now = datetime.now(timezone.utc)
-    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
-    end_time = started_at_utc + timedelta(minutes=exam.duration_minutes)
-    remaining_seconds = int((end_time - now).total_seconds())
+    # Calculate time remaining Authoritatively using helper
+    remaining_seconds = get_remaining_seconds(attempt)
     
     # Server-side Expiration Check
-    if remaining_seconds <= 0:
+    if remaining_seconds == 0:
+        now = datetime.now(timezone.utc)
         if exam.auto_submit_on_timeout:
             attempt.status = "submitted"
             attempt.submitted_at = now
