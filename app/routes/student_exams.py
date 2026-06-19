@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from app.extensions import db
-from app.models import Exam, StudentAttempt
+from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
 from datetime import datetime, timezone
 import uuid
 
@@ -92,3 +92,116 @@ def start_exam(exam_code):
     session.pop('student_email', None)
     
     return redirect(f"/attempt/{attempt_token}/question/1")
+
+@student_exams_bp.route("/attempt/<attempt_token>/question/<int:question_number>", methods=["GET", "POST"])
+def question_attempt(attempt_token, question_number):
+    attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
+    
+    if attempt.status != "in_progress":
+        abort(403, description="This attempt is no longer active.")
+        
+    exam = attempt.exam
+    # Fetch questions ordered by display_order ASC
+    questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
+    total_questions = len(questions)
+    
+    # Boundary validation
+    if question_number < 1 or question_number > total_questions:
+        abort(404, description="Question not found.")
+        
+    current_question = questions[question_number - 1]
+    
+    if request.method == "POST":
+        # Check if they clicked clear_response
+        if "clear_response" in request.form:
+            existing_answer = StudentAnswer.query.filter_by(
+                attempt_id=attempt.id,
+                question_id=current_question.id
+            ).first()
+            if existing_answer:
+                db.session.delete(existing_answer)
+                db.session.commit()
+            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number))
+            
+        # Get selected option ID
+        option_id_str = request.form.get("option_id")
+        
+        if option_id_str:
+            try:
+                option_id = int(option_id_str)
+            except ValueError:
+                abort(400, description="Invalid option structure.")
+                
+            # Verify the option belongs to the current question
+            valid_option = any(opt.id == option_id for opt in current_question.options)
+            if not valid_option:
+                abort(400, description="Selected option does not belong to this question.")
+                
+            existing_answer = StudentAnswer.query.filter_by(
+                attempt_id=attempt.id,
+                question_id=current_question.id
+            ).first()
+            
+            if existing_answer:
+                existing_answer.selected_option_id = option_id
+            else:
+                new_answer = StudentAnswer(
+                    attempt_id=attempt.id,
+                    question_id=current_question.id,
+                    selected_option_id=option_id
+                )
+                db.session.add(new_answer)
+                
+            db.session.commit()
+        
+        # Navigation
+        action = request.form.get("action")
+        goto_question = request.form.get("goto_question")
+        
+        if goto_question:
+            try:
+                target_q = int(goto_question)
+                if 1 <= target_q <= total_questions:
+                    return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=target_q))
+                else:
+                    abort(400, description="Sidebar target question out of range.")
+            except ValueError:
+                abort(400, description="Invalid sidebar target question.")
+                
+        if action == "prev" and question_number > 1:
+            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number - 1))
+        elif action == "next" and question_number < total_questions:
+            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number + 1))
+        elif action == "finish" and question_number == total_questions:
+            return redirect(f"/attempt/{attempt_token}/review")
+        else:
+            # Fallback if no action or out-of-bounds sequential navigation
+            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number))
+            
+    # GET logic
+    # Fetch existing answer for pre-selection
+    existing_answer = StudentAnswer.query.filter_by(
+        attempt_id=attempt.id,
+        question_id=current_question.id
+    ).first()
+    
+    answered_option_id = existing_answer.selected_option_id if existing_answer else None
+    
+    # Calculate progress bar percentage
+    progress = (question_number / total_questions) * 100 if total_questions > 0 else 0
+    
+    # Gather set of answered question IDs for sidebar color highlight
+    answered_question_ids = {ans.question_id for ans in attempt.answers}
+    
+    return render_template(
+        "student/question.html",
+        exam=exam,
+        attempt_token=attempt_token,
+        question=current_question,
+        question_number=question_number,
+        total_questions=total_questions,
+        answered_option_id=answered_option_id,
+        progress=progress,
+        questions=questions,
+        answered_question_ids=answered_question_ids
+    )

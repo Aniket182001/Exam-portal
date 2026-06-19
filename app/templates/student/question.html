@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Progress Bar -->
+    {% if exam.show_progress_bar %}
+    <div class="row justify-content-center mb-4">
+        <div class="col-12">
+            <div class="progress shadow-sm" style="height: 12px; border-radius: 6px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                     role="progressbar" 
+                     style="width: {{ progress }}%;" 
+                     aria-valuenow="{{ progress }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ progress|int }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number) }}" id="exam-form">
+        <div class="row g-4">
+            <!-- Main Question Area -->
+            <div class="{% if exam.allow_question_navigation and exam.show_question_numbers %}col-lg-9{% else %}col-12{% endif %}">
+                <div class="card shadow border-0 rounded-4">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-uppercase tracking-wider text-muted font-monospace small">Exam Attempt</span>
+                            <h3 class="mb-0 text-primary fw-bold">{{ exam.title }}</h3>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6 border border-secondary-subtle rounded-pill">
+                                {{ question.marks }} Marks
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Header / Question counter -->
+                        <div class="mb-4 d-flex justify-content-between align-items-center">
+                            <h4 class="text-dark fw-bold mb-0">
+                                {% if exam.show_question_numbers %}
+                                    Question {{ question_number }} <span class="text-muted fw-normal fs-5">of {{ total_questions }}</span>
+                                {% else %}
+                                    Current Question
+                                {% endif %}
+                            </h4>
+                        </div>
+
+                        <!-- Question Text -->
+                        <div class="p-3 bg-light rounded-3 border border-light-subtle mb-4 shadow-inner">
+                            <div class="fs-5 text-dark" style="white-space: pre-wrap; font-weight: 500;">{{ question.question_text }}</div>
+                        </div>
+
+                        <!-- Options List -->
+                        <h5 class="text-secondary mb-3">Select the correct option:</h5>
+                        <div class="list-group mb-4">
+                            {% for option in question.options|sort(attribute='option_order') %}
+                            <label class="list-group-item list-group-item-action d-flex align-items-center py-3 border rounded-3 mb-2 shadow-sm {% if answered_option_id == option.id %}border-primary bg-primary-subtle bg-opacity-10{% endif %}" 
+                                   style="cursor: pointer; transition: all 0.2s ease;">
+                                <input class="form-check-input me-3 fs-5" 
+                                       type="radio" 
+                                       name="option_id" 
+                                       value="{{ option.id }}" 
+                                       {% if answered_option_id == option.id %}checked{% endif %}
+                                       style="cursor: pointer;">
+                                <span class="option-text fs-6 text-dark" style="font-weight: 500;">{{ option.option_text }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Clear Response Button -->
+                        <div id="clear-btn-container" style="{% if not answered_option_id %}display: none;{% endif %}" class="mb-4">
+                            <button type="submit" name="clear_response" value="true" class="btn btn-outline-danger btn-sm px-3 rounded-pill shadow-sm">
+                                <i class="bi bi-x-circle me-1"></i> Clear Response
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Footer Navigation -->
+                    <div class="card-footer bg-white border-top p-4 d-flex justify-content-between">
+                        <div>
+                            {% if question_number > 1 %}
+                            <button type="submit" name="action" value="prev" class="btn btn-outline-secondary btn-lg px-4 rounded-pill shadow-sm">
+                                &larr; Previous
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if question_number < total_questions %}
+                            <button type="submit" name="action" value="next" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm fw-bold">
+                                Next &rarr;
+                            </button>
+                            {% else %}
+                            <button type="submit" name="action" value="finish" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm fw-bold">
+                                Finish Exam
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar (Palette) -->
+            {% if exam.allow_question_navigation and exam.show_question_numbers %}
+            <div class="col-lg-3">
+                <div class="card shadow border-0 rounded-4">
+                    <div class="card-header bg-white border-bottom py-3 text-center">
+                        <h5 class="mb-0 text-secondary fw-bold">Question Palette</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="d-grid gap-2" style="grid-template-columns: repeat(4, 1fr);">
+                            {% for q in questions %}
+                                {% set is_current = (loop.index == question_number) %}
+                                {% set is_answered = (q.id in answered_question_ids) %}
+                                <button type="submit" 
+                                        name="goto_question" 
+                                        value="{{ loop.index }}" 
+                                        class="btn p-0 d-flex align-items-center justify-content-center fw-bold transition-all {% if is_current %}btn-primary shadow{% elif is_answered %}btn-success{% else %}btn-outline-secondary{% endif %}" 
+                                        style="height: 45px; width: 100%; border-radius: 10px; font-size: 0.95rem; min-width: 0;">
+                                    {{ loop.index }}
+                                </button>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="text-uppercase tracking-wider text-muted font-monospace small mb-3">Status Legend</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-primary rounded-3 me-2" style="width: 16px; height: 16px;"></div>
+                                <span class="small text-secondary">Current Question</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-success rounded-3 me-2" style="width: 16px; height: 16px;"></div>
+                                <span class="small text-secondary">Answered</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="border border-secondary rounded-3 me-2" style="width: 16px; height: 16px; background-color: transparent;"></div>
+                                <span class="small text-secondary">Not Answered</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Styling adjustments for selected options */
+    .list-group-item {
+        border-color: #e9ecef;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+    }
+    .list-group-item.border-primary {
+        border-color: #0d6efd !important;
+        background-color: rgba(13, 110, 253, 0.05) !important;
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const radios = document.querySelectorAll('input[name="option_id"]');
+        const clearBtnContainer = document.getElementById("clear-btn-container");
+
+        radios.forEach(radio => {
+            radio.addEventListener("change", () => {
+                // Remove active styling from all labels
+                document.querySelectorAll(".list-group-item").forEach(l => {
+                    l.classList.remove("border-primary", "bg-primary-subtle", "bg-opacity-10");
+                });
+
+                // Find parent label of selected radio and style it
+                const label = radio.closest(".list-group-item");
+                if (label) {
+                    label.classList.add("border-primary", "bg-primary-subtle", "bg-opacity-10");
+                }
+                
+                // Show clear response button
+                if (clearBtnContainer) {
+                    clearBtnContainer.style.display = "block";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
