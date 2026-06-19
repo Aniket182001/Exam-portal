@@ -100,6 +100,19 @@ def get_remaining_seconds(attempt):
     remaining = int((end_time - now).total_seconds())
     return max(0, remaining)
 
+def handle_attempt_timeout(attempt):
+    exam = attempt.exam
+    now = datetime.now(timezone.utc)
+    if exam.auto_submit_on_timeout:
+        attempt.status = "submitted"
+        attempt.submitted_at = now
+        db.session.commit()
+        flash("Your time has expired. Your exam has been automatically submitted.", "warning")
+    else:
+        attempt.status = "expired"
+        db.session.commit()
+        flash("Your time has expired. This exam attempt has expired.", "danger")
+
 @student_exams_bp.route("/attempt/<attempt_token>/question/<int:question_number>", methods=["GET", "POST"])
 def question_attempt(attempt_token, question_number):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
@@ -114,16 +127,7 @@ def question_attempt(attempt_token, question_number):
     
     # Server-side Expiration Check
     if remaining_seconds == 0:
-        now = datetime.now(timezone.utc)
-        if exam.auto_submit_on_timeout:
-            attempt.status = "submitted"
-            attempt.submitted_at = now
-            db.session.commit()
-            flash("Your time has expired. Your exam has been automatically submitted.", "warning")
-        else:
-            attempt.status = "expired"
-            db.session.commit()
-            flash("Your time has expired. This exam attempt has expired.", "danger")
+        handle_attempt_timeout(attempt)
         return redirect(f"/attempt/{attempt_token}/review")
         
     # Fetch questions ordered by display_order ASC
@@ -230,4 +234,78 @@ def question_attempt(attempt_token, question_number):
         questions=questions,
         answered_question_ids=answered_question_ids,
         remaining_seconds=remaining_seconds
+    )
+
+@student_exams_bp.route("/attempt/<attempt_token>/review", methods=["GET"])
+def review(attempt_token):
+    attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
+    exam = attempt.exam
+    
+    # Check timeout if attempt is still in progress
+    if attempt.status == "in_progress":
+        remaining_seconds = get_remaining_seconds(attempt)
+        if remaining_seconds == 0:
+            handle_attempt_timeout(attempt)
+            # Reload to reflect transition
+            return redirect(url_for('student_exams.review', attempt_token=attempt_token))
+    else:
+        remaining_seconds = 0
+
+    questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
+    total_questions = len(questions)
+    
+    # Calculate answered statistics
+    answered_question_ids = {ans.question_id for ans in attempt.answers}
+    answered_questions_count = len(attempt.answers)
+    unanswered_questions_count = total_questions - answered_questions_count
+    
+    return render_template(
+        "student/review.html",
+        attempt=attempt,
+        exam=exam,
+        attempt_token=attempt_token,
+        questions=questions,
+        total_questions=total_questions,
+        answered_question_ids=answered_question_ids,
+        answered_questions_count=answered_questions_count,
+        unanswered_questions_count=unanswered_questions_count,
+        remaining_seconds=remaining_seconds
+    )
+
+@student_exams_bp.route("/attempt/<attempt_token>/submit", methods=["POST"])
+def submit_attempt(attempt_token):
+    attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
+    
+    if attempt.status != "in_progress":
+        abort(403, description="This attempt is no longer active.")
+        
+    remaining_seconds = get_remaining_seconds(attempt)
+    if remaining_seconds == 0:
+        handle_attempt_timeout(attempt)
+        return redirect(url_for('student_exams.review', attempt_token=attempt_token))
+        
+    # Mark as submitted
+    attempt.status = "submitted"
+    attempt.submitted_at = datetime.now(timezone.utc)
+    db.session.commit()
+    
+    flash("Your exam has been successfully submitted.", "success")
+    return redirect(url_for('student_exams.result_placeholder', attempt_token=attempt_token))
+
+@student_exams_bp.route("/attempt/<attempt_token>/result", methods=["GET"])
+def result_placeholder(attempt_token):
+    attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
+    
+    if attempt.status == "in_progress":
+        remaining_seconds = get_remaining_seconds(attempt)
+        if remaining_seconds == 0:
+            handle_attempt_timeout(attempt)
+        else:
+            flash("Your exam is still in progress. Please complete your exam first.", "info")
+            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=1))
+            
+    return render_template(
+        "student/result_placeholder.html",
+        exam=attempt.exam,
+        attempt=attempt
     )

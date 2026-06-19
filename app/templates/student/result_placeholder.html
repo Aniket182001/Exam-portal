@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow border-0 rounded-4">
+            <div class="card-header bg-white border-bottom py-3 text-center">
+                <span class="text-uppercase tracking-wider text-muted font-monospace small">Exam Finished</span>
+                <h3 class="mb-0 text-primary fw-bold">{{ exam.title }}</h3>
+            </div>
+            <div class="card-body p-5 text-center">
+                <div class="fs-1 mb-4">📝</div>
+                <h4 class="fw-bold text-dark mb-4">Thank you, {{ attempt.student_name }}!</h4>
+                
+                <div class="p-3 bg-light rounded-3 border border-light-subtle mb-4">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace">Current Attempt Status</p>
+                    <h5 class="fw-bold mb-0">
+                        {% if attempt.status == 'submitted' %}
+                            <span class="text-success">Submitted</span>
+                        {% else %}
+                            <span class="text-danger">Expired</span>
+                        {% endif %}
+                    </h5>
+                </div>
+
+                <div class="alert alert-info py-3 mb-0" role="alert">
+                    <i class="bi bi-info-circle me-2"></i><strong>Result calculation is under development.</strong>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top py-3 text-center">
+                <a href="/" class="btn btn-outline-primary px-4 rounded-pill">Return to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

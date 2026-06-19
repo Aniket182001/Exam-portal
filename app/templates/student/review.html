@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Card -->
+    <div class="card shadow border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-uppercase tracking-wider text-muted font-monospace small">Exam Review & Submission</span>
+                <h2 class="mb-0 text-primary fw-bold">{{ exam.title }}</h2>
+            </div>
+            <div class="text-end d-flex align-items-center gap-2">
+                <!-- Status Badge -->
+                {% if attempt.status == 'in_progress' %}
+                    <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">In Progress</span>
+                    <!-- Timer Badge -->
+                    <div id="exam-timer" data-seconds="{{ remaining_seconds }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-6 rounded-pill d-flex align-items-center">
+                        <span class="me-2">⏱️</span>
+                        <span id="timer-display" class="font-monospace fw-bold">00:00:00</span>
+                    </div>
+                {% elif attempt.status == 'submitted' %}
+                    <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">Submitted</span>
+                {% else %}
+                    <span class="badge bg-danger px-3 py-2 fs-6 rounded-pill">Expired</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-4 bg-light bg-opacity-50">
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace">Student Name</p>
+                    <h5 class="fw-bold text-dark mb-0">{{ attempt.student_name }}</h5>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace">Student Email</p>
+                    <h5 class="fw-bold text-dark mb-0">{{ attempt.student_email }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small font-monospace mb-2">Total Questions</h6>
+                    <h1 class="fw-bold text-dark mb-0">{{ total_questions }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3 border-start border-success border-4">
+                <div class="card-body">
+                    <h6 class="text-success text-uppercase small font-monospace mb-2">Answered</h6>
+                    <h1 class="fw-bold text-success mb-0">{{ answered_questions_count }}</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3 border-start border-secondary border-4">
+                <div class="card-body">
+                    <h6 class="text-secondary text-uppercase small font-monospace mb-2">Unanswered</h6>
+                    <h1 class="fw-bold text-secondary mb-0">{{ unanswered_questions_count }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Palette and Actions -->
+    <div class="row g-4">
+        <!-- Palette Area -->
+        <div class="col-12">
+            <div class="card shadow border-0 rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 text-secondary fw-bold">Question Palette</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if attempt.status == 'in_progress' %}
+                        <p class="text-muted mb-4 small">
+                            <i class="bi bi-info-circle me-1"></i> You can click any question number below to jump back and edit your answer.
+                        </p>
+                    {% else %}
+                        <p class="text-muted mb-4 small text-danger fw-bold">
+                            <i class="bi bi-lock-fill me-1"></i> This exam attempt is closed. Questions cannot be loaded or edited.
+                        </p>
+                    {% endif %}
+
+                    <div class="d-flex flex-wrap gap-3 justify-content-start mb-4">
+                        {% for q in questions %}
+                            {% set is_answered = (q.id in answered_question_ids) %}
+                            {% if attempt.status == 'in_progress' %}
+                                <a href="{{ url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=loop.index) }}" 
+                                   class="btn d-flex align-items-center justify-content-center fw-bold transition-all {% if is_answered %}btn-success{% else %}btn-secondary{% endif %}" 
+                                   style="height: 50px; width: 50px; border-radius: 12px; font-size: 1.1rem; min-width: 0;">
+                                    {{ loop.index }}
+                                </a>
+                            {% else %}
+                                <button class="btn d-flex align-items-center justify-content-center fw-bold {% if is_answered %}btn-success{% else %}btn-secondary{% endif %}" 
+                                        style="height: 50px; width: 50px; border-radius: 12px; font-size: 1.1rem; min-width: 0; opacity: 0.65; cursor: not-allowed;" 
+                                        disabled>
+                                    {{ loop.index }}
+                                </button>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="d-flex flex-wrap gap-4 pt-3 border-top">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success rounded-3 me-2" style="width: 18px; height: 18px;"></div>
+                            <span class="small text-secondary fw-semibold">Answered</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-secondary rounded-3 me-2" style="width: 18px; height: 18px;"></div>
+                            <span class="small text-secondary fw-semibold">Unanswered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Submission Block -->
+    {% if attempt.status == 'in_progress' %}
+        <div class="card shadow border-0 rounded-4 bg-light-subtle mb-4">
+            <div class="card-body p-4 text-center">
+                <h4 class="fw-bold text-dark mb-2">Ready to finish your exam?</h4>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 600px;">
+                    Please make sure you have reviewed all questions. Once submitted, your answers are final and cannot be altered.
+                </p>
+                <button type="button" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                    Submit Exam &rarr;
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Submit Confirmation Modal -->
+{% if attempt.status == 'in_progress' %}
+<div class="modal fade" id="confirmSubmitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-bottom py-3">
+                <h5 class="modal-title fw-bold text-dark" id="confirmSubmitModalLabel">Confirm Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3 text-warning fs-1">⚠️</div>
+                <h5 class="fw-bold text-dark mb-3">Are you sure you want to submit your exam?</h5>
+                <p class="text-muted mb-0">
+                    You cannot modify answers after submission. Double check any unanswered questions before confirming.
+                </p>
+            </div>
+            <div class="modal-footer border-top p-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('student_exams.submit_attempt', attempt_token=attempt_token) }}" method="POST">
+                    <button type="submit" class="btn btn-success px-4 rounded-pill fw-bold">Yes, Submit Exam</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+    .transition-all:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
+{% if attempt.status == 'in_progress' %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Timer countdown script
+        const timerElement = document.getElementById("exam-timer");
+        const timerDisplay = document.getElementById("timer-display");
+        
+        if (timerElement && timerDisplay) {
+            let remainingSeconds = parseInt(timerElement.getAttribute("data-seconds")) || 0;
+            
+            function updateDisplay() {
+                if (remainingSeconds <= 0) {
+                    timerDisplay.textContent = "00:00:00";
+                    timerElement.classList.remove("bg-light", "text-dark", "bg-warning");
+                    timerElement.classList.add("bg-danger", "text-white");
+                    return;
+                }
+                
+                const h = Math.floor(remainingSeconds / 3600);
+                const m = Math.floor((remainingSeconds % 3600) / 60);
+                const s = remainingSeconds % 60;
+                
+                const formattedTime = [
+                    h.toString().padStart(2, '0'),
+                    m.toString().padStart(2, '0'),
+                    s.toString().padStart(2, '0')
+                ].join(':');
+                
+                timerDisplay.textContent = formattedTime;
+                
+                if (remainingSeconds < 60) {
+                    // Danger state (< 1 minute remaining)
+                    timerElement.classList.remove("bg-light", "text-dark", "bg-warning");
+                    timerElement.classList.add("bg-danger", "text-white");
+                } else if (remainingSeconds < 300) {
+                    // Warning state (< 5 minutes remaining)
+                    timerElement.classList.remove("bg-light", "bg-danger", "text-white");
+                    timerElement.classList.add("bg-warning", "text-dark");
+                } else {
+                    // Default state
+                    timerElement.classList.remove("bg-warning", "bg-danger", "text-white");
+                    timerElement.classList.add("bg-light", "text-dark");
+                }
+            }
+            
+            // Run initial update
+            updateDisplay();
+            
+            const timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateDisplay();
+                
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    // Reload to let server process expiration
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
