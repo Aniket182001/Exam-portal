@@ -29,7 +29,9 @@
         <div class="container">
             <!-- Brand -->
             <a class="navbar-brand" href="{{ url_for('main.home') }}" aria-label="AIQM Exam Portal Home">
-                <div class="brand-logo" aria-hidden="true">A</div>
+                <div class="brand-logo" aria-hidden="true" style="background: transparent !important;">
+                    <img src="{{ url_for('static', filename='img/aiqm_logo.png') }}" alt="AIQM Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
                 <div class="brand-text">
                     <span class="brand-title">AIQM Portal</span>
                     <span class="brand-sub">Exam Management</span>
@@ -91,9 +93,12 @@
     <footer class="aiqm-footer" role="contentinfo">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-6 mb-2 mb-md-0">
-                    <span class="footer-brand">AIQM Exam Portal</span>
-                    <span class="footer-org">Asian Institute of Quality Management</span>
+                <div class="col-md-6 mb-2 mb-md-0 d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='img/aiqm_logo.png') }}" alt="AIQM Logo" style="height: 40px; width: auto; margin-right: 12px; object-fit: contain;">
+                    <div>
+                        <span class="footer-brand">AIQM Exam Portal</span>
+                        <span class="footer-org">Asian Institute of Quality Management</span>
+                    </div>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <span class="footer-copy">&copy; {{ now.year if now is defined else 2025 }} AIQM Exam Portal. All rights reserved.</span>

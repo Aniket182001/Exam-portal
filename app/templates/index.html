@@ -14,18 +14,15 @@
                     <span class="hero-badge-dot"></span>
                     Portal Active
                 </div>
-                <h1 class="hero-title">AIQM Exam Portal</h1>
-                <p class="hero-subtitle">Secure and professional examination platform for the Asian Institute of Quality Management.</p>
+                <h1 class="hero-title">AIQM Educational Dashboard</h1>
+                <p class="hero-subtitle">Secure, minimal, and professional examination platform tailored for modern learning experiences.</p>
                 
                 <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
-                    <button type="button" class="btn btn-light btn-lg text-primary fw-bold shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#studentExamModal">
-                        <i class="bi bi-person-badge me-2"></i>Student Exam
+                    <button type="button" class="btn btn-primary btn-lg fw-bold shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#studentExamModal">
+                        <i class="bi bi-person-badge me-2"></i>Access Exam
                     </button>
-                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-light btn-lg rounded-pill px-4" style="border-width: 2px;">
+                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-primary btn-lg rounded-pill px-4 border-0" style="background-color: var(--aiqm-lavender); color: var(--aiqm-lavender-dark);">
                         <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
-                    </a>
-                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-light btn-lg rounded-pill px-4" style="border-width: 2px; background: rgba(255,255,255,0.1);">
-                        <i class="bi bi-journal-check me-2"></i>Manage Exams
                     </a>
                 </div>
             </div>
@@ -38,43 +35,52 @@
 ============================================================= -->
 <section class="features-section">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="section-label">Platform Features</span>
-            <h2 class="section-title">Core Capabilities</h2>
+        <div class="text-center mb-5 pb-3">
+            <span class="section-label">Platform Capabilities</span>
+            <h2 class="section-title">Core Modules</h2>
             <p class="section-desc">A complete suite of tools to conduct, evaluate, and review professional examinations with confidence.</p>
         </div>
         
         <div class="row g-4 justify-content-center">
             <!-- Feature 1 -->
             <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-laptop"></i>
+                <div class="feature-card mint-card">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="feature-icon bg-white text-dark shadow-sm">
+                            <i class="bi bi-laptop"></i>
+                        </div>
+                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Secure</span>
                     </div>
                     <h5>Online Examinations</h5>
-                    <p>Conduct exams securely. A robust environment designed for uninterrupted student assessment and detailed progress tracking.</p>
+                    <p>Conduct exams securely. A robust environment designed for uninterrupted student assessment and progress tracking.</p>
                 </div>
             </div>
             
             <!-- Feature 2 -->
             <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-lightning-charge"></i>
+                <div class="feature-card peach-card">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="feature-icon bg-white text-dark shadow-sm">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Instant</span>
                     </div>
-                    <h5>Instant Results</h5>
-                    <p>Automatic evaluation and reporting. Instantly calculate scores, apply negative marking, and generate comprehensive pass/fail statuses.</p>
+                    <h5>Live Results</h5>
+                    <p>Automatic evaluation and reporting. Instantly calculate scores, apply negative marking, and generate statuses.</p>
                 </div>
             </div>
             
             <!-- Feature 3 -->
             <div class="col-md-4">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="bi bi-file-earmark-check"></i>
+                <div class="feature-card lavender-card">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="feature-icon bg-white text-dark shadow-sm">
+                            <i class="bi bi-file-earmark-check"></i>
+                        </div>
+                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Analytics</span>
                     </div>
                     <h5>Answer Sheets</h5>
-                    <p>Review responses and performance. Detailed breakdowns of correct, incorrect, and unanswered questions for thorough student feedback.</p>
+                    <p>Review responses and performance. Detailed breakdowns of correct, incorrect, and unanswered questions.</p>
                 </div>
             </div>
         </div>
@@ -86,21 +92,25 @@
 ============================================================= -->
 <div class="modal fade" id="studentExamModal" tabindex="-1" aria-labelledby="studentExamModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header border-bottom py-3">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
+      <div class="modal-header border-bottom py-3" style="background-color: var(--aiqm-white); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
         <h5 class="modal-title fw-bold text-dark" id="studentExamModalLabel">Access Examination</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-4">
-        <p class="text-muted mb-4">Please enter the unique exam code provided by your administrator to securely access your examination session.</p>
+      <div class="modal-body p-4 p-md-5 bg-light" style="border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+        <div class="d-flex justify-content-center mb-4">
+            <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                <i class="bi bi-key-fill fs-3" style="color: var(--aiqm-primary);"></i>
+            </div>
+        </div>
+        <p class="text-center text-muted mb-4 small px-3">Please enter the unique exam code provided by your administrator to securely access your examination session.</p>
         <form id="examCodeForm" onsubmit="event.preventDefault(); const code = document.getElementById('examCodeInput').value.trim(); if(code) { window.location.href='/exam/' + encodeURIComponent(code); }">
-            <div class="mb-3">
-                <label for="examCodeInput" class="form-label">Exam Code</label>
-                <input type="text" class="form-control form-control-lg text-center font-monospace fw-bold" id="examCodeInput" placeholder="e.g. EXAM123" required>
+            <div class="mb-4">
+                <input type="text" class="form-control form-control-lg text-center font-monospace fw-bold shadow-sm border-0 py-3" id="examCodeInput" placeholder="Enter Exam Code..." required style="border-radius: var(--radius-md);">
             </div>
             <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold text-white shadow-sm">
-                    Continue to Exam <i class="bi bi-arrow-right ms-1"></i>
+                <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold text-white shadow-sm py-3">
+                    Continue to Exam <i class="bi bi-arrow-right ms-2"></i>
                 </button>
             </div>
         </form>
