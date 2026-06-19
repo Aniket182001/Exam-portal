@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h4 class="mb-0">{{ exam.title }}</h4>
+            </div>
+            <div class="card-body p-4">
+                {% if disabled %}
+                    <div class="alert alert-warning text-center">
+                        This exam is currently unavailable. Please contact your administrator.
+                    </div>
+                {% else %}
+                    <p class="text-center mb-4">Please enter your details to access the exam.</p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="student_name" class="form-label">Full Name *</label>
+                            <input type="text" class="form-control form-control-lg" id="student_name" name="student_name" required placeholder="John Doe">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="student_email" class="form-label">Email Address *</label>
+                            <input type="email" class="form-control form-control-lg" id="student_email" name="student_email" required placeholder="john.doe@example.com">
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Proceed to Instructions</button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
