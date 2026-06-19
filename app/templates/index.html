@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block page_title %}Home{% endblock %}
+
+{% block content %}
+<!-- ============================================================
+     HERO SECTION
+============================================================= -->
+<section class="hero-section">
+    <div class="container position-relative z-1">
+        <div class="row align-items-center justify-content-center text-center">
+            <div class="col-lg-8">
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Portal Active
+                </div>
+                <h1 class="hero-title">AIQM Exam Portal</h1>
+                <p class="hero-subtitle">Secure and professional examination platform for the Asian Institute of Quality Management.</p>
+                
+                <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light btn-lg text-primary fw-bold shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#studentExamModal">
+                        <i class="bi bi-person-badge me-2"></i>Student Exam
+                    </button>
+                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-light btn-lg rounded-pill px-4" style="border-width: 2px;">
+                        <i class="bi bi-speedometer2 me-2"></i>Admin Dashboard
+                    </a>
+                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-light btn-lg rounded-pill px-4" style="border-width: 2px; background: rgba(255,255,255,0.1);">
+                        <i class="bi bi-journal-check me-2"></i>Manage Exams
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     FEATURES SECTION
+============================================================= -->
+<section class="features-section">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-label">Platform Features</span>
+            <h2 class="section-title">Core Capabilities</h2>
+            <p class="section-desc">A complete suite of tools to conduct, evaluate, and review professional examinations with confidence.</p>
+        </div>
+        
+        <div class="row g-4 justify-content-center">
+            <!-- Feature 1 -->
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                    <h5>Online Examinations</h5>
+                    <p>Conduct exams securely. A robust environment designed for uninterrupted student assessment and detailed progress tracking.</p>
+                </div>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <h5>Instant Results</h5>
+                    <p>Automatic evaluation and reporting. Instantly calculate scores, apply negative marking, and generate comprehensive pass/fail statuses.</p>
+                </div>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-file-earmark-check"></i>
+                    </div>
+                    <h5>Answer Sheets</h5>
+                    <p>Review responses and performance. Detailed breakdowns of correct, incorrect, and unanswered questions for thorough student feedback.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     STUDENT EXAM MODAL
+============================================================= -->
+<div class="modal fade" id="studentExamModal" tabindex="-1" aria-labelledby="studentExamModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom py-3">
+        <h5 class="modal-title fw-bold text-dark" id="studentExamModalLabel">Access Examination</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted mb-4">Please enter the unique exam code provided by your administrator to securely access your examination session.</p>
+        <form id="examCodeForm" onsubmit="event.preventDefault(); const code = document.getElementById('examCodeInput').value.trim(); if(code) { window.location.href='/exam/' + encodeURIComponent(code); }">
+            <div class="mb-3">
+                <label for="examCodeInput" class="form-label">Exam Code</label>
+                <input type="text" class="form-control form-control-lg text-center font-monospace fw-bold" id="examCodeInput" placeholder="e.g. EXAM123" required>
+            </div>
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold text-white shadow-sm">
+                    Continue to Exam <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

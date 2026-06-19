@@ -3,44 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIQM Exam Portal - Admin</title>
+    <meta name="description" content="{% block meta_description %}AIQM Exam Portal — Conduct and manage exams professionally with the Asian Institute of Quality Management.{% endblock %}">
+
+    <title>{% block page_title %}AIQM Exam Portal{% endblock %} — Asian Institute of Quality Management</title>
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- AIQM Portal Styles -->
+    <link href="{{ url_for('static', filename='css/portal.css') }}" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+
+    <!-- ============================================================
+         NAVBAR
+    ============================================================ -->
+    <nav class="navbar navbar-expand-lg aiqm-navbar sticky-top" role="navigation" aria-label="Main navigation">
         <div class="container">
-            <a class="navbar-brand" href="/">AIQM Portal</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- Brand -->
+            <a class="navbar-brand" href="{{ url_for('main.home') }}" aria-label="AIQM Exam Portal Home">
+                <div class="brand-logo" aria-hidden="true">A</div>
+                <div class="brand-text">
+                    <span class="brand-title">AIQM Portal</span>
+                    <span class="brand-sub">Exam Management</span>
+                </div>
+            </a>
+
+            <!-- Toggler (mobile) -->
+            <button class="navbar-toggler border-0" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#aiqmNavbar"
+                    aria-controls="aiqmNavbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
+
+            <!-- Nav Links -->
+            <div class="collapse navbar-collapse" id="aiqmNavbar">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin_exams.list_exams') }}">Exam Management</a>
+                        <a class="nav-link" href="{{ url_for('main.home') }}">
+                            <i class="bi bi-house me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_exams.list_exams') }}">
+                            <i class="bi bi-shield-lock me-1"></i>Admin Panel
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container">
-        <!-- Flash messages -->
+    <!-- ============================================================
+         MAIN CONTENT
+    ============================================================ -->
+    <main class="page-body">
+
+        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
+                <div class="container flash-container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
-    </div>
+
+    </main>
+
+    <!-- ============================================================
+         FOOTER
+    ============================================================ -->
+    <footer class="aiqm-footer" role="contentinfo">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <span class="footer-brand">AIQM Exam Portal</span>
+                    <span class="footer-org">Asian Institute of Quality Management</span>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="footer-copy">&copy; {{ now.year if now is defined else 2025 }} AIQM Exam Portal. All rights reserved.</span>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    {% block extra_scripts %}{% endblock %}
+
 </body>
 </html>

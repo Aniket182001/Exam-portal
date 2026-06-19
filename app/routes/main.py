@@ -1,8 +1,9 @@
-from flask import Blueprint
+from flask import Blueprint, render_template
+from datetime import datetime
 
 main_bp = Blueprint("main", __name__)
 
 
 @main_bp.route("/")
 def home():
-    return "AIQM Exam Portal is running successfully!"
+    return render_template("index.html", now=datetime.utcnow())
