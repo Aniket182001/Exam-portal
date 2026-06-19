@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">{{ action }} Exam</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="title" class="form-label">Title *</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ exam.title if exam else '' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="exam_code" class="form-label">Exam Code *</label>
+                            <input type="text" class="form-control" id="exam_code" name="exam_code" value="{{ exam.exam_code if exam else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ exam.description if exam else '' }}</textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="duration_minutes" class="form-label">Duration (minutes) *</label>
+                            <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" value="{{ exam.duration_minutes if exam else '' }}" required min="1">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="passing_type" class="form-label">Passing Type *</label>
+                            <select class="form-select" id="passing_type" name="passing_type" required>
+                                <option value="percentage" {% if exam and exam.passing_type == 'percentage' %}selected{% endif %}>Percentage</option>
+                                <option value="marks" {% if exam and exam.passing_type == 'marks' %}selected{% endif %}>Marks</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="passing_value" class="form-label">Passing Value *</label>
+                            <input type="number" step="0.01" class="form-control" id="passing_value" name="passing_value" value="{{ exam.passing_value if exam else '' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 border p-3 rounded bg-light">
+                        <div class="col-md-4 form-check mt-4 ms-2">
+                            <input class="form-check-input" type="checkbox" id="negative_marking_enabled" name="negative_marking_enabled" {% if exam and exam.negative_marking_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="negative_marking_enabled">
+                                Enable Negative Marking
+                            </label>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="negative_marks" class="form-label">Negative Marks (per wrong question)</label>
+                            <input type="number" step="0.01" class="form-control" id="negative_marks" name="negative_marks" value="{{ exam.negative_marks if exam else '0' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start_datetime" class="form-label">Start Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="start_datetime" name="start_datetime" 
+                                   value="{{ exam.start_datetime.strftime('%Y-%m-%dT%H:%M') if exam and exam.start_datetime else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_datetime" class="form-label">End Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="end_datetime" name="end_datetime"
+                                   value="{{ exam.end_datetime.strftime('%Y-%m-%dT%H:%M') if exam and exam.end_datetime else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="show_result_immediately" name="show_result_immediately" {% if exam and exam.show_result_immediately %}checked{% endif %}>
+                        <label class="form-check-label" for="show_result_immediately">
+                            Show Result Immediately After Submission
+                        </label>
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if not exam or exam.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            Is Active
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">{{ action }} Exam</button>
+                        <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

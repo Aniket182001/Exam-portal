@@ -11,7 +11,9 @@ def create_app():
     migrate.init_app(app, db)
 
     from app import models
+    from app.routes.admin_exams import admin_exams_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(admin_exams_bp)
 
     return app

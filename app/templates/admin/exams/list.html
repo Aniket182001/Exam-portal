@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Exam Management</h2>
+    <a href="{{ url_for('admin_exams.create_exam') }}" class="btn btn-primary">Create New Exam</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if exams %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Exam Code</th>
+                        <th>Title</th>
+                        <th>Duration (min)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in exams %}
+                    <tr>
+                        <td>{{ exam.exam_code }}</td>
+                        <td>{{ exam.title }}</td>
+                        <td>{{ exam.duration_minutes }}</td>
+                        <td>
+                            {% if exam.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('admin_exams.edit_exam', id=exam.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form action="{{ url_for('admin_exams.toggle_exam', id=exam.id) }}" method="POST" class="d-inline">
+                                {% if exam.is_active %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">Deactivate</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="text-muted mb-0">No exams found. Click "Create New Exam" to add one.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
