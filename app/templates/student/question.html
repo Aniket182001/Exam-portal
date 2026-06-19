@@ -30,7 +30,13 @@
                             <span class="text-uppercase tracking-wider text-muted font-monospace small">Exam Attempt</span>
                             <h3 class="mb-0 text-primary fw-bold">{{ exam.title }}</h3>
                         </div>
-                        <div class="text-end">
+                        <div class="text-end d-flex align-items-center gap-2">
+                            <!-- Timer Badge -->
+                            <div id="exam-timer" data-seconds="{{ remaining_seconds }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-6 rounded-pill d-flex align-items-center">
+                                <span class="me-2">⏱️</span>
+                                <span id="timer-display" class="font-monospace fw-bold">00:00:00</span>
+                            </div>
+                            <!-- Marks Badge -->
                             <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6 border border-secondary-subtle rounded-pill">
                                 {{ question.marks }} Marks
                             </span>
@@ -164,6 +170,14 @@
     .transition-all {
         transition: all 0.2s ease-in-out;
     }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.6; }
+        100% { opacity: 1; }
+    }
+    .animate-pulse {
+        animation: pulse 1.5s infinite;
+    }
 </style>
 
 <script>
@@ -190,6 +204,55 @@
                 }
             });
         });
+
+        // Timer countdown script
+        const timerElement = document.getElementById("exam-timer");
+        const timerDisplay = document.getElementById("timer-display");
+        
+        if (timerElement && timerDisplay) {
+            let remainingSeconds = parseInt(timerElement.getAttribute("data-seconds")) || 0;
+            
+            function updateDisplay() {
+                if (remainingSeconds <= 0) {
+                    timerDisplay.textContent = "00:00:00";
+                    timerElement.classList.remove("bg-light", "text-dark");
+                    timerElement.classList.add("bg-danger", "text-white", "animate-pulse");
+                    return;
+                }
+                
+                const h = Math.floor(remainingSeconds / 3600);
+                const m = Math.floor((remainingSeconds % 3600) / 60);
+                const s = remainingSeconds % 60;
+                
+                const formattedTime = [
+                    h.toString().padStart(2, '0'),
+                    m.toString().padStart(2, '0'),
+                    s.toString().padStart(2, '0')
+                ].join(':');
+                
+                timerDisplay.textContent = formattedTime;
+                
+                // If less than 5 minutes (300 seconds), highlight in red
+                if (remainingSeconds < 300) {
+                    timerElement.classList.remove("bg-light", "text-dark");
+                    timerElement.classList.add("bg-danger", "text-white", "animate-pulse");
+                }
+            }
+            
+            // Run initial update
+            updateDisplay();
+            
+            const timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateDisplay();
+                
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    // Reload to let server process expiration
+                    window.location.reload();
+                }
+            }, 1000);
+        }
     });
 </script>
 {% endblock %}

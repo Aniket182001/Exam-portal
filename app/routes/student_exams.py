@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from app.extensions import db
 from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 
 student_exams_bp = Blueprint("student_exams", __name__)
@@ -101,6 +101,26 @@ def question_attempt(attempt_token, question_number):
         abort(403, description="This attempt is no longer active.")
         
     exam = attempt.exam
+    
+    # Calculate time remaining Authoritatively from Server timestamps
+    now = datetime.now(timezone.utc)
+    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
+    end_time = started_at_utc + timedelta(minutes=exam.duration_minutes)
+    remaining_seconds = int((end_time - now).total_seconds())
+    
+    # Server-side Expiration Check
+    if remaining_seconds <= 0:
+        if exam.auto_submit_on_timeout:
+            attempt.status = "submitted"
+            attempt.submitted_at = now
+            db.session.commit()
+            flash("Your time has expired. Your exam has been automatically submitted.", "warning")
+        else:
+            attempt.status = "expired"
+            db.session.commit()
+            flash("Your time has expired. This exam attempt has expired.", "danger")
+        return redirect(f"/attempt/{attempt_token}/review")
+        
     # Fetch questions ordered by display_order ASC
     questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
     total_questions = len(questions)
@@ -203,5 +223,6 @@ def question_attempt(attempt_token, question_number):
         answered_option_id=answered_option_id,
         progress=progress,
         questions=questions,
-        answered_question_ids=answered_question_ids
+        answered_question_ids=answered_question_ids,
+        remaining_seconds=remaining_seconds
     )
