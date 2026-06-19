@@ -1,6 +1,11 @@
 import os
 import webbrowser
 from threading import Timer
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (required for Gunicorn)
+load_dotenv()
+
 from app import create_app
 
 app = create_app()
