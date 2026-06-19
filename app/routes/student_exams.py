@@ -101,6 +101,8 @@ def get_remaining_seconds(attempt):
     return max(0, remaining)
 
 def handle_attempt_timeout(attempt):
+    if attempt.status != "in_progress":
+        return
     exam = attempt.exam
     now = datetime.now(timezone.utc)
     if exam.auto_submit_on_timeout:
@@ -302,7 +304,20 @@ def result_placeholder(attempt_token):
             handle_attempt_timeout(attempt)
         else:
             flash("Your exam is still in progress. Please complete your exam first.", "info")
-            return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=1))
+            # Find the first unanswered question
+            questions = Question.query.filter_by(exam_id=attempt.exam_id).order_by(Question.display_order.asc()).all()
+            answered_question_ids = {ans.question_id for ans in attempt.answers}
+            
+            first_unanswered_number = None
+            for idx, q in enumerate(questions, start=1):
+                if q.id not in answered_question_ids:
+                    first_unanswered_number = idx
+                    break
+                    
+            if first_unanswered_number is not None:
+                return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=first_unanswered_number))
+            else:
+                return redirect(url_for('student_exams.review', attempt_token=attempt_token))
             
     return render_template(
         "student/result_placeholder.html",
