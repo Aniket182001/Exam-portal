@@ -1,51 +1,118 @@
 {% extends "base.html" %}
 
+{% block page_title %}Questions - {{ exam.title }}{% endblock %}
+
 {% block content %}
-<div class="mb-4">
-    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to Exams</a>
-    <div class="d-flex justify-content-between align-items-center">
-        <h2>Questions for: <span class="text-primary">{{ exam.title }}</span></h2>
-        <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-primary">Add New Question</a>
+<div class="container py-4">
+    
+    <!-- Page Header & Breadcrumbs -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Questions</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Exams">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-list-task text-primary me-2"></i>Questions for: <span class="text-primary">{{ exam.title }}</span>
+                </h3>
+            </div>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-plus-circle-fill me-2"></i> Add New Question
+            </a>
+        </div>
+    </div>
+
+    <!-- Data Card -->
+    <div class="card border-0 shadow-sm rounded-xl overflow-hidden">
+        <div class="card-body p-0">
+            {% if questions %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light border-bottom">
+                        <tr>
+                            <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 5%">No.</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 50%">Question Text</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 15%">Options</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 10%">Marks</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end" style="width: 20%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for question in questions %}
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <span class="badge bg-light text-dark border px-2 py-1">{{ loop.index }}</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="text-dark fw-medium" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-height: 3rem;">
+                                    {{ question.question_text }}
+                                </div>
+                            </td>
+                            <td class="py-3 text-center">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill">{{ question.options|length }} Options</span>
+                            </td>
+                            <td class="py-3 text-center text-dark fw-bold">
+                                {{ question.marks }}
+                            </td>
+                            <td class="pe-4 py-3 text-end">
+                                <div class="btn-group shadow-sm">
+                                    <a href="{{ url_for('admin_questions.edit_question', question_id=question.id) }}" class="btn btn-sm btn-light border text-primary" title="Edit Question">
+                                        <i class="bi bi-pencil-square"></i> <span class="d-none d-lg-inline ms-1">Edit</span>
+                                    </a>
+                                    <form action="{{ url_for('admin_questions.delete_question', question_id=question.id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to permanently delete this question and all its options? This action cannot be undone.');">
+                                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="Delete Question">
+                                            <i class="bi bi-trash3-fill"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5 px-3">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-question-circle text-muted fs-1"></i>
+                </div>
+                <h4 class="fw-bold text-dark">No Questions Yet</h4>
+                <p class="text-muted mb-4 max-w-sm mx-auto">This examination currently has no questions. Click the button below to start building your exam.</p>
+                <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Add First Question
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        {% if questions %}
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th style="width: 5%">No.</th>
-                        <th style="width: 50%">Question Text</th>
-                        <th style="width: 15%">Options</th>
-                        <th style="width: 10%">Marks</th>
-                        <th style="width: 20%">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for question in questions %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>
-                            {{ question.question_text[:80] + '...' if question.question_text|length > 80 else question.question_text }}
-                        </td>
-                        <td>{{ question.options|length }}</td>
-                        <td>{{ question.marks }}</td>
-                        <td>
-                            <a href="{{ url_for('admin_questions.edit_question', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <form action="{{ url_for('admin_questions.delete_question', question_id=question.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this question and all its options? This cannot be undone.');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-            <p class="text-muted mb-0">No questions found for this exam. Click "Add New Question" to create one.</p>
-        {% endif %}
-    </div>
-</div>
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md) !important;
+    }
+    .table-hover tbody tr:hover {
+        background-color: var(--aiqm-gray-50);
+    }
+    .btn-group .btn {
+        transition: all 0.2s ease;
+    }
+    .btn-group .btn:hover {
+        background-color: var(--aiqm-gray-100);
+    }
+</style>
 {% endblock %}

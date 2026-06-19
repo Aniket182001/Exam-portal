@@ -1,38 +1,88 @@
 {% extends "base.html" %}
 
+{% block page_title %}Access Exam - {{ exam.title }}{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center py-3">
-                <h4 class="mb-0">{{ exam.title }}</h4>
-            </div>
-            <div class="card-body p-4">
-                {% if disabled %}
-                    <div class="alert alert-warning text-center">
-                        This exam is currently unavailable. Please contact your administrator.
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card entry-card border-0 shadow-lg rounded-xl overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4" style="background: linear-gradient(135deg, var(--aiqm-primary-dark), var(--aiqm-primary)); border-bottom: none;">
+                    <div class="mb-2 opacity-75">
+                        <i class="bi bi-shield-lock fs-1"></i>
                     </div>
-                {% else %}
-                    <p class="text-center mb-4">Please enter your details to access the exam.</p>
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="student_name" class="form-label">Full Name *</label>
-                            <input type="text" class="form-control form-control-lg" id="student_name" name="student_name" required placeholder="John Doe">
+                    <h3 class="mb-1 fw-bold text-white">{{ exam.title }}</h3>
+                    <p class="mb-0 text-white-50 font-monospace small text-uppercase letter-wide">Exam Authentication</p>
+                </div>
+                
+                <div class="card-body p-4 p-md-5 bg-white">
+                    {% if disabled %}
+                        <div class="alert alert-warning text-center border-0 shadow-sm rounded-lg d-flex align-items-center justify-content-center p-4">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-3"></i>
+                            <div>
+                                <h5 class="fw-bold mb-1">Exam Unavailable</h5>
+                                <p class="mb-0 text-muted small">This exam is currently not active or out of schedule. Please contact your administrator.</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center mb-4">
+                            <p class="text-muted fw-medium">Please verify your identity to access the examination portal.</p>
                         </div>
                         
-                        <div class="mb-4">
-                            <label for="student_email" class="form-label">Email Address *</label>
-                            <input type="email" class="form-control form-control-lg" id="student_email" name="student_email" required placeholder="john.doe@example.com">
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">Proceed to Instructions</button>
-                        </div>
-                    </form>
-                {% endif %}
+                        <form method="POST" class="needs-validation">
+                            <div class="mb-4">
+                                <label for="student_name" class="form-label text-secondary fw-bold small text-uppercase letter-wide">Full Name <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg shadow-sm rounded-sm overflow-hidden">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control border-start-0 ps-0" id="student_name" name="student_name" required placeholder="John Doe">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-5">
+                                <label for="student_email" class="form-label text-secondary fw-bold small text-uppercase letter-wide">Email Address <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg shadow-sm rounded-sm overflow-hidden">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control border-start-0 ps-0" id="student_email" name="student_email" required placeholder="john.doe@example.com">
+                                </div>
+                                <div class="form-text mt-2 small text-muted"><i class="bi bi-info-circle me-1"></i>Your results will be associated with this email address.</div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm py-3 d-flex align-items-center justify-content-center transition-all">
+                                    Proceed to Instructions <i class="bi bi-arrow-right-short fs-4 ms-1"></i>
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('main.home') }}" class="text-muted small text-decoration-none hover-primary transition-fast"><i class="bi bi-arrow-left me-1"></i> Return to Homepage</a>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .input-group-text {
+        border-color: var(--aiqm-gray-200);
+        background-color: var(--aiqm-gray-50);
+    }
+    .form-control:focus {
+        box-shadow: none;
+        border-color: var(--aiqm-gray-200);
+    }
+    .input-group:focus-within {
+        border-color: var(--aiqm-primary) !important;
+        box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+    }
+    .input-group:focus-within .input-group-text,
+    .input-group:focus-within .form-control {
+        border-color: var(--aiqm-primary);
+    }
+    .hover-primary:hover {
+        color: var(--aiqm-primary) !important;
+    }
+</style>
 {% endblock %}

@@ -1,104 +1,99 @@
 {% extends "base.html" %}
 
+{% block page_title %}Review & Submit - {{ exam.title }}{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 py-md-5">
     <!-- Header Card -->
-    <div class="card shadow border-0 rounded-4 mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 py-md-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-                <span class="text-uppercase tracking-wider text-muted font-monospace small">Exam Review & Submission</span>
-                <h2 class="mb-0 text-primary fw-bold">{{ exam.title }}</h2>
+                <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide"><i class="bi bi-eye text-primary me-2"></i>Exam Review</span>
+                <h3 class="mb-0 text-dark fw-bold">{{ exam.title }}</h3>
             </div>
-            <div class="text-end d-flex align-items-center gap-2">
-                <!-- Status Badge -->
+            <div class="d-flex align-items-center gap-2">
                 {% if attempt.status == 'in_progress' %}
-                    <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">In Progress</span>
-                    <!-- Timer Badge -->
-                    <div id="exam-timer" data-seconds="{{ remaining_seconds }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-6 rounded-pill d-flex align-items-center">
-                        <span class="me-2">⏱️</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 rounded-pill"><i class="bi bi-activity me-1"></i> In Progress</span>
+                    <div id="exam-timer" data-seconds="{{ remaining_seconds }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-6 rounded-pill d-flex align-items-center shadow-sm">
+                        <i class="bi bi-stopwatch me-2 text-primary"></i>
                         <span id="timer-display" class="font-monospace fw-bold">00:00:00</span>
                     </div>
                 {% elif attempt.status == 'submitted' %}
-                    <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">Submitted</span>
+                    <span class="badge bg-success text-white px-4 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-check-circle me-1"></i> Submitted</span>
                 {% else %}
-                    <span class="badge bg-danger px-3 py-2 fs-6 rounded-pill">Expired</span>
+                    <span class="badge bg-danger text-white px-4 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-x-circle me-1"></i> Expired</span>
                 {% endif %}
             </div>
         </div>
-        <div class="card-body p-4 bg-light bg-opacity-50">
-            <div class="row">
-                <div class="col-md-6 mb-3 mb-md-0">
-                    <p class="mb-1 text-muted small text-uppercase font-monospace">Student Name</p>
-                    <h5 class="fw-bold text-dark mb-0">{{ attempt.student_name }}</h5>
+        <div class="card-body p-4 bg-light">
+            <div class="row g-3">
+                <div class="col-md-6 border-end-md">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace letter-wide">Student Identity</p>
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-circle text-primary me-2"></i>{{ attempt.student_name }}</h5>
                 </div>
-                <div class="col-md-6">
-                    <p class="mb-1 text-muted small text-uppercase font-monospace">Student Email</p>
-                    <h5 class="fw-bold text-dark mb-0">{{ attempt.student_email }}</h5>
+                <div class="col-md-6 ps-md-4">
+                    <p class="mb-1 text-muted small text-uppercase font-monospace letter-wide">Email Address</p>
+                    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-envelope-at text-primary me-2"></i>{{ attempt.student_email }}</h5>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Summary Stats -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-5">
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase small font-monospace mb-2">Total Questions</h6>
-                    <h1 class="fw-bold text-dark mb-0">{{ total_questions }}</h1>
-                </div>
+            <div class="card border-0 shadow-sm rounded-xl h-100 text-center p-4 hover-lift">
+                <h6 class="text-muted text-uppercase small font-monospace letter-wide mb-3">Total Questions</h6>
+                <div class="display-4 fw-bold text-dark mb-0">{{ total_questions }}</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3 border-start border-success border-4">
-                <div class="card-body">
-                    <h6 class="text-success text-uppercase small font-monospace mb-2">Answered</h6>
-                    <h1 class="fw-bold text-success mb-0">{{ answered_questions_count }}</h1>
-                </div>
+            <div class="card border-0 shadow-sm rounded-xl h-100 text-center p-4 border-bottom border-success border-4 hover-lift" style="border-bottom-width: 5px !important;">
+                <h6 class="text-success text-uppercase small font-monospace letter-wide mb-3"><i class="bi bi-check2-circle me-1"></i> Answered</h6>
+                <div class="display-4 fw-bold text-success mb-0">{{ answered_questions_count }}</div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100 text-center p-3 border-start border-secondary border-4">
-                <div class="card-body">
-                    <h6 class="text-secondary text-uppercase small font-monospace mb-2">Unanswered</h6>
-                    <h1 class="fw-bold text-secondary mb-0">{{ unanswered_questions_count }}</h1>
-                </div>
+            <div class="card border-0 shadow-sm rounded-xl h-100 text-center p-4 border-bottom border-secondary border-4 hover-lift" style="border-bottom-width: 5px !important;">
+                <h6 class="text-secondary text-uppercase small font-monospace letter-wide mb-3"><i class="bi bi-circle me-1"></i> Unanswered</h6>
+                <div class="display-4 fw-bold text-secondary mb-0">{{ unanswered_questions_count }}</div>
             </div>
         </div>
     </div>
 
-    <!-- Palette and Actions -->
     <div class="row g-4">
         <!-- Palette Area -->
-        <div class="col-12">
-            <div class="card shadow border-0 rounded-4 mb-4">
+        <div class="col-lg-{% if attempt.status == 'in_progress' %}8{% else %}12{% endif %}">
+            <div class="card border-0 shadow-sm rounded-xl mb-4 h-100">
                 <div class="card-header bg-white border-bottom py-3">
-                    <h5 class="mb-0 text-secondary fw-bold">Question Palette</h5>
+                    <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Question Palette</h5>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body p-4 p-md-5">
                     {% if attempt.status == 'in_progress' %}
-                        <p class="text-muted mb-4 small">
-                            <i class="bi bi-info-circle me-1"></i> You can click any question number below to jump back and edit your answer.
-                        </p>
+                        <div class="alert alert-light border shadow-sm rounded-lg d-flex align-items-center mb-4">
+                            <i class="bi bi-info-circle-fill text-primary fs-4 me-3"></i>
+                            <span class="text-muted small">Click any question number to jump back and edit your answer.</span>
+                        </div>
                     {% else %}
-                        <p class="text-muted mb-4 small text-danger fw-bold">
-                            <i class="bi bi-lock-fill me-1"></i> This exam attempt is closed. Questions cannot be loaded or edited.
-                        </p>
+                        <div class="alert alert-danger border-danger-subtle shadow-sm rounded-lg d-flex align-items-center mb-4">
+                            <i class="bi bi-lock-fill text-danger fs-4 me-3"></i>
+                            <span class="text-danger small fw-bold">This exam attempt is closed. Questions cannot be loaded or edited.</span>
+                        </div>
                     {% endif %}
 
-                    <div class="d-flex flex-wrap gap-3 justify-content-start mb-4">
+                    <div class="palette-grid gap-2 mb-4 pb-2">
                         {% for q in questions %}
                             {% set is_answered = (q.id in answered_question_ids) %}
                             {% if attempt.status == 'in_progress' %}
                                 <a href="{{ url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=loop.index) }}" 
-                                   class="btn d-flex align-items-center justify-content-center fw-bold transition-all {% if is_answered %}btn-success{% else %}btn-secondary{% endif %}" 
-                                   style="height: 50px; width: 50px; border-radius: 12px; font-size: 1.1rem; min-width: 0;">
+                                   class="btn d-flex align-items-center justify-content-center fw-bold transition-fast palette-btn shadow-sm
+                                   {% if is_answered %}btn-success text-white{% else %}btn-light text-dark border-light-subtle{% endif %}">
                                     {{ loop.index }}
                                 </a>
                             {% else %}
-                                <button class="btn d-flex align-items-center justify-content-center fw-bold {% if is_answered %}btn-success{% else %}btn-secondary{% endif %}" 
-                                        style="height: 50px; width: 50px; border-radius: 12px; font-size: 1.1rem; min-width: 0; opacity: 0.65; cursor: not-allowed;" 
-                                        disabled>
+                                <button class="btn d-flex align-items-center justify-content-center fw-bold palette-btn
+                                        {% if is_answered %}btn-success{% else %}btn-secondary{% endif %}" 
+                                        style="opacity: 0.65; cursor: not-allowed;" disabled>
                                     {{ loop.index }}
                                 </button>
                             {% endif %}
@@ -106,57 +101,67 @@
                     </div>
 
                     <!-- Legend -->
-                    <div class="d-flex flex-wrap gap-4 pt-3 border-top">
+                    <div class="d-flex flex-wrap gap-4 pt-4 border-top">
                         <div class="d-flex align-items-center">
-                            <div class="bg-success rounded-3 me-2" style="width: 18px; height: 18px;"></div>
+                            <div class="bg-success rounded-1 shadow-sm me-2" style="width: 20px; height: 20px;"></div>
                             <span class="small text-secondary fw-semibold">Answered</span>
                         </div>
                         <div class="d-flex align-items-center">
-                            <div class="bg-secondary rounded-3 me-2" style="width: 18px; height: 18px;"></div>
+                            <div class="bg-light border border-light-subtle shadow-sm rounded-1 me-2" style="width: 20px; height: 20px;"></div>
                             <span class="small text-secondary fw-semibold">Unanswered</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Final Submission Block -->
-    {% if attempt.status == 'in_progress' %}
-        <div class="card shadow border-0 rounded-4 bg-light-subtle mb-4">
-            <div class="card-body p-4 text-center">
-                <h4 class="fw-bold text-dark mb-2">Ready to finish your exam?</h4>
-                <p class="text-muted mb-4 mx-auto" style="max-width: 600px;">
-                    Please make sure you have reviewed all questions. Once submitted, your answers are final and cannot be altered.
-                </p>
-                <button type="button" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
-                    Submit Exam &rarr;
-                </button>
+        <!-- Final Submission Block -->
+        {% if attempt.status == 'in_progress' %}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg rounded-xl h-100 bg-primary bg-opacity-10" style="border: 2px solid var(--aiqm-primary-light) !important;">
+                <div class="card-body p-4 p-md-5 text-center d-flex flex-column justify-content-center align-items-center">
+                    <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                        <i class="bi bi-send-check-fill text-primary" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-3">Ready to Finish?</h4>
+                    <p class="text-muted mb-4 small" style="line-height: 1.6;">
+                        Please ensure you have reviewed all your answers. Once submitted, your examination is final and cannot be altered.
+                    </p>
+                    <button type="button" class="btn btn-success btn-lg w-100 rounded-pill shadow-lg fw-bold d-flex align-items-center justify-content-center hover-scale" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                        Submit Exam <i class="bi bi-arrow-right-circle-fill ms-2"></i>
+                    </button>
+                </div>
             </div>
         </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
 <!-- Submit Confirmation Modal -->
 {% if attempt.status == 'in_progress' %}
 <div class="modal fade" id="confirmSubmitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4 shadow">
-            <div class="modal-header border-bottom py-3">
+        <div class="modal-content border-0 rounded-xl shadow-lg">
+            <div class="modal-header border-bottom py-3 bg-light">
                 <h5 class="modal-title fw-bold text-dark" id="confirmSubmitModalLabel">Confirm Submission</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 text-center">
-                <div class="mb-3 text-warning fs-1">⚠️</div>
-                <h5 class="fw-bold text-dark mb-3">Are you sure you want to submit your exam?</h5>
-                <p class="text-muted mb-0">
-                    You cannot modify answers after submission. Double check any unanswered questions before confirming.
+            <div class="modal-body p-4 p-md-5 text-center">
+                <div class="mb-4 d-inline-block p-3 bg-warning bg-opacity-10 rounded-circle">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-3">Submit your exam?</h4>
+                <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                    You have <strong class="text-dark">{{ unanswered_questions_count }}</strong> unanswered questions. 
+                    After submission, you will not be able to return to the exam or change your answers.
                 </p>
             </div>
-            <div class="modal-footer border-top p-3 d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                <form action="{{ url_for('student_exams.submit_attempt', attempt_token=attempt_token) }}" method="POST">
-                    <button type="submit" class="btn btn-success px-4 rounded-pill fw-bold">Yes, Submit Exam</button>
+            <div class="modal-footer border-top p-3 d-flex flex-column flex-sm-row gap-2">
+                <button type="button" class="btn btn-light border btn-lg rounded-pill flex-grow-1 fw-medium" data-bs-dismiss="modal">Cancel & Review</button>
+                <form action="{{ url_for('student_exams.submit_attempt', attempt_token=attempt_token) }}" method="POST" class="flex-grow-1 d-flex">
+                    <button type="submit" class="btn btn-success btn-lg rounded-pill fw-bold w-100 shadow-sm d-flex justify-content-center align-items-center">
+                        <i class="bi bi-check-circle-fill me-2"></i> Confirm Submit
+                    </button>
                 </form>
             </div>
         </div>
@@ -165,20 +170,54 @@
 {% endif %}
 
 <style>
-    .transition-all {
-        transition: all 0.2s ease-in-out;
+    .border-end-md {
+        border-right: 1px solid var(--aiqm-gray-200);
     }
-    .transition-all:hover {
-        transform: translateY(-2px);
+    @media (max-width: 767.98px) {
+        .border-end-md {
+            border-right: none;
+            border-bottom: 1px solid var(--aiqm-gray-200);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md) !important;
+    }
+    .hover-scale {
+        transition: transform 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: scale(1.03);
+    }
+    
+    /* Palette Grid */
+    .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    }
+    .palette-btn {
+        height: 50px;
+        border-radius: 10px;
+        font-size: 1.05rem;
+    }
+    a.palette-btn:hover {
+        transform: scale(1.08);
+        z-index: 1;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
     }
 </style>
 
 {% if attempt.status == 'in_progress' %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Timer countdown script
         const timerElement = document.getElementById("exam-timer");
         const timerDisplay = document.getElementById("timer-display");
+        const timerIcon = timerElement.querySelector("i");
         
         if (timerElement && timerDisplay) {
             let remainingSeconds = parseInt(timerElement.getAttribute("data-seconds")) || 0;
@@ -186,8 +225,8 @@
             function updateDisplay() {
                 if (remainingSeconds <= 0) {
                     timerDisplay.textContent = "00:00:00";
-                    timerElement.classList.remove("bg-light", "text-dark", "bg-warning");
-                    timerElement.classList.add("bg-danger", "text-white");
+                    timerElement.className = "badge bg-danger text-white px-3 py-2 fs-6 rounded-pill shadow-sm d-flex align-items-center";
+                    timerIcon.className = "bi bi-stopwatch me-2 text-white";
                     return;
                 }
                 
@@ -204,21 +243,17 @@
                 timerDisplay.textContent = formattedTime;
                 
                 if (remainingSeconds < 60) {
-                    // Danger state (< 1 minute remaining)
-                    timerElement.classList.remove("bg-light", "text-dark", "bg-warning");
-                    timerElement.classList.add("bg-danger", "text-white");
+                    timerElement.className = "badge bg-danger text-white px-3 py-2 fs-6 rounded-pill shadow-sm d-flex align-items-center animate__animated animate__pulse animate__infinite";
+                    timerIcon.className = "bi bi-exclamation-triangle-fill me-2 text-white";
                 } else if (remainingSeconds < 300) {
-                    // Warning state (< 5 minutes remaining)
-                    timerElement.classList.remove("bg-light", "bg-danger", "text-white");
-                    timerElement.classList.add("bg-warning", "text-dark");
+                    timerElement.className = "badge bg-warning text-dark border border-warning px-3 py-2 fs-6 rounded-pill shadow-sm d-flex align-items-center";
+                    timerIcon.className = "bi bi-stopwatch me-2 text-dark";
                 } else {
-                    // Default state
-                    timerElement.classList.remove("bg-warning", "bg-danger", "text-white");
-                    timerElement.classList.add("bg-light", "text-dark");
+                    timerElement.className = "badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-6 rounded-pill shadow-sm d-flex align-items-center";
+                    timerIcon.className = "bi bi-stopwatch me-2 text-primary";
                 }
             }
             
-            // Run initial update
             updateDisplay();
             
             const timerInterval = setInterval(() => {
@@ -227,7 +262,6 @@
                 
                 if (remainingSeconds <= 0) {
                     clearInterval(timerInterval);
-                    // Reload to let server process expiration
                     window.location.reload();
                 }
             }, 1000);

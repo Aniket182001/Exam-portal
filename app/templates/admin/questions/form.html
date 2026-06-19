@@ -1,51 +1,133 @@
 {% extends "base.html" %}
 
+{% block page_title %}{{ action }} Question - {{ exam.title }}{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="mb-3">
-            <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-secondary">&larr; Back to Questions</a>
-        </div>
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h4 class="mb-0">{{ action }} Question for {{ exam.title }}</h4>
-            </div>
-            <div class="card-body">
-                <form method="POST" id="questionForm">
-                    <div class="mb-3">
-                        <label for="question_text" class="form-label">Question Text *</label>
-                        <textarea class="form-control" id="question_text" name="question_text" rows="4" required>{{ question.question_text if question else '' }}</textarea>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <label for="marks" class="form-label">Marks *</label>
-                            <input type="number" step="0.5" class="form-control" id="marks" name="marks" value="{{ question.marks if question else '1.0' }}" required min="0.5">
-                        </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Options</h5>
-                            <button type="button" class="btn btn-sm btn-success" id="addOptionBtn">+ Add Option</button>
-                        </div>
-                        <div class="card-body" id="optionsContainer">
-                            <!-- Options will be dynamically inserted here -->
-                        </div>
-                        <div class="card-footer text-muted small">
-                            A minimum of 2 and maximum of 5 options are required. Select the radio button to mark the correct answer.
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4">Save Question</button>
-                        <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </form>
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="text-decoration-none">Questions</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ action }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center">
+            <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Questions">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide d-block lh-1">Exam: {{ exam.title }}</span>
+                <h3 class="fw-bold text-dark mb-0">{{ action }} Question</h3>
             </div>
         </div>
     </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <form method="POST" id="questionForm" class="needs-validation">
+                
+                <!-- Question Details Card -->
+                <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-question-circle-fill text-primary me-2"></i>Question Details</h5>
+                    </div>
+                    <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
+                        <div class="mb-4">
+                            <label for="question_text" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Question Text <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-lg bg-white" id="question_text" name="question_text" rows="4" placeholder="Type the question content here..." required>{{ question.question_text if question else '' }}</textarea>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <label for="marks" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Marks Weight <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-muted"><i class="bi bi-plus-slash-minus"></i></span>
+                                    <input type="number" step="0.5" class="form-control bg-white fw-bold" id="marks" name="marks" value="{{ question.marks if question else '1.0' }}" required min="0.5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Options Card -->
+                <div class="card border-0 shadow-sm rounded-xl mb-5 overflow-hidden">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-check text-primary me-2"></i>Answer Options</h5>
+                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm hover-scale" id="addOptionBtn">
+                            <i class="bi bi-plus-circle me-1"></i> Add Option
+                        </button>
+                    </div>
+                    
+                    <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
+                        
+                        <div class="alert alert-info border-info-subtle shadow-sm rounded-lg d-flex align-items-center mb-4 p-3">
+                            <i class="bi bi-info-circle-fill text-info fs-4 me-3"></i>
+                            <div class="small">
+                                Provide <strong>2 to 5 options</strong>. Select the radio button on the left to indicate which option is the <strong>correct answer</strong>.
+                            </div>
+                        </div>
+
+                        <div id="optionsContainer" class="d-flex flex-column gap-3">
+                            <!-- Options will be dynamically inserted here via JS -->
+                        </div>
+                        
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="d-flex flex-column flex-sm-row justify-content-end gap-3 mb-5">
+                    <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-light border btn-lg rounded-pill px-5 fw-medium">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold hover-scale">
+                        <i class="bi bi-save-fill me-2"></i> Save Question
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md) !important;
+    }
+    
+    /* Option Row Styling */
+    .option-row .input-group-text {
+        background-color: var(--aiqm-white);
+        border-color: var(--aiqm-gray-200);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .option-row .form-control {
+        border-color: var(--aiqm-gray-200);
+    }
+    .option-row:focus-within .input-group-text,
+    .option-row:focus-within .form-control {
+        border-color: var(--aiqm-primary);
+    }
+    
+    /* Radio Button Highlight */
+    .option-row .form-check-input {
+        cursor: pointer;
+        width: 1.25em;
+        height: 1.25em;
+    }
+    .option-row .form-check-input:checked {
+        background-color: var(--aiqm-success);
+        border-color: var(--aiqm-success);
+    }
+    .option-row .form-check-input:checked + .input-group-text {
+        background-color: rgba(25, 135, 84, 0.1);
+        border-color: var(--aiqm-success);
+    }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -75,25 +157,64 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderOption(text, isCorrect) {
         const idx = optionCount;
         const wrapper = document.createElement('div');
-        wrapper.className = 'input-group mb-3 option-row';
+        wrapper.className = 'input-group input-group-lg shadow-sm rounded-lg option-row';
         
         wrapper.innerHTML = `
-            <div class="input-group-text">
+            <div class="input-group-text ps-3 pe-4" title="Mark as correct answer">
                 <input class="form-check-input mt-0" type="radio" name="correct_option_index" value="${idx}" ${isCorrect ? 'checked' : ''} aria-label="Correct answer" required>
             </div>
-            <input type="text" class="form-control" name="option_text[]" value="${text}" placeholder="Option text" required>
-            <button class="btn btn-outline-danger remove-btn" type="button" title="Remove Option">&times;</button>
+            <input type="text" class="form-control bg-white" name="option_text[]" value="${text}" placeholder="Enter option text..." required>
+            <button class="btn btn-danger text-white px-3 remove-btn" type="button" title="Remove Option">
+                <i class="bi bi-trash3-fill"></i>
+            </button>
         `;
+        
+        // Add click listener to the text div to trigger radio
+        const radioDiv = wrapper.querySelector('.input-group-text');
+        const radioBtn = wrapper.querySelector('input[type="radio"]');
+        radioDiv.addEventListener('click', function(e) {
+            if(e.target !== radioBtn) {
+                radioBtn.checked = true;
+                highlightSelectedRadio();
+            }
+        });
+        
+        radioBtn.addEventListener('change', highlightSelectedRadio);
         
         optionsContainer.appendChild(wrapper);
         optionCount++;
         updateButtons();
+        highlightSelectedRadio();
+    }
+    
+    function highlightSelectedRadio() {
+        document.querySelectorAll('.option-row').forEach(row => {
+            const radio = row.querySelector('input[type="radio"]');
+            const addon = row.querySelector('.input-group-text');
+            const input = row.querySelector('.form-control');
+            if(radio.checked) {
+                addon.style.backgroundColor = "rgba(25, 135, 84, 0.1)";
+                addon.style.borderColor = "var(--aiqm-success)";
+                input.style.borderColor = "var(--aiqm-success)";
+                row.style.boxShadow = "0 0 0 0.25rem rgba(25, 135, 84, 0.25)";
+            } else {
+                addon.style.backgroundColor = "var(--aiqm-white)";
+                addon.style.borderColor = "var(--aiqm-gray-200)";
+                input.style.borderColor = "var(--aiqm-gray-200)";
+                row.style.boxShadow = "var(--shadow-sm)";
+            }
+        });
     }
 
     function updateButtons() {
         const rows = document.querySelectorAll('.option-row');
         // Enable/disable add button
         addOptionBtn.disabled = rows.length >= 5;
+        if(rows.length >= 5) {
+            addOptionBtn.classList.replace('btn-success', 'btn-secondary');
+        } else {
+            addOptionBtn.classList.replace('btn-secondary', 'btn-success');
+        }
         
         // Enable/disable remove buttons
         const removeBtns = document.querySelectorAll('.remove-btn');
@@ -119,11 +240,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     optionsContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-btn')) {
+        const removeBtn = e.target.closest('.remove-btn');
+        if (removeBtn) {
             const rows = document.querySelectorAll('.option-row');
             if (rows.length > 2) {
-                e.target.closest('.option-row').remove();
+                removeBtn.closest('.option-row').remove();
                 updateButtons();
+                // Ensure at least one radio is checked if the checked one was deleted
+                const checked = document.querySelector('input[name="correct_option_index"]:checked');
+                if(!checked && document.querySelectorAll('.option-row').length > 0) {
+                    document.querySelector('input[name="correct_option_index"]').checked = true;
+                    highlightSelectedRadio();
+                }
             }
         }
     });
