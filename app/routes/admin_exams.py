@@ -26,6 +26,12 @@ def create_exam():
         end_datetime = request.form.get("end_datetime")
         is_active = request.form.get("is_active") == 'on'
 
+        instructions = request.form.get("instructions")
+        show_question_numbers = request.form.get("show_question_numbers") == 'on'
+        allow_question_navigation = request.form.get("allow_question_navigation") == 'on'
+        show_progress_bar = request.form.get("show_progress_bar") == 'on'
+        auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
+
         # Basic Validation
         if not title or not exam_code or not duration_minutes or not passing_type or not passing_value:
             flash("Please fill out all required fields.", "danger")
@@ -51,6 +57,11 @@ def create_exam():
             negative_marking_enabled=negative_marking_enabled,
             negative_marks=float(negative_marks) if negative_marks else 0.0,
             show_result_immediately=show_result_immediately,
+            instructions=instructions,
+            show_question_numbers=show_question_numbers,
+            allow_question_navigation=allow_question_navigation,
+            show_progress_bar=show_progress_bar,
+            auto_submit_on_timeout=auto_submit_on_timeout,
             start_datetime=start_dt,
             end_datetime=end_dt,
             is_active=is_active
@@ -87,6 +98,12 @@ def edit_exam(id):
         exam.negative_marks = float(request.form.get("negative_marks") or 0.0)
         exam.show_result_immediately = request.form.get("show_result_immediately") == 'on'
         
+        exam.instructions = request.form.get("instructions")
+        exam.show_question_numbers = request.form.get("show_question_numbers") == 'on'
+        exam.allow_question_navigation = request.form.get("allow_question_navigation") == 'on'
+        exam.show_progress_bar = request.form.get("show_progress_bar") == 'on'
+        exam.auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
+
         start_datetime = request.form.get("start_datetime")
         end_datetime = request.form.get("end_datetime")
         exam.start_datetime = datetime.fromisoformat(start_datetime) if start_datetime else None

@@ -25,6 +25,13 @@ class Exam(db.Model):
     # Result settings
     show_result_immediately = db.Column(db.Boolean, default=False, nullable=False)
 
+    # Behavior Settings
+    instructions = db.Column(db.Text, nullable=True)
+    show_question_numbers = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+    allow_question_navigation = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+    show_progress_bar = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+    auto_submit_on_timeout = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+
     # General
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

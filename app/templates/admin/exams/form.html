@@ -76,7 +76,45 @@
                         </label>
                     </div>
 
-                    <div class="mb-4 form-check">
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Exam Behaviour Settings</h5>
+                    
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Instructions</label>
+                        <textarea class="form-control" id="instructions" name="instructions" rows="4">{{ exam.instructions if exam else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="show_question_numbers" name="show_question_numbers" {% if not exam or exam.show_question_numbers %}checked{% endif %}>
+                                <label class="form-check-label" for="show_question_numbers">
+                                    Show Question Numbers
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="allow_question_navigation" name="allow_question_navigation" {% if not exam or exam.allow_question_navigation %}checked{% endif %}>
+                                <label class="form-check-label" for="allow_question_navigation">
+                                    Allow Question Navigation
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="show_progress_bar" name="show_progress_bar" {% if not exam or exam.show_progress_bar %}checked{% endif %}>
+                                <label class="form-check-label" for="show_progress_bar">
+                                    Show Progress Bar
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="auto_submit_on_timeout" name="auto_submit_on_timeout" {% if not exam or exam.auto_submit_on_timeout %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_submit_on_timeout">
+                                    Auto Submit on Timeout
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 form-check border-top pt-3">
                         <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if not exam or exam.is_active %}checked{% endif %}>
                         <label class="form-check-label" for="is_active">
                             Is Active
