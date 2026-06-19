@@ -20,6 +20,12 @@ class StudentAttempt(db.Model):
 
     # Results
     score = db.Column(db.Float, default=0.0, nullable=False)
+    total_marks_obtained = db.Column(db.Float, default=0.0, nullable=True)
+    percentage_score = db.Column(db.Float, default=0.0, nullable=True)
+    correct_count = db.Column(db.Integer, default=0, nullable=True)
+    wrong_count = db.Column(db.Integer, default=0, nullable=True)
+    unanswered_count = db.Column(db.Integer, default=0, nullable=True)
+    result_status = db.Column(db.String(20), nullable=True)
 
     # Status: in_progress, submitted, expired
     status = db.Column(db.String(20), default="in_progress", nullable=False)

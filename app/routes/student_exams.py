@@ -115,6 +115,51 @@ def handle_attempt_timeout(attempt):
         db.session.commit()
         flash("Your time has expired. This exam attempt has expired.", "danger")
 
+def calculate_result(attempt):
+    exam = attempt.exam
+    questions = Question.query.filter_by(exam_id=exam.id).all()
+    total_possible_marks = sum(q.marks for q in questions)
+    
+    answers = {ans.question_id: ans for ans in attempt.answers}
+    
+    correct_count = 0
+    wrong_count = 0
+    unanswered_count = 0
+    total_marks = 0.0
+    
+    for q in questions:
+        ans = answers.get(q.id)
+        if ans is None or ans.selected_option_id is None:
+            unanswered_count += 1
+        elif ans.selected_option_id == q.correct_option_id:
+            correct_count += 1
+            total_marks += q.marks
+        else:
+            wrong_count += 1
+            if exam.negative_marking_enabled:
+                total_marks -= exam.negative_marks
+                
+    percentage_score = (total_marks / total_possible_marks * 100) if total_possible_marks > 0 else 0.0
+    
+    # Pass/Fail determination
+    if exam.passing_type == "percentage":
+        passed = percentage_score >= exam.passing_value
+    else:  # exam.passing_type == "marks"
+        passed = total_marks >= exam.passing_value
+        
+    result_status = "Pass" if passed else "Fail"
+    
+    # Save to database
+    attempt.total_marks_obtained = total_marks
+    attempt.percentage_score = percentage_score
+    attempt.correct_count = correct_count
+    attempt.wrong_count = wrong_count
+    attempt.unanswered_count = unanswered_count
+    attempt.result_status = result_status
+    attempt.score = total_marks
+    
+    db.session.commit()
+
 @student_exams_bp.route("/attempt/<attempt_token>/question/<int:question_number>", methods=["GET", "POST"])
 def question_attempt(attempt_token, question_number):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
@@ -292,10 +337,10 @@ def submit_attempt(attempt_token):
     db.session.commit()
     
     flash("Your exam has been successfully submitted.", "success")
-    return redirect(url_for('student_exams.result_placeholder', attempt_token=attempt_token))
+    return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
 
 @student_exams_bp.route("/attempt/<attempt_token>/result", methods=["GET"])
-def result_placeholder(attempt_token):
+def view_result(attempt_token):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
     
     if attempt.status == "in_progress":
@@ -318,9 +363,13 @@ def result_placeholder(attempt_token):
                 return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=first_unanswered_number))
             else:
                 return redirect(url_for('student_exams.review', attempt_token=attempt_token))
+                
+    # Calculate and save if not already calculated
+    if attempt.result_status is None:
+        calculate_result(attempt)
             
     return render_template(
-        "student/result_placeholder.html",
+        "student/result.html",
         exam=attempt.exam,
         attempt=attempt
     )
