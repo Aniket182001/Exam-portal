@@ -2,9 +2,23 @@ def generate_result_email(attempt, total_marks):
     """
     Generates the subject and body for the Result Confirmation email.
     """
+    def format_mark(val):
+        if val is None:
+            return "-"
+        try:
+            val_float = float(val)
+            if val_float.is_integer():
+                return int(val_float)
+            return val_float
+        except (ValueError, TypeError):
+            return val
+
     certificate_name = attempt.student_name
 
     subject = "Congratulations! Your Certification Exam Results – Confirmation Required"
+
+    formatted_total = format_mark(total_marks)
+    formatted_obtained = format_mark(attempt.total_marks_obtained)
 
     body = f"""Dear Candidate,
 
@@ -18,9 +32,9 @@ We are delighted to inform you that you have successfully completed your examina
 
 • Program Name: {attempt.exam.title}
 
-• Total Marks: {total_marks}
+• Total Marks: {formatted_total}
 
-• Marks Obtained: {attempt.total_marks_obtained} 🏆
+• Marks Obtained: {formatted_obtained} 🏆
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 Certificate Name Confirmation
