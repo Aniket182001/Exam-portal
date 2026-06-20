@@ -178,7 +178,7 @@ def duplicate_exam(exam_id):
             new_o = QuestionOption(
                 question_id=new_q.id,
                 option_text=o.option_text,
-                display_order=o.display_order
+                option_order=o.option_order
             )
             db.session.add(new_o)
             db.session.flush()
