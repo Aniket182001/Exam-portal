@@ -6,8 +6,14 @@ import io
 import openpyxl
 import uuid
 from app.services.email_templates import generate_result_email
+from app.utils.auth import admin_required
 
 admin_exams_bp = Blueprint("admin_exams", __name__, url_prefix="/admin/exams")
+
+@admin_exams_bp.before_request
+@admin_required
+def require_admin():
+    pass
 
 @admin_exams_bp.route("/")
 def list_exams():

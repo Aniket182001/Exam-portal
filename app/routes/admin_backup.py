@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, flash, send_file, redirect, url_for, session, current_app
 from app.extensions import db
 from app.models import Exam, Question, QuestionOption, StudentAttempt, StudentAnswer
+from app.utils.auth import admin_required
 
 admin_backup_bp = Blueprint("admin_backup", __name__, url_prefix="/admin/backup")
 
@@ -29,6 +30,7 @@ def deserialize_model(model_class, data):
     return model_class(**data)
 
 @admin_backup_bp.before_request
+@admin_required
 def check_auth():
     if request.endpoint != 'admin_backup.auth' and not session.get('sensitive_action_verified'):
         if request.method == 'GET':

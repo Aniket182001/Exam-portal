@@ -6,8 +6,14 @@ import json
 import uuid
 from werkzeug.utils import secure_filename
 from app.services.import_parsers import get_parser
+from app.utils.auth import admin_required
 
 admin_questions_bp = Blueprint("admin_questions", __name__, url_prefix="/admin")
+
+@admin_questions_bp.before_request
+@admin_required
+def require_admin():
+    pass
 
 @admin_questions_bp.route("/exams/<int:exam_id>/questions")
 def list_questions(exam_id):
