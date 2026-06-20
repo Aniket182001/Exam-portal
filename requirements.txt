@@ -15,7 +15,7 @@ SQLAlchemy==2.0.51
 typing_extensions==4.15.0
 Werkzeug==3.1.8
 gunicorn==21.2.0
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 openpyxl==3.1.5
 et-xmlfile==2.0.0
 python-docx==1.1.0
