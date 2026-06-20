@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block page_title %}Compose Email - {{ attempt.student_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.view_attempts', exam_id=attempt.exam_id) }}" class="text-decoration-none">Attempts</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Compose Email</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin_exams.view_attempts', exam_id=attempt.exam_id) }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Attempts">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-envelope-paper-fill text-primary me-2"></i>Compose Result Email
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl mb-4">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold small text-uppercase letter-wide">Recipient Email</label>
+                        <input type="text" class="form-control form-control-lg bg-light" id="recipientEmail" value="{{ attempt.student_email }}" readonly>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold small text-uppercase letter-wide">Certificate Name</label>
+                        <input type="text" class="form-control form-control-lg" id="certName" value="{{ attempt.student_name }}">
+                        <div class="form-text">Editing this will update the name in the email body below.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-secondary fw-bold small text-uppercase letter-wide mb-0">Subject</label>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" onclick="copyText('emailSubject', this)"><i class="bi bi-clipboard"></i> Copy Subject</button>
+                        </div>
+                        <input type="text" class="form-control form-control-lg" id="emailSubject" value="{{ email_data.subject }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-secondary fw-bold small text-uppercase letter-wide mb-0">Body</label>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" onclick="copyText('emailBody', this)"><i class="bi bi-clipboard"></i> Copy Body</button>
+                        </div>
+                        <textarea class="form-control form-control-lg" id="emailBody" rows="20" style="font-family: monospace; white-space: pre;">{{ email_data.body }}</textarea>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-xl sticky-top" style="top: 2rem;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Actions</h5>
+                    
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-outline-primary btn-lg rounded-pill fw-bold shadow-sm hover-scale" onclick="copyEntireEmail()">
+                            <i class="bi bi-clipboard-check me-2"></i> Copy Entire Email
+                        </button>
+                        
+                        <a href="#" id="outlookBtn" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm hover-scale d-flex align-items-center justify-content-center">
+                            <i class="bi bi-envelope-open-fill me-2"></i> Open Outlook Draft
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4 alert alert-light border small text-muted">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i>
+                        The "Open Outlook Draft" button relies on your computer's default mail client settings (mailto link).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(249, 115, 22, 0.3) !important;
+    }
+</style>
+
+<script>
+    const originalName = {{ attempt.student_name | tojson }};
+    const originalBody = {{ email_data.body | tojson }};
+    const certNameInput = document.getElementById('certName');
+    const emailBodyInput = document.getElementById('emailBody');
+    const emailSubjectInput = document.getElementById('emailSubject');
+    const recipientEmail = document.getElementById('recipientEmail').value;
+    const outlookBtn = document.getElementById('outlookBtn');
+
+    // Live update of body text when certificate name changes
+    certNameInput.addEventListener('input', function() {
+        // Safe replace all occurrences of originalName with new value
+        const newName = this.value || '[Name]';
+        // We do a regex replace globally
+        const regex = new RegExp(originalName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        emailBodyInput.value = originalBody.replace(regex, newName);
+        updateOutlookLink();
+    });
+
+    // Update outlook link whenever subject or body changes
+    emailBodyInput.addEventListener('input', updateOutlookLink);
+    emailSubjectInput.addEventListener('input', updateOutlookLink);
+
+    function updateOutlookLink() {
+        const subject = encodeURIComponent(emailSubjectInput.value);
+        const body = encodeURIComponent(emailBodyInput.value);
+        outlookBtn.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+    }
+
+    // Initialize the outlook link
+    updateOutlookLink();
+
+    function copyText(elementId, btnElement) {
+        const textToCopy = document.getElementById(elementId).value;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
+            btnElement.classList.replace('btn-outline-secondary', 'btn-success');
+            btnElement.classList.add('text-white');
+            setTimeout(() => {
+                btnElement.innerHTML = originalHtml;
+                btnElement.classList.replace('btn-success', 'btn-outline-secondary');
+                btnElement.classList.remove('text-white');
+            }, 2000);
+        });
+    }
+
+    function copyEntireEmail() {
+        const subject = emailSubjectInput.value;
+        const body = emailBodyInput.value;
+        const recipient = recipientEmail;
+        
+        const fullEmail = `To: ${recipient}\nSubject: ${subject}\n\n${body}`;
+        
+        navigator.clipboard.writeText(fullEmail).then(() => {
+            alert('Entire email copied to clipboard!');
+        });
+    }
+</script>
+{% endblock %}

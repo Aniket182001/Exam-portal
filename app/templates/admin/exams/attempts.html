@@ -112,6 +112,9 @@
                                     <a href="{{ url_for('student_exams.view_answer_sheet', attempt_token=attempt.attempt_token) }}" class="btn btn-sm btn-light border text-info" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled{% endif %}>
                                         <i class="bi bi-file-earmark-text-fill"></i> <span class="d-none d-lg-inline ms-1">Answers</span>
                                     </a>
+                                    <a href="{{ url_for('admin_exams.compose_result_email', attempt_id=attempt.id) }}" class="btn btn-sm btn-light border text-warning" title="Compose Email" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                        <i class="bi bi-envelope-paper-fill"></i> <span class="d-none d-lg-inline ms-1">Email</span>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

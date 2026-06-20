@@ -4,6 +4,7 @@ from app.models import Exam, StudentAttempt
 from datetime import datetime
 import io
 import openpyxl
+from app.services.email_templates import generate_result_email
 
 admin_exams_bp = Blueprint("admin_exams", __name__, url_prefix="/admin/exams")
 
@@ -219,3 +220,16 @@ def export_selected_results(exam_id):
     
     filename = f"{exam.exam_code}_results.xlsx"
     return send_file(out, download_name=filename, as_attachment=True)
+
+@admin_exams_bp.route("/attempts/<int:attempt_id>/compose-email")
+def compose_result_email(attempt_id):
+    attempt = StudentAttempt.query.get_or_404(attempt_id)
+    
+    # Calculate total marks from questions
+    total_marks = sum([q.marks for q in attempt.exam.questions])
+    
+    email_data = generate_result_email(attempt, total_marks)
+    
+    return render_template("admin/attempts/compose_email.html", 
+                           attempt=attempt, 
+                           email_data=email_data)
