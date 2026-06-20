@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from app.extensions import db
 from app.models import Exam, StudentAttempt
 from datetime import datetime
+import io
+import openpyxl
 
 admin_exams_bp = Blueprint("admin_exams", __name__, url_prefix="/admin/exams")
 
@@ -132,3 +134,41 @@ def view_attempts(exam_id):
     # Order by submitted_at desc, but some might be null (in_progress).
     attempts = StudentAttempt.query.filter_by(exam_id=exam.id).order_by(StudentAttempt.submitted_at.desc()).all()
     return render_template("admin/exams/attempts.html", exam=exam, attempts=attempts)
+
+@admin_exams_bp.route("/<int:exam_id>/export-results")
+def export_results(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    attempts = StudentAttempt.query.filter_by(exam_id=exam.id).order_by(StudentAttempt.submitted_at.desc()).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Results"
+    
+    headers = [
+        "Student Name", "Student Email", "Attempt Status", 
+        "Marks Obtained", "Percentage Score", "Correct Answers", 
+        "Wrong Answers", "Unanswered Questions", "Pass/Fail Status", "Submitted At"
+    ]
+    ws.append(headers)
+    
+    for attempt in attempts:
+        row = [
+            attempt.student_name,
+            attempt.student_email,
+            attempt.status.title(),
+            attempt.total_marks_obtained if attempt.total_marks_obtained is not None else "-",
+            f"{attempt.percentage_score:.1f}%" if attempt.percentage_score is not None else "-",
+            attempt.correct_count if attempt.correct_count is not None else "-",
+            attempt.wrong_count if attempt.wrong_count is not None else "-",
+            attempt.unanswered_count if attempt.unanswered_count is not None else "-",
+            attempt.result_status if attempt.result_status is not None else "-",
+            attempt.submitted_at.strftime('%Y-%m-%d %H:%M:%S') if attempt.submitted_at else "-"
+        ]
+        ws.append(row)
+        
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+    
+    filename = f"{exam.exam_code}_results.xlsx"
+    return send_file(out, download_name=filename, as_attachment=True)

@@ -23,6 +23,13 @@
                 </h3>
             </div>
         </div>
+        <div>
+            {% if attempts %}
+            <a href="{{ url_for('admin_exams.export_results', exam_id=exam.id) }}" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-file-earmark-excel-fill me-2"></i> Export Results
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Data Card -->
@@ -127,6 +134,13 @@
         opacity: 0.5;
         cursor: not-allowed;
         pointer-events: none;
+    }
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md) !important;
     }
 </style>
 {% endblock %}
