@@ -192,7 +192,8 @@ def duplicate_exam(exam_id):
 @admin_exams_bp.route("/<int:exam_id>/delete", methods=["POST"])
 def delete_exam(exam_id):
     if not session.get("sensitive_action_verified"):
-        return redirect(url_for('admin_backup.auth', next=url_for('admin_exams.list_exams')))
+        session["post_verification_redirect"] = url_for('admin_exams.list_exams')
+        return redirect(url_for('admin_backup.auth'))
         
     exam = Exam.query.get_or_404(exam_id)
     
