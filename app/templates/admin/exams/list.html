@@ -55,6 +55,9 @@
                             </td>
                             <td class="pe-4 py-3 text-end">
                                 <div class="btn-group shadow-sm">
+                                    <a href="{{ url_for('admin_exams.view_attempts', exam_id=exam.id) }}" class="btn btn-sm btn-light border" title="View Attempts">
+                                        <i class="bi bi-people-fill text-info"></i> <span class="d-none d-xl-inline ms-1">Attempts</span>
+                                    </a>
                                     <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm btn-light border" title="Manage Questions">
                                         <i class="bi bi-list-task text-primary"></i> <span class="d-none d-xl-inline ms-1">Questions</span>
                                     </a>

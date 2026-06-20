@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block page_title %}Attempts - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Student Attempts</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Exams">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-people-fill text-primary me-2"></i>Attempts for: <span class="text-primary">{{ exam.title }}</span>
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Card -->
+    <div class="card border-0 shadow-sm rounded-xl overflow-hidden">
+        <div class="card-body p-0">
+            {% if attempts %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light border-bottom">
+                        <tr>
+                            <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide">Student</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Status</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Marks</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Score</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Result</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Submitted At</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        {% for attempt in attempts %}
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <div class="fw-bold text-dark">{{ attempt.student_name }}</div>
+                                <div class="small text-muted">{{ attempt.student_email }}</div>
+                            </td>
+                            <td class="py-3">
+                                {% if attempt.status == 'submitted' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill"><i class="bi bi-check-circle me-1"></i> Submitted</span>
+                                {% elif attempt.status == 'in_progress' %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 rounded-pill"><i class="bi bi-clock-history me-1"></i> In Progress</span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">{{ attempt.status | title }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-center fw-bold text-dark">
+                                {{ attempt.total_marks_obtained if attempt.total_marks_obtained is not none else '-' }}
+                            </td>
+                            <td class="py-3 text-center">
+                                {% if attempt.percentage_score is not none %}
+                                    {{ "%.1f"|format(attempt.percentage_score) }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-center">
+                                {% if attempt.result_status == 'Pass' %}
+                                    <span class="badge bg-success rounded-pill px-2 py-1">Pass</span>
+                                {% elif attempt.result_status == 'Fail' %}
+                                    <span class="badge bg-danger rounded-pill px-2 py-1">Fail</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-center small text-muted">
+                                {% if attempt.submitted_at %}
+                                    {{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 py-3 text-end">
+                                <div class="btn-group shadow-sm">
+                                    <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-sm btn-light border text-primary" title="View Result" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                        <i class="bi bi-bar-chart-fill"></i> <span class="d-none d-lg-inline ms-1">Result</span>
+                                    </a>
+                                    <a href="{{ url_for('student_exams.view_answer_sheet', attempt_token=attempt.attempt_token) }}" class="btn btn-sm btn-light border text-info" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                        <i class="bi bi-file-earmark-text-fill"></i> <span class="d-none d-lg-inline ms-1">Answers</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5 px-3">
+                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-journal-x text-muted fs-1"></i>
+                </div>
+                <h4 class="fw-bold text-dark">No Attempts Yet</h4>
+                <p class="text-muted mb-0 mx-auto">No students have attempted this examination yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: var(--aiqm-gray-50);
+    }
+    .btn-group .btn {
+        transition: all 0.2s ease;
+    }
+    .btn-group .btn:hover:not([disabled]) {
+        background-color: var(--aiqm-gray-100);
+    }
+    .btn-group .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}

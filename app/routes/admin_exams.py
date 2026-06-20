@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.extensions import db
-from app.models import Exam
+from app.models import Exam, StudentAttempt
 from datetime import datetime
 
 admin_exams_bp = Blueprint("admin_exams", __name__, url_prefix="/admin/exams")
@@ -125,3 +125,10 @@ def toggle_exam(id):
     status = "activated" if exam.is_active else "deactivated"
     flash(f"Exam '{exam.title}' has been {status}.", "success")
     return redirect(url_for("admin_exams.list_exams"))
+
+@admin_exams_bp.route("/<int:exam_id>/attempts")
+def view_attempts(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    # Order by submitted_at desc, but some might be null (in_progress).
+    attempts = StudentAttempt.query.filter_by(exam_id=exam.id).order_by(StudentAttempt.submitted_at.desc()).all()
+    return render_template("admin/exams/attempts.html", exam=exam, attempts=attempts)
