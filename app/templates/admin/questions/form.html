@@ -66,7 +66,7 @@
                         <div class="alert alert-info border-info-subtle shadow-sm rounded-lg d-flex align-items-center mb-4 p-3">
                             <i class="bi bi-info-circle-fill text-info fs-4 me-3"></i>
                             <div class="small">
-                                Provide <strong>2 to 5 options</strong>. Select the radio button on the left to indicate which option is the <strong>correct answer</strong>.
+                                Provide <strong>2 to 6 options</strong>. Select the radio button on the left to indicate which option is the <strong>correct answer</strong>.
                             </div>
                         </div>
 
@@ -209,8 +209,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateButtons() {
         const rows = document.querySelectorAll('.option-row');
         // Enable/disable add button
-        addOptionBtn.disabled = rows.length >= 5;
-        if(rows.length >= 5) {
+        addOptionBtn.disabled = rows.length >= 6;
+        if(rows.length >= 6) {
             addOptionBtn.classList.replace('btn-success', 'btn-secondary');
         } else {
             addOptionBtn.classList.replace('btn-secondary', 'btn-success');
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     addOptionBtn.addEventListener('click', function() {
         const rows = document.querySelectorAll('.option-row');
-        if (rows.length < 5) {
+        if (rows.length < 6) {
             renderOption('', false);
         }
     });
@@ -258,9 +258,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', function(e) {
         const rows = document.querySelectorAll('.option-row');
-        if (rows.length < 2 || rows.length > 5) {
+        if (rows.length < 2 || rows.length > 6) {
             e.preventDefault();
-            alert('Please provide between 2 and 5 options.');
+            alert('Please provide between 2 and 6 options.');
             return false;
         }
         

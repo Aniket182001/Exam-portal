@@ -3,9 +3,9 @@
 {% block page_title %}Review & Submit - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4 py-md-5">
+<div class="container py-3">
     <!-- Header Card -->
-    <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden">
+    <div class="card border-0 shadow-sm rounded-xl mb-3 overflow-hidden">
         <div class="card-header bg-white border-bottom py-3 py-md-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide"><i class="bi bi-eye text-primary me-2"></i>Exam Review</span>
@@ -40,7 +40,7 @@
     </div>
 
     <!-- Summary Stats -->
-    <div class="row g-3 mb-5">
+    <div class="row g-3 mb-3">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-xl h-100 text-center p-4 hover-lift">
                 <h6 class="text-muted text-uppercase small font-monospace letter-wide mb-3">Total Questions</h6>
@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-3">
         <!-- Palette Area -->
         <div class="col-lg-{% if attempt.status == 'in_progress' %}8{% else %}12{% endif %}">
             <div class="card border-0 shadow-sm rounded-xl mb-4 h-100">
@@ -118,16 +118,13 @@
         <!-- Final Submission Block -->
         {% if attempt.status == 'in_progress' %}
         <div class="col-lg-4">
-            <div class="card border-0 shadow-lg rounded-xl h-100 bg-primary bg-opacity-10" style="border: 2px solid var(--aiqm-primary-light) !important;">
-                <div class="card-body p-4 p-md-5 text-center d-flex flex-column justify-content-center align-items-center">
-                    <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
-                        <i class="bi bi-send-check-fill text-primary" style="font-size: 2.5rem;"></i>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-3">Ready to Finish?</h4>
-                    <p class="text-muted mb-4 small" style="line-height: 1.6;">
-                        Please ensure you have reviewed all your answers. Once submitted, your examination is final and cannot be altered.
+            <div class="card border-0 shadow-sm rounded-xl h-100" style="background-color: var(--aiqm-cream);">
+                <div class="card-body p-4 text-center d-flex flex-column justify-content-center align-items-center">
+                    <h5 class="fw-bold text-dark mb-2"><i class="bi bi-send-check-fill text-primary-brand me-2"></i>Final Submission</h5>
+                    <p class="text-danger fw-semibold small mb-4" style="line-height: 1.4;">
+                        You are still reviewing your answers. This is not the final page.
                     </p>
-                    <button type="button" class="btn btn-success btn-lg w-100 rounded-pill shadow-lg fw-bold d-flex align-items-center justify-content-center hover-scale" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                    <button type="button" class="btn btn-primary w-100 rounded-pill shadow-lg fw-bold d-flex align-items-center justify-content-center hover-scale py-2" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal" style="font-size: 1.05rem;">
                         Submit Exam <i class="bi bi-arrow-right-circle-fill ms-2"></i>
                     </button>
                 </div>

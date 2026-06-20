@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block page_title %}Import Questions - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="mb-1 text-dark fw-bold">Import Questions</h2>
+            <p class="text-muted mb-0">Upload a file to bulk import questions into <strong>{{ exam.title }}</strong>.</p>
+        </div>
+        <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-outline-secondary rounded-pill">
+            <i class="bi bi-arrow-left me-1"></i> Back to Questions
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>Upload File</h5>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form action="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" method="POST" enctype="multipart/form-data">
+                        
+                        <!-- Template Download Section -->
+                        <div class="mb-4 d-flex flex-column align-items-start">
+                            <a href="{{ url_for('static', filename='templates/exam_upload_template.xlsx') }}" class="btn btn-outline-success rounded-pill fw-bold shadow-sm hover-scale" download>
+                                <i class="bi bi-file-earmark-excel-fill me-2"></i> Download Excel Template
+                            </a>
+                            <div class="mt-2 ms-2 text-muted small">
+                                <strong>Template supports:</strong>
+                                <ul class="mb-0 ps-3 mt-1">
+                                    <li>2 to 6 options</li>
+                                    <li>True/False questions</li>
+                                    <li>Standard MCQs</li>
+                                    <li>Correct Option values A-F</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light border shadow-sm rounded-lg d-flex align-items-start mb-4">
+                            <i class="bi bi-info-circle-fill text-primary fs-4 me-3 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Supported Formats</h6>
+                                <p class="mb-0 text-muted small">
+                                    Currently, only Excel files (<code>.xlsx</code>) are fully supported. Word (<code>.docx</code>) and PDF (<code>.pdf</code>) imports are coming soon.
+                                    The Excel file must have columns: <strong>Question, Option A, Option B, Option C, Option D, Option E, Option F, Correct Option (A-F), Marks</strong>. Leave columns blank if you need fewer than 6 options.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="file" class="form-label text-secondary fw-bold small text-uppercase letter-wide">Select File</label>
+                            <input class="form-control form-control-lg" type="file" id="file" name="file" accept=".xlsx,.docx,.pdf" required>
+                        </div>
+                        
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center hover-scale">
+                                <i class="bi bi-file-earmark-check fs-5 me-2"></i> Parse & Preview
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(249, 115, 22, 0.3) !important;
+    }
+</style>
+{% endblock %}

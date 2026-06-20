@@ -400,37 +400,77 @@ a:hover {
    ================================================================ */
 .hero-section {
     background: var(--aiqm-white);
-    padding: 6rem 0 5rem;
+    padding: 7rem 0 6rem;
     position: relative;
     overflow: hidden;
 }
 
+/* Background gradient base */
 .hero-section::before {
     content: '';
     position: absolute;
-    top: -30%;
-    right: -10%;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    background: var(--aiqm-peach);
-    opacity: 0.5;
+    inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(255, 237, 213, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 20% 80%, rgba(224, 231, 255, 0.4) 0%, transparent 40%);
     pointer-events: none;
-    filter: blur(80px);
+    z-index: 0;
 }
 
-.hero-section::after {
-    content: '';
+/* Animated Abstract Blobs */
+.hero-blob {
     position: absolute;
-    bottom: -20%;
-    left: -10%;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: multiply;
+}
+
+.blob-1 {
+    width: 500px;
+    height: 500px;
+    background: var(--aiqm-peach);
+    top: -20%;
+    right: -10%;
+    animation: floatBlob1 25s infinite ease-in-out alternate;
+}
+
+.blob-2 {
     width: 400px;
     height: 400px;
-    border-radius: 50%;
-    background: var(--aiqm-lavender);
-    opacity: 0.5;
-    pointer-events: none;
-    filter: blur(60px);
+    background: var(--aiqm-mint);
+    bottom: -15%;
+    left: -5%;
+    animation: floatBlob2 28s infinite ease-in-out alternate;
+}
+
+.blob-3 {
+    width: 350px;
+    height: 350px;
+    background: var(--aiqm-cream-dark);
+    top: 40%;
+    left: 40%;
+    opacity: 0.15;
+    animation: floatBlob3 32s infinite ease-in-out alternate;
+}
+
+@keyframes floatBlob1 {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+    50% { transform: translate(-50px, 30px) scale(1.05) rotate(15deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+    100% { transform: translate(-20px, 60px) scale(0.95) rotate(-5deg); border-radius: 50% 50% 40% 60% / 50% 60% 40% 50%; }
+}
+
+@keyframes floatBlob2 {
+    0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 50% 50% 40% 60% / 50% 60% 40% 50%; }
+    50% { transform: translate(40px, -40px) scale(0.95) rotate(-10deg); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+    100% { transform: translate(60px, 10px) scale(1.1) rotate(15deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+}
+
+@keyframes floatBlob3 {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(70px, -60px) scale(1.2); }
+    100% { transform: translate(-50px, -30px) scale(0.9); }
 }
 
 .hero-title {
