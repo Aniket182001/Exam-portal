@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 import openpyxl
+import docx
 
 class QuestionParser(ABC):
     @abstractmethod
@@ -93,11 +94,79 @@ class ExcelParser(QuestionParser):
             
         return parsed_questions
 
+class DocxParser(QuestionParser):
+    def parse(self, filepath):
+        parsed_questions = []
+        doc = docx.Document(filepath)
+        
+        current_q = None
+        
+        def finalize_question():
+            if current_q and len(current_q["options"]) >= 2:
+                correct_idx = 0
+                if current_q.get("correct_raw"):
+                    ans = current_q["correct_raw"].strip().lower()
+                    if len(ans) == 1 and ans in "abcdef":
+                        idx = ord(ans) - ord('a')
+                        if idx < len(current_q["options"]):
+                            correct_idx = idx
+                    else:
+                        for i, opt in enumerate(current_q["options"]):
+                            if opt.lower() == ans:
+                                correct_idx = i
+                                break
+                
+                parsed_questions.append({
+                    "question": current_q["question"].strip(),
+                    "options": current_q["options"][:6],
+                    "correct_option_index": correct_idx,
+                    "marks": current_q["marks"]
+                })
+
+        for p in doc.paragraphs:
+            line = p.text.strip()
+            if not line:
+                continue
+                
+            line_lower = line.lower()
+            
+            if line_lower.startswith("question"):
+                finalize_question()
+                q_text = line
+                if ":" in line:
+                    q_text = line.split(":", 1)[1].strip()
+                current_q = {
+                    "question": q_text,
+                    "options": [],
+                    "correct_raw": None,
+                    "marks": 1.0
+                }
+            elif current_q is not None:
+                if len(line) >= 2 and line[0].upper() in "ABCDEF" and line[1] in ".) ":
+                    opt_text = line[2:].strip()
+                    current_q["options"].append(opt_text)
+                elif line_lower.startswith("answer:") or line_lower.startswith("answer :"):
+                    current_q["correct_raw"] = line.split(":", 1)[1].strip()
+                elif line_lower.startswith("marks:") or line_lower.startswith("marks :"):
+                    marks_str = line.split(":", 1)[1].strip()
+                    try:
+                        current_q["marks"] = float(marks_str)
+                    except ValueError:
+                        pass
+                else:
+                    # Append to question if options haven't started yet
+                    if len(current_q["options"]) == 0 and current_q["correct_raw"] is None:
+                        current_q["question"] += "\n" + line
+                        
+        finalize_question()
+        return parsed_questions
+
 def get_parser(filename):
     ext = os.path.splitext(filename)[1].lower()
     if ext == '.xlsx':
         return ExcelParser()
-    # elif ext == '.docx': return WordParser()
+    elif ext == '.docx':
+        return DocxParser()
     # elif ext == '.pdf': return PDFParser()
     else:
         raise ValueError(f"Unsupported file format: {ext}")
