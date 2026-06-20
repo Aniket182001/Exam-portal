@@ -25,6 +25,7 @@ def create_exam():
         negative_marking_enabled = request.form.get("negative_marking_enabled") == 'on'
         negative_marks = request.form.get("negative_marks", 0)
         show_result_immediately = request.form.get("show_result_immediately") == 'on'
+        restrict_to_time_window = request.form.get("restrict_to_time_window") == 'on'
         start_datetime = request.form.get("start_datetime")
         end_datetime = request.form.get("end_datetime")
         is_active = request.form.get("is_active") == 'on'
@@ -65,6 +66,7 @@ def create_exam():
             allow_question_navigation=allow_question_navigation,
             show_progress_bar=show_progress_bar,
             auto_submit_on_timeout=auto_submit_on_timeout,
+            restrict_to_time_window=restrict_to_time_window,
             start_datetime=start_dt,
             end_datetime=end_dt,
             is_active=is_active
@@ -107,6 +109,7 @@ def edit_exam(id):
         exam.show_progress_bar = request.form.get("show_progress_bar") == 'on'
         exam.auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
 
+        exam.restrict_to_time_window = request.form.get("restrict_to_time_window") == 'on'
         start_datetime = request.form.get("start_datetime")
         end_datetime = request.form.get("end_datetime")
         exam.start_datetime = datetime.fromisoformat(start_datetime) if start_datetime else None

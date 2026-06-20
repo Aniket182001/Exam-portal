@@ -17,13 +17,14 @@ def entry(exam_code):
     now = datetime.now(timezone.utc)
     
     # Validation for exam timings
-    if exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc):
-        flash("This exam has not started yet.", "warning")
-        return render_template("student/entry.html", exam=exam, disabled=True)
-        
-    if exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc):
-        flash("This exam has already ended.", "danger")
-        return render_template("student/entry.html", exam=exam, disabled=True)
+    if exam.restrict_to_time_window:
+        if exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc):
+            flash("This exam has not started yet.", "warning")
+            return render_template("student/entry.html", exam=exam, disabled=True)
+            
+        if exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc):
+            flash("This exam window has closed.", "danger")
+            return render_template("student/entry.html", exam=exam, disabled=True)
 
     if request.method == "POST":
         student_name = request.form.get("student_name")
@@ -51,7 +52,11 @@ def instructions(exam_code):
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
         
     now = datetime.now(timezone.utc)
-    if not exam.is_active or (exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc)) or (exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc)):
+    time_invalid = exam.restrict_to_time_window and (
+        (exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc)) or 
+        (exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc))
+    )
+    if not exam.is_active or time_invalid:
         flash("This exam is currently unavailable.", "danger")
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
 
@@ -69,7 +74,11 @@ def start_exam(exam_code):
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
         
     now = datetime.now(timezone.utc)
-    if not exam.is_active or (exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc)) or (exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc)):
+    time_invalid = exam.restrict_to_time_window and (
+        (exam.start_datetime and now < exam.start_datetime.replace(tzinfo=timezone.utc)) or 
+        (exam.end_datetime and now > exam.end_datetime.replace(tzinfo=timezone.utc))
+    )
+    if not exam.is_active or time_invalid:
         flash("This exam is currently unavailable.", "danger")
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
         

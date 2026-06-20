@@ -99,7 +99,14 @@
                         </div>
 
                         <!-- Scheduling -->
-                        <div class="row g-4">
+                        <div class="mb-4">
+                            <div class="form-check form-switch fs-5">
+                                <input class="form-check-input" type="checkbox" role="switch" id="restrict_to_time_window" name="restrict_to_time_window" {% if exam and exam.restrict_to_time_window %}checked{% endif %}>
+                                <label class="form-check-label ms-2 fw-medium text-dark" for="restrict_to_time_window">Restrict exam to a time window</label>
+                            </div>
+                        </div>
+
+                        <div class="row g-4" id="time_window_fields">
                             <div class="col-md-6">
                                 <label for="start_datetime" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Start Date & Time (UTC)</label>
                                 <input type="datetime-local" class="form-control bg-white" id="start_datetime" name="start_datetime" 
@@ -235,4 +242,28 @@
         border-color: var(--aiqm-primary);
     }
 </style>
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const restrictCheckbox = document.getElementById('restrict_to_time_window');
+        const timeWindowFields = document.getElementById('time_window_fields');
+        
+        function toggleTimeWindow() {
+            if (restrictCheckbox.checked) {
+                timeWindowFields.style.display = 'flex';
+            } else {
+                timeWindowFields.style.display = 'none';
+                // Optional: clear fields when hiding
+                // document.getElementById('start_datetime').value = '';
+                // document.getElementById('end_datetime').value = '';
+            }
+        }
+        
+        if (restrictCheckbox) {
+            restrictCheckbox.addEventListener('change', toggleTimeWindow);
+            toggleTimeWindow();
+        }
+    });
+</script>
 {% endblock %}

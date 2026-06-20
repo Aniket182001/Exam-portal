@@ -19,6 +19,7 @@ class Exam(db.Model):
     negative_marks = db.Column(db.Float, default=0.0, nullable=False)
 
     # Exam window
+    restrict_to_time_window = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
     start_datetime = db.Column(db.DateTime, nullable=True)
     end_datetime = db.Column(db.DateTime, nullable=True)
 
