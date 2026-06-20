@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, session
 from app.extensions import db
-from app.models import Exam, StudentAttempt
+from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
 from datetime import datetime
 import io
 import openpyxl
+import uuid
 from app.services.email_templates import generate_result_email
 
 admin_exams_bp = Blueprint("admin_exams", __name__, url_prefix="/admin/exams")
@@ -131,6 +132,90 @@ def toggle_exam(id):
     status = "activated" if exam.is_active else "deactivated"
     flash(f"Exam '{exam.title}' has been {status}.", "success")
     return redirect(url_for("admin_exams.list_exams"))
+
+@admin_exams_bp.route("/<int:exam_id>/duplicate", methods=["POST"])
+def duplicate_exam(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    
+    # Duplicate exam
+    new_exam = Exam(
+        title=f"Copy of {exam.title}",
+        exam_code=f"COPY-{uuid.uuid4().hex[:8].upper()}",
+        description=exam.description,
+        instructions=exam.instructions,
+        duration_minutes=exam.duration_minutes,
+        passing_type=exam.passing_type,
+        passing_value=exam.passing_value,
+        show_question_numbers=exam.show_question_numbers,
+        allow_question_navigation=exam.allow_question_navigation,
+        show_progress_bar=exam.show_progress_bar,
+        auto_submit_on_timeout=exam.auto_submit_on_timeout,
+        negative_marking_enabled=exam.negative_marking_enabled,
+        negative_marks=exam.negative_marks,
+        show_result_immediately=exam.show_result_immediately,
+        restrict_to_time_window=exam.restrict_to_time_window,
+        start_datetime=exam.start_datetime,
+        end_datetime=exam.end_datetime,
+        is_active=False
+    )
+    db.session.add(new_exam)
+    db.session.flush()
+
+    # Duplicate questions
+    questions = Question.query.filter_by(exam_id=exam.id).all()
+    for q in questions:
+        new_q = Question(
+            exam_id=new_exam.id,
+            question_text=q.question_text,
+            marks=q.marks,
+            display_order=q.display_order
+        )
+        db.session.add(new_q)
+        db.session.flush()
+
+        options = QuestionOption.query.filter_by(question_id=q.id).all()
+        for o in options:
+            new_o = QuestionOption(
+                question_id=new_q.id,
+                option_text=o.option_text,
+                display_order=o.display_order
+            )
+            db.session.add(new_o)
+            db.session.flush()
+            if o.id == q.correct_option_id:
+                new_q.correct_option_id = new_o.id
+                
+    db.session.commit()
+    flash(f"Exam duplicated successfully as '{new_exam.title}'.", "success")
+    return redirect(url_for('admin_exams.list_exams'))
+
+@admin_exams_bp.route("/<int:exam_id>/delete", methods=["POST"])
+def delete_exam(exam_id):
+    if not session.get("sensitive_action_verified"):
+        return redirect(url_for('admin_backup.auth', next=url_for('admin_exams.list_exams')))
+        
+    exam = Exam.query.get_or_404(exam_id)
+    
+    # 1. Delete StudentAnswers and Attempts
+    attempts = StudentAttempt.query.filter_by(exam_id=exam.id).all()
+    attempt_ids = [a.id for a in attempts]
+    if attempt_ids:
+        StudentAnswer.query.filter(StudentAnswer.attempt_id.in_(attempt_ids)).delete(synchronize_session=False)
+        StudentAttempt.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+
+    # 2. Delete QuestionOptions and Questions
+    questions = Question.query.filter_by(exam_id=exam.id).all()
+    question_ids = [q.id for q in questions]
+    if question_ids:
+        QuestionOption.query.filter(QuestionOption.question_id.in_(question_ids)).delete(synchronize_session=False)
+        Question.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+
+    # 3. Delete Exam
+    db.session.delete(exam)
+    db.session.commit()
+    
+    flash("Exam deleted successfully.", "success")
+    return redirect(url_for('admin_exams.list_exams'))
 
 @admin_exams_bp.route("/<int:exam_id>/attempts")
 def view_attempts(exam_id):

@@ -30,26 +30,31 @@ def deserialize_model(model_class, data):
 
 @admin_backup_bp.before_request
 def check_auth():
-    if request.endpoint != 'admin_backup.auth' and not session.get('backup_verified'):
-        return redirect(url_for('admin_backup.auth'))
+    if request.endpoint != 'admin_backup.auth' and not session.get('sensitive_action_verified'):
+        return redirect(url_for('admin_backup.auth', next=request.url))
 
 @admin_backup_bp.route("/auth", methods=["GET", "POST"])
 def auth():
+    next_url = request.args.get('next')
     if request.method == "POST":
         pin = request.form.get("pin")
-        correct_pin = current_app.config.get("BACKUP_SECURITY_PIN", "0007")
+        correct_pin = current_app.config.get("ADMIN_SECURITY_PIN", "4821")
         if pin == correct_pin:
-            session["backup_verified"] = True
-            flash("Backup access granted.", "success")
-            return redirect(url_for('admin_backup.index'))
+            session["sensitive_action_verified"] = True
+            flash("Sensitive action access granted.", "success")
+            
+            # Form might also pass next_url as hidden field
+            next_url_form = request.form.get('next')
+            redirect_target = next_url_form or next_url or url_for('admin_backup.index')
+            return redirect(redirect_target)
         else:
             flash("Invalid security PIN.", "danger")
-    return render_template("admin/backup_auth.html")
+    return render_template("admin/backup_auth.html", next_url=next_url)
 
 @admin_backup_bp.route("/logout")
 def logout():
-    session.pop("backup_verified", None)
-    flash("Backup session locked.", "info")
+    session.pop("sensitive_action_verified", None)
+    flash("Sensitive action session locked.", "info")
     return redirect(url_for('main.home'))
 
 @admin_backup_bp.route("/")

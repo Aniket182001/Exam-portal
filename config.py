@@ -5,7 +5,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
-    BACKUP_SECURITY_PIN = os.getenv("BACKUP_SECURITY_PIN", "0007")
+    ADMIN_SECURITY_PIN = os.getenv("ADMIN_SECURITY_PIN", "4821")
 
     database_url = os.getenv("DATABASE_URL")
     

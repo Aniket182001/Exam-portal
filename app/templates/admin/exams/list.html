@@ -75,9 +75,45 @@
                                             </button>
                                         {% endif %}
                                     </form>
+                                    <form action="{{ url_for('admin_exams.duplicate_exam', exam_id=exam.id) }}" method="POST" class="d-inline mb-0">
+                                        <button type="submit" class="btn btn-sm btn-light border" title="Duplicate Exam">
+                                            <i class="bi bi-files text-secondary"></i>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-light border text-danger" title="Delete Exam" data-bs-toggle="modal" data-bs-target="#deleteModal{{ exam.id }}">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
+
+                        <!-- Delete Modal -->
+                        <div class="modal fade" id="deleteModal{{ exam.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ exam.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                    <div class="modal-header bg-danger text-white border-0 rounded-top-4">
+                                        <h5 class="modal-title fw-bold" id="deleteModalLabel{{ exam.id }}"><i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Exam</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-center">
+                                        <p class="mb-4 text-start">Deleting this exam will permanently remove:</p>
+                                        <ul class="text-start mb-4 fw-medium text-dark">
+                                            <li>Questions</li>
+                                            <li>Question options</li>
+                                            <li>Student attempts</li>
+                                            <li>Student answers</li>
+                                        </ul>
+                                        <p class="text-danger fw-bold mb-0">This action cannot be undone.</p>
+                                    </div>
+                                    <div class="modal-footer bg-light border-0 rounded-bottom-4">
+                                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <form action="{{ url_for('admin_exams.delete_exam', exam_id=exam.id) }}" method="POST" class="m-0">
+                                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Delete Exam</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
