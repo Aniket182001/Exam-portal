@@ -687,8 +687,7 @@ a:hover {
    STUDENT FLOW (Apple Inspired Additions)
    ================================================================ */
 .apple-glass-bg {
-    background-color: #FDFBF7;
-    background-image: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.02) 0%, transparent 60%);
+    background-color: #F5F5F7;
     min-height: 100vh;
     animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
