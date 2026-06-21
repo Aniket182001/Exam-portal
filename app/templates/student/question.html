@@ -5,8 +5,8 @@
 {% block page_title %}Question {{ question_number }} - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<!-- Sticky Exam Header -->
-<div class="sticky-top bg-white border-bottom shadow-sm z-3" style="top: var(--navbar-height);">
+<!-- Exam Header -->
+<div class="bg-white border-bottom shadow-sm mb-4">
     <div class="container-fluid px-lg-5 py-2 py-md-3 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
             <div class="bg-primary-brand text-white rounded-2 px-2 py-1 d-none d-sm-block">
@@ -117,7 +117,7 @@
             <!-- Sidebar Palette -->
             {% if exam.allow_question_navigation and exam.show_question_numbers %}
             <div class="col-xl-3 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-xl sticky-top z-1" style="top: calc(var(--navbar-height) + 100px);">
+                <div class="card border-0 shadow-sm rounded-xl sticky-top z-1" style="top: 20px;">
                     <div class="card-header bg-white border-bottom py-3 text-center">
                         <h6 class="mb-0 text-dark fw-bold text-uppercase letter-wide small"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Question Palette</h6>
                     </div>

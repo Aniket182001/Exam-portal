@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="text-center pb-5">
-                    <form action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST" onsubmit="document.getElementById('globalNavbar')?.classList.add('header-hidden');">
+                    <form id="start-exam-form" action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST">
                         <button type="submit" class="btn btn-apple-primary px-5 py-4 d-inline-flex align-items-center">
                             START EXAM NOW <i class="bi bi-arrow-right ms-3"></i>
                         </button>
@@ -120,4 +120,29 @@
         }
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const startForm = document.getElementById("start-exam-form");
+        if(startForm) {
+            startForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+                
+                const navbar = document.getElementById("globalNavbar");
+                const footer = document.getElementById("globalFooter");
+                
+                if(navbar) {
+                    navbar.classList.add("exam-chrome-transition", "exam-chrome-hide-up");
+                }
+                if(footer) {
+                    footer.classList.add("exam-chrome-transition", "exam-chrome-hide-fade");
+                }
+                
+                setTimeout(() => {
+                    startForm.submit();
+                }, 350);
+            });
+        }
+    });
+</script>
 {% endblock %}

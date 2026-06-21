@@ -111,13 +111,6 @@ a:hover {
     height: var(--navbar-height);
     box-shadow: var(--shadow-sm);
     border-bottom: 1px solid var(--aiqm-gray-200);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.header-hidden {
-    transform: translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
 }
 
 .aiqm-navbar .navbar-brand {
@@ -780,6 +773,29 @@ a:hover {
     border-radius: 20px;
     padding: 1.5rem;
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.02);
+}
+
+/* ================================================================
+   EXAM FOCUS MODE
+   ================================================================ */
+body.exam-mode .aiqm-navbar,
+body.exam-mode .aiqm-footer {
+    display: none !important;
+}
+
+.exam-chrome-transition {
+    transition: transform 350ms ease, opacity 350ms ease !important;
+}
+
+.exam-chrome-hide-up {
+    transform: translateY(-100%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.exam-chrome-hide-fade {
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 @media (max-width: 480px) {
