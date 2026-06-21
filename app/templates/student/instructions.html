@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="text-center pb-5">
-                    <form action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST">
+                    <form action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST" onsubmit="document.getElementById('globalNavbar')?.classList.add('header-hidden');">
                         <button type="submit" class="btn btn-apple-primary px-5 py-4 d-inline-flex align-items-center">
                             START EXAM NOW <i class="bi bi-arrow-right ms-3"></i>
                         </button>
