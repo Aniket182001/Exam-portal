@@ -7,9 +7,6 @@
      HERO SECTION
 ============================================================= -->
 <section class="hero-section">
-    <div class="hero-blob blob-1"></div>
-    <div class="hero-blob blob-2"></div>
-    <div class="hero-blob blob-3"></div>
     <div class="container position-relative z-1">
         <div class="row align-items-center justify-content-center text-center">
             <div class="col-lg-8">
@@ -17,9 +14,9 @@
                 <h1 class="hero-title">AIQM Educational Dashboard</h1>
                 <p class="hero-subtitle">Secure, minimal, and professional examination platform tailored for modern learning experiences.</p>
                 
-                <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
-                    <button type="button" class="btn btn-primary btn-lg fw-bold shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#studentExamModal">
-                        <i class="bi bi-person-badge me-2"></i>Access Exam
+                <div class="d-flex flex-wrap gap-3 justify-content-center mt-4 hero-controls">
+                    <button type="button" class="btn btn-apple-primary" data-bs-toggle="modal" data-bs-target="#studentExamModal">
+                        Launch Examination <i class="bi bi-arrow-right ms-2"></i>
                     </button>
                 </div>
             </div>
@@ -41,12 +38,12 @@
         <div class="row g-4 justify-content-center">
             <!-- Feature 1 -->
             <div class="col-md-4">
-                <div class="feature-card mint-card">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div class="feature-icon bg-white text-dark shadow-sm">
+                <div class="feature-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="feature-icon">
                             <i class="bi bi-laptop"></i>
                         </div>
-                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Secure</span>
+                        <span class="text-uppercase fw-bold text-muted small letter-wide" style="font-size: 0.75rem;">Secure</span>
                     </div>
                     <h5>Online Examinations</h5>
                     <p>Conduct exams securely. A robust environment designed for uninterrupted student assessment and progress tracking.</p>
@@ -55,12 +52,12 @@
             
             <!-- Feature 2 -->
             <div class="col-md-4">
-                <div class="feature-card peach-card">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div class="feature-icon bg-white text-dark shadow-sm">
+                <div class="feature-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="feature-icon">
                             <i class="bi bi-lightning-charge"></i>
                         </div>
-                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Instant</span>
+                        <span class="text-uppercase fw-bold text-muted small letter-wide" style="font-size: 0.75rem;">Instant</span>
                     </div>
                     <h5>Live Results</h5>
                     <p>Automatic evaluation and reporting. Instantly calculate scores, apply negative marking, and generate statuses.</p>
@@ -69,12 +66,12 @@
             
             <!-- Feature 3 -->
             <div class="col-md-4">
-                <div class="feature-card lavender-card">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div class="feature-icon bg-white text-dark shadow-sm">
+                <div class="feature-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="feature-icon">
                             <i class="bi bi-file-earmark-check"></i>
                         </div>
-                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-3 py-2 border">Analytics</span>
+                        <span class="text-uppercase fw-bold text-muted small letter-wide" style="font-size: 0.75rem;">Analytics</span>
                     </div>
                     <h5>Answer Sheets</h5>
                     <p>Review responses and performance. Detailed breakdowns of correct, incorrect, and unanswered questions.</p>
@@ -87,27 +84,27 @@
 <!-- ============================================================
      STUDENT EXAM MODAL
 ============================================================= -->
-<div class="modal fade" id="studentExamModal" tabindex="-1" aria-labelledby="studentExamModalLabel" aria-hidden="true">
+<div class="modal fade" id="studentExamModal" tabindex="-1" aria-labelledby="studentExamModalLabel" aria-hidden="true" style="backdrop-filter: blur(12px); background-color: rgba(0,0,0,0.2);">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg);">
-      <div class="modal-header border-bottom py-3" style="background-color: var(--aiqm-white); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
-        <h5 class="modal-title fw-bold text-dark" id="studentExamModalLabel">Access Examination</h5>
+    <div class="modal-content border-0" style="border-radius: 28px; box-shadow: 0 25px 50px rgba(0,0,0,0.15);">
+      <div class="modal-header border-0 pb-0 pt-4 px-4">
+        <h5 class="modal-title fw-bold text-dark fs-4" id="studentExamModalLabel" style="letter-spacing: -0.02em;">Access Examination</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-4 p-md-5 bg-light" style="border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
-        <div class="d-flex justify-content-center mb-4">
-            <div class="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                <i class="bi bi-key-fill fs-3" style="color: var(--aiqm-primary);"></i>
+      <div class="modal-body p-4 px-md-5 pb-md-5">
+        <div class="d-flex mb-4">
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                <i class="bi bi-shield-lock-fill fs-4" style="color: #1D1D1F;"></i>
             </div>
         </div>
-        <p class="text-center text-muted mb-4 small px-3">Please enter the unique exam code provided by your administrator to securely access your examination session.</p>
+        <p class="text-muted mb-4" style="font-size: 1.05rem; line-height: 1.5;">Please enter the unique exam code provided by your administrator to securely access your session.</p>
         <form id="examCodeForm" onsubmit="event.preventDefault(); const code = document.getElementById('examCodeInput').value.trim(); if(code) { window.location.href='/exam/' + encodeURIComponent(code); }">
             <div class="mb-4">
-                <input type="text" class="form-control form-control-lg text-center font-monospace fw-bold shadow-sm border-0 py-3" id="examCodeInput" placeholder="Enter Exam Code..." required style="border-radius: var(--radius-md);">
+                <input type="text" class="form-control form-control-lg font-monospace fw-bold py-3 px-4" id="examCodeInput" placeholder="Enter Exam Code..." required style="border-radius: 16px; background-color: #F5F5F7; border: 1px solid rgba(0,0,0,0.05);">
             </div>
-            <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold text-white shadow-sm py-3">
-                    Continue to Exam <i class="bi bi-arrow-right ms-2"></i>
+            <div class="d-grid mt-2">
+                <button type="submit" class="btn btn-apple-primary text-white py-3 w-100" style="border-radius: 16px;">
+                    Continue to Exam
                 </button>
             </div>
         </form>
