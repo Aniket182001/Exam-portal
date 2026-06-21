@@ -683,6 +683,99 @@ a:hover {
     }
 }
 
+/* ================================================================
+   STUDENT FLOW (Apple Inspired Additions)
+   ================================================================ */
+.apple-glass-bg {
+    background-color: #FDFBF7;
+    background-image: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.02) 0%, transparent 60%);
+    min-height: 100vh;
+    animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.apple-card-soft {
+    background: #FFFFFF;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+    border-radius: 28px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden;
+}
+
+.apple-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.apple-input-icon {
+    position: absolute;
+    left: 1.25rem;
+    color: #86868B;
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.apple-input {
+    background-color: #F5F5F7 !important;
+    border: 1px solid rgba(0,0,0,0.03) !important;
+    border-radius: 16px !important;
+    padding: 1rem 1.25rem 1rem 3rem !important; /* Extra padding on left for icon */
+    font-size: 1rem !important;
+    color: #1D1D1F !important;
+    transition: all 0.3s ease !important;
+    width: 100%;
+}
+
+.apple-input:focus {
+    background-color: #FFFFFF !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.05) !important;
+    outline: none;
+}
+
+.apple-input-wrapper:focus-within .apple-input-icon {
+    color: #1D1D1F;
+}
+
+.apple-pill-soft-green {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+    color: #059669 !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    padding: 0.4rem 1rem !important;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.apple-pill-soft-gray {
+    background-color: #F5F5F7 !important;
+    color: #86868B !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    padding: 0.4rem 1rem !important;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.apple-pill-soft-orange {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+    color: #EA580C !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+    padding: 0.4rem 1rem !important;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.apple-alert-warm {
+    background-color: #FEF8F3;
+    border: 1px solid rgba(249, 115, 22, 0.1);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.02);
+}
+
 @media (max-width: 480px) {
     .hero-title {
         font-size: 2rem;
