@@ -16,6 +16,7 @@ def create_app():
     from app.routes.student_exams import student_exams_bp
     from app.routes.admin_backup import admin_backup_bp
     from app.routes.auth import auth_bp
+    from app.routes.admin_bp import admin_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -23,5 +24,6 @@ def create_app():
     app.register_blueprint(admin_questions_bp)
     app.register_blueprint(student_exams_bp)
     app.register_blueprint(admin_backup_bp)
+    app.register_blueprint(admin_bp)
 
     return app

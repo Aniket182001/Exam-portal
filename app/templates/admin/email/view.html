@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ template.name }} - Email Center{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.email_center') }}" class="text-decoration-none">Email Center</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ template.name }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin_bp.email_center') }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Email Center">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-file-earmark-text-fill text-primary me-2"></i>{{ template.name }}
+                </h3>
+            </div>
+        </div>
+        <div>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-gear-fill me-1"></i> System Template (Readonly)</span>
+        </div>
+    </div>
+
+    <!-- Readonly Form Card -->
+    <div class="card border-0 shadow-sm rounded-xl p-4">
+        <div class="card-body p-0">
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Subject Line</label>
+                <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3 text-dark fw-medium" value="{{ template.subject }}" readonly>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Available Variables</label>
+                <div class="d-flex flex-wrap gap-2 p-3 bg-light rounded-3 border-0">
+                    {% for var in template.variables %}
+                        <span class="badge bg-white text-dark border shadow-sm px-3 py-2 rounded-pill font-monospace">{{"{"}}{{ var }}{{"}"}}</span>
+                    {% else %}
+                        <span class="text-muted small">No dynamic variables available for this template.</span>
+                    {% endfor %}
+                </div>
+                <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> These variables are automatically replaced by the system before sending.</div>
+            </div>
+
+            <div>
+                <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Email Body</label>
+                <textarea class="form-control bg-light border-0 shadow-none rounded-3 text-dark" rows="15" readonly style="resize: none;">{{ template.body }}</textarea>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

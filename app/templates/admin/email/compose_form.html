@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block page_title %}Compose {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_exams.list_exams') }}" class="text-decoration-none">Admin Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_bp.email_center') }}" class="text-decoration-none">Email Center</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Compose</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center">
+                <a href="{{ url_for('admin_bp.email_center') }}" class="btn btn-sm btn-outline-secondary rounded-circle me-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 36px; height: 36px;" title="Back to Email Center">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <h3 class="fw-bold text-dark mb-0">
+                    <i class="bi bi-envelope-paper-fill text-primary me-2"></i>Compose: {{ template.name }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <form method="POST">
+                        <h5 class="fw-bold mb-4">Recipient Details</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Candidate Name</label>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_name" placeholder="e.g. John Doe" required>
+                        </div>
+
+                        {% if template.key in ['exam_invitation'] %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Candidate Email</label>
+                            <input type="email" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_email" placeholder="john@example.com" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Select Exam</label>
+                            <select class="form-select form-select-lg bg-light border-0 shadow-none rounded-3" name="exam_id" required>
+                                <option value="" selected disabled>Choose an exam...</option>
+                                {% for exam in exams %}
+                                    <option value="{{ exam.id }}">{{ exam.title }} ({{ exam.exam_code }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Exam details (code, duration, questions) will be populated automatically.</div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if template.key in ['lms_access'] %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Login Email (Username)</label>
+                            <input type="email" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="login_email" placeholder="john@example.com" required>
+                        </div>
+                        {% endif %}
+                        
+                        {% if template.key in ['lms_access', 'certificate_email'] %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Select Course</label>
+                            <select class="form-select form-select-lg bg-light border-0 shadow-none rounded-3" name="course_name" required>
+                                <option value="" selected disabled>Choose a course...</option>
+                                {% for course in courses %}
+                                    <option value="{{ course }}">{{ course }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('admin_bp.email_center') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">Cancel</a>
+                            <button type="submit" class="btn btn-apple-primary rounded-pill px-4 shadow-sm fw-bold hover-scale d-inline-flex align-items-center">
+                                Generate Email <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md) !important;
+    }
+</style>
+{% endblock %}
