@@ -6,6 +6,13 @@ import uuid
 
 student_exams_bp = Blueprint("student_exams", __name__)
 
+@student_exams_bp.after_request
+def add_cache_headers(response):
+    """Prevent browsers from caching exam pages to avoid issues with the Back button."""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
 @student_exams_bp.route("/exam/<exam_code>", methods=["GET", "POST"])
 def entry(exam_code):
     exam = Exam.query.filter_by(exam_code=exam_code).first_or_404()
@@ -117,6 +124,7 @@ def handle_attempt_timeout(attempt):
     if exam.auto_submit_on_timeout:
         attempt.status = "submitted"
         attempt.submitted_at = now
+        calculate_result(attempt)
         db.session.commit()
         flash("Your time has expired. Your exam has been automatically submitted.", "warning")
     else:
@@ -174,7 +182,8 @@ def question_attempt(attempt_token, question_number):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
     
     if attempt.status != "in_progress":
-        abort(403, description="This attempt is no longer active.")
+        flash("This exam attempt has already been submitted.", "info")
+        return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
         
     exam = attempt.exam
     
@@ -305,7 +314,9 @@ def review(attempt_token):
             # Reload to reflect transition
             return redirect(url_for('student_exams.review', attempt_token=attempt_token))
     else:
-        remaining_seconds = 0
+        # Already submitted
+        flash("This exam attempt has already been submitted.", "info")
+        return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
 
     questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
     total_questions = len(questions)
@@ -333,7 +344,8 @@ def submit_attempt(attempt_token):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
     
     if attempt.status != "in_progress":
-        abort(403, description="This attempt is no longer active.")
+        flash("This exam attempt has already been submitted.", "info")
+        return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
         
     remaining_seconds = get_remaining_seconds(attempt)
     if remaining_seconds == 0:
@@ -343,6 +355,7 @@ def submit_attempt(attempt_token):
     # Mark as submitted
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now(timezone.utc)
+    calculate_result(attempt)
     db.session.commit()
     
     flash("Your exam has been successfully submitted.", "success")
