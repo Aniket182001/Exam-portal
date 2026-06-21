@@ -90,70 +90,84 @@
                         </div>
                     </div>
                     
-                    <!-- Navigation Footer -->
-                    <div class="card-footer bg-light-subtle border-top p-4 d-flex flex-column flex-sm-row justify-content-between gap-3">
-                        <div class="d-grid d-sm-block">
-                            {% if question_number > 1 %}
-                            <button type="submit" name="action" value="prev" class="btn btn-outline-secondary btn-lg px-4 rounded-pill fw-bold shadow-sm">
-                                <i class="bi bi-arrow-left me-1"></i> Previous
-                            </button>
-                            {% endif %}
-                        </div>
-                        <div class="d-grid d-sm-block">
-                            {% if question_number < total_questions %}
-                            <button type="submit" name="action" value="next" class="btn btn-primary btn-lg px-5 rounded-pill fw-bold shadow-sm action-next">
-                                Save & Next <i class="bi bi-arrow-right ms-1"></i>
-                            </button>
-                            {% else %}
-                            <button type="submit" name="action" value="finish" class="btn btn-success btn-lg px-5 rounded-pill fw-bold shadow-sm action-next">
-                                Save & Finish Exam <i class="bi bi-check-circle ms-1"></i>
-                            </button>
-                            {% endif %}
-                        </div>
+                    <!-- Navigation Footer (Fallback if palette is disabled) -->
+                    {% if not (exam.allow_question_navigation and exam.show_question_numbers) %}
+                    <div class="card-footer bg-white border-top p-4 p-lg-5 d-flex justify-content-end">
+                        {% if question_number < total_questions %}
+                        <button type="submit" name="action" value="next" class="btn btn-apple-primary px-5 py-3 shadow-sm d-inline-flex align-items-center" style="border-radius: 16px; font-size: 1.05rem;">
+                            Next <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                        {% else %}
+                        <button type="submit" name="action" value="finish" class="btn btn-success px-5 py-3 shadow-sm d-inline-flex align-items-center" style="border-radius: 16px; font-size: 1.05rem; font-weight: 600;">
+                            Finish Exam <i class="bi bi-check-circle ms-2"></i>
+                        </button>
+                        {% endif %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Sidebar Palette -->
+            <!-- Sidebar Palette & Navigation -->
             {% if exam.allow_question_navigation and exam.show_question_numbers %}
             <div class="col-xl-3 col-lg-4">
-                <div class="card border-0 shadow-sm rounded-xl sticky-top z-1" style="top: 20px;">
-                    <div class="card-header bg-white border-bottom py-3 text-center">
-                        <h6 class="mb-0 text-dark fw-bold text-uppercase letter-wide small"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Question Palette</h6>
-                    </div>
-                    <div class="card-body p-3 p-xl-4">
-                        <div class="palette-grid gap-2 mb-4">
-                            {% for q in questions %}
-                                {% set is_current = (loop.index == question_number) %}
-                                {% set is_answered = (q.id in answered_question_ids) %}
-                                <button type="submit" 
-                                        name="goto_question" 
-                                        value="{{ loop.index }}" 
-                                        class="btn p-0 fw-bold transition-fast palette-btn shadow-sm
-                                        {% if is_current %}btn-primary text-white border-primary current-q
-                                        {% elif is_answered %}btn-success text-white border-success
-                                        {% else %}btn-light text-dark border-light-subtle{% endif %}" 
-                                        title="Question {{ loop.index }}">
-                                    {{ loop.index }}
-                                </button>
-                            {% endfor %}
+                <div class="sticky-top z-1" style="top: 20px;">
+                    <div class="apple-card-soft mb-4">
+                        <div class="card-header bg-white border-bottom py-3 text-center" style="border-radius: 28px 28px 0 0;">
+                            <h6 class="mb-0 text-dark fw-bold text-uppercase letter-wide small" style="letter-spacing: 0.05em;"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Question Palette</h6>
                         </div>
+                        <div class="card-body p-3 p-xl-4">
+                            <div class="palette-grid gap-2 mb-4">
+                                {% for q in questions %}
+                                    {% set is_current = (loop.index == question_number) %}
+                                    {% set is_answered = (q.id in answered_question_ids) %}
+                                    <button type="submit" 
+                                            name="goto_question" 
+                                            value="{{ loop.index }}" 
+                                            class="btn p-0 fw-bold transition-fast palette-btn shadow-sm
+                                            {% if is_current %}btn-primary text-white border-primary current-q
+                                            {% elif is_answered %}btn-success text-white border-success
+                                            {% else %}btn-light text-dark border-light-subtle{% endif %}" 
+                                            title="Question {{ loop.index }}">
+                                        {{ loop.index }}
+                                    </button>
+                                {% endfor %}
+                            </div>
 
-                        <!-- Legend -->
-                        <div class="pt-3 border-top">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="bg-primary rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
-                                <span class="small text-secondary fw-medium">Current Question</span>
-                            </div>
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="bg-success rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
-                                <span class="small text-secondary fw-medium">Answered</span>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light border border-light-subtle rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
-                                <span class="small text-secondary fw-medium">Not Answered</span>
+                            <!-- Legend -->
+                            <div class="pt-3 border-top">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-primary rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
+                                    <span class="small text-secondary fw-medium">Current Question</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-success rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
+                                    <span class="small text-secondary fw-medium">Answered</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light border border-light-subtle rounded-1 me-2 shadow-sm" style="width: 20px; height: 20px;"></div>
+                                    <span class="small text-secondary fw-medium">Not Answered</span>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Navigation Controls (Stacked) -->
+                    <div class="d-flex flex-column gap-3">
+                        {% if question_number < total_questions %}
+                        <button type="submit" name="action" value="next" class="btn btn-apple-primary w-100 py-3 shadow-sm d-flex justify-content-center align-items-center" style="border-radius: 16px; font-size: 1.05rem;">
+                            Next <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                        {% else %}
+                        <button type="submit" name="action" value="finish" class="btn btn-success w-100 py-3 shadow-sm d-flex justify-content-center align-items-center" style="border-radius: 16px; font-size: 1.05rem; font-weight: 600;">
+                            Finish Exam <i class="bi bi-check-circle ms-2"></i>
+                        </button>
+                        {% endif %}
+
+                        {% if question_number > 1 %}
+                        <button type="submit" name="action" value="prev" class="btn w-100 py-3 border-0 transition-fast" style="border-radius: 16px; font-weight: 600; color: #1D1D1F; background-color: #F5F5F7;">
+                            <i class="bi bi-arrow-left me-2"></i> Previous
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
