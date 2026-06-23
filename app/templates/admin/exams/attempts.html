@@ -109,12 +109,21 @@
                                     <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Result" {% if attempt.status != 'submitted' %}disabled{% endif %}>
                                         <i class="bi bi-bar-chart-fill text-primary me-1"></i> Result
                                     </a>
-                                    <a href="{{ url_for('student_exams.view_answer_sheet', attempt_token=attempt.attempt_token) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                    <a href="{{ url_for('admin_bp.view_candidate_answers', attempt_id=attempt.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled{% endif %}>
                                         <i class="bi bi-file-earmark-text-fill text-info me-1"></i> Answers
                                     </a>
                                     <a href="{{ url_for('admin_exams.compose_result_email', attempt_id=attempt.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Compose Email" {% if attempt.status != 'submitted' %}disabled{% endif %}>
                                         <i class="bi bi-envelope-paper-fill text-warning me-1"></i> Email
                                     </a>
+                                    <button type="button" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark copy-result-btn" title="Copy Result"
+                                            data-candidate-name="{{ attempt.student_name }}"
+                                            data-candidate-email="{{ attempt.student_email }}"
+                                            data-exam-title="{{ exam.title }}"
+                                            data-obtained-marks="{{ attempt.total_marks_obtained if attempt.total_marks_obtained is not none else '-' }}"
+                                            data-total-marks="{{ attempt.exam.questions|length }}"
+                                            {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; cursor: not-allowed; pointer-events: none;"{% endif %}>
+                                        <i class="bi bi-clipboard text-secondary me-1"></i> Copy Result
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -158,6 +167,39 @@
     .hover-scale:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md) !important;
+    }
+    .btn[disabled], .btn.disabled {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+    /* Apple-inspired toast styling */
+    .apple-toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translate(-50%, 20px);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px) saturate(190%);
+        -webkit-backdrop-filter: blur(20px) saturate(190%);
+        border: 1px solid rgba(209, 209, 214, 0.3);
+        color: #1d1d1f;
+        padding: 12px 24px;
+        border-radius: 99px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        font-size: 0.95rem;
+        font-weight: 500;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .apple-toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
     }
 </style>
 
@@ -221,6 +263,67 @@ document.addEventListener('DOMContentLoaded', function() {
             selectAllCheckbox.indeterminate = someChecked && !allChecked;
         });
     });
+
+    // Copy Result Button Event Listeners
+    const copyBtns = document.querySelectorAll('.copy-result-btn');
+    copyBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const name = this.getAttribute('data-candidate-name');
+            const email = this.getAttribute('data-candidate-email');
+            const examTitle = this.getAttribute('data-exam-title');
+            const obtained = this.getAttribute('data-obtained-marks');
+            const total = this.getAttribute('data-total-marks');
+            
+            // Format obtained and total marks nicely (whole numbers as integers)
+            const formatMarkVal = (val) => {
+                if (val === null || val === undefined || val === '' || val === '-') return '-';
+                const num = parseFloat(val);
+                if (isNaN(num)) return val;
+                return Number.isInteger(num) ? num.toString() : num.toFixed(1);
+            };
+            
+            const formattedObtained = formatMarkVal(obtained);
+            const formattedTotal = formatMarkVal(total);
+            
+            const copyText = `Name - ${name}\nEmail - ${email}\nCourse - ${examTitle}\nMarks - ${formattedObtained}/${formattedTotal}`;
+            
+            navigator.clipboard.writeText(copyText).then(() => {
+                showToast("Result copied to clipboard.");
+            }).catch(err => {
+                console.error("Failed to copy text: ", err);
+                alert("Failed to copy result to clipboard.");
+            });
+        });
+    });
+    
+    function showToast(message) {
+        let toast = document.getElementById('appleToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'appleToast';
+            toast.className = 'apple-toast';
+            toast.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> <span class="toast-text"></span>`;
+            document.body.appendChild(toast);
+        }
+        toast.querySelector('.toast-text').textContent = message;
+        
+        // Reset state for animations
+        toast.classList.remove('show');
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 50);
+        
+        if (window.toastTimeout) {
+            clearTimeout(window.toastTimeout);
+        }
+        
+        window.toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 });
 </script>
 {% endblock %}

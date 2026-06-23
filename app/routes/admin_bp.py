@@ -171,3 +171,24 @@ def compose_template(template_key):
     courses = ["Lean Six Sigma Black Belt", "Lean Six Sigma Green Belt", "Total Quality Management"]
     
     return render_template("admin/email/compose_form.html", template=template, exams=exams, courses=courses)
+
+from app.models import StudentAttempt, Question
+from sqlalchemy.orm import joinedload
+
+@admin_bp.route("/attempts/<int:attempt_id>/answers")
+def view_candidate_answers(attempt_id):
+    attempt = StudentAttempt.query.options(joinedload(StudentAttempt.answers)).get_or_404(attempt_id)
+    
+    questions = Question.query.filter_by(exam_id=attempt.exam_id).options(
+        joinedload(Question.options)
+    ).order_by(Question.display_order.asc()).all()
+    
+    student_answers = {ans.question_id: ans for ans in attempt.answers}
+    
+    return render_template(
+        "admin/attempts/answers.html",
+        attempt=attempt,
+        exam=attempt.exam,
+        questions=questions,
+        student_answers=student_answers
+    )

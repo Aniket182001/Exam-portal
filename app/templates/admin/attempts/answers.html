@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block page_title %}Candidate Answer Sheet{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist text-primary me-2"></i>Candidate Answer Sheet</h2>
+        <a href="{{ url_for('admin_exams.view_attempts', exam_id=attempt.exam_id) }}" class="btn btn-outline-secondary rounded-pill shadow-sm hover-scale bg-white">
+            <i class="bi bi-arrow-left me-1"></i> Back to Attempts
+        </a>
+    </div>
+
+    <!-- Summary Hero Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header border-bottom py-3 bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide">Exam</span>
+                <h4 class="mb-0 text-dark fw-bold">{{ exam.title if exam else 'Unknown Exam' }}</h4>
+            </div>
+            <div>
+                {% if attempt.result_status == 'Pass' %}
+                    <span class="badge bg-success px-3 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-trophy-fill me-1"></i>Pass</span>
+                {% elif attempt.result_status == 'Fail' %}
+                    <span class="badge bg-danger px-3 py-2 fs-6 rounded-pill shadow-sm"><i class="bi bi-exclamation-octagon-fill me-1"></i>Fail</span>
+                {% else %}
+                    <span class="badge bg-secondary px-3 py-2 fs-6 rounded-pill shadow-sm">{{ attempt.result_status or 'N/A' }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <!-- Candidate Info Strip -->
+            <div class="bg-light px-4 py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle fs-3 text-primary me-3"></i>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 lh-sm">{{ attempt.student_name }}</h6>
+                        <span class="small text-muted">{{ attempt.student_email }}</span>
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <span class="small text-muted d-block text-uppercase font-monospace letter-wide">Submitted On</span>
+                    <span class="fw-medium text-dark"><i class="bi bi-calendar-check me-1"></i> {{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M:%S UTC') if attempt.submitted_at else 'N/A' }}</span>
+                </div>
+            </div>
+
+            <!-- Stats Block -->
+            <div class="row g-0 text-center">
+                <div class="col-6 col-md-2 border-end border-bottom border-md-bottom-0">
+                    <div class="p-3">
+                        <span class="text-muted small text-uppercase font-monospace d-block mb-1">Total Marks</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ "%.2f"|format(attempt.total_marks_obtained)|replace('.00', '') }} / {{ "%.2f"|format(questions|sum(attribute='marks'))|replace('.00', '') if questions else '0' }}</h4>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2 border-end border-bottom border-md-bottom-0">
+                    <div class="p-3">
+                        <span class="text-muted small text-uppercase font-monospace d-block mb-1">Percentage</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ "%.1f"|format(attempt.percentage_score) }}%</h4>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2 border-end border-bottom border-md-bottom-0">
+                    <div class="p-3">
+                        <span class="text-muted small text-uppercase font-monospace d-block mb-1">Questions</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ questions|length }}</h4>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2 border-end border-bottom border-md-bottom-0">
+                    <div class="p-3">
+                        <span class="text-primary small text-uppercase font-monospace d-block mb-1">Answered</span>
+                        <h4 class="fw-bold text-primary mb-0">{{ attempt.correct_count + attempt.wrong_count }}</h4>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2 border-end border-bottom border-md-bottom-0">
+                    <div class="p-3">
+                        <span class="text-success small text-uppercase font-monospace d-block mb-1">Correct</span>
+                        <h4 class="fw-bold text-success mb-0">{{ attempt.correct_count }}</h4>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="p-3">
+                        <span class="text-secondary small text-uppercase font-monospace d-block mb-1">Unanswered</span>
+                        <h4 class="fw-bold text-secondary mb-0">{{ attempt.unanswered_count }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions Breakdown -->
+    <div class="d-flex flex-column gap-4 mb-5">
+        {% for q in questions %}
+            {% set ans = student_answers.get(q.id) %}
+            {% set is_unanswered = (ans is none or ans.selected_option_id is none) %}
+            {% set is_correct = (not is_unanswered and ans.selected_option_id == q.correct_option_id) %}
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden answer-card
+                {% if is_unanswered %}border-start border-secondary
+                {% elif is_correct %}border-start border-success
+                {% else %}border-start border-danger{% endif %}" 
+                style="border-left-width: 6px !important; background-color: {% if is_unanswered %}#f8f9fa{% elif is_correct %}#f0fdf4{% else %}#fef2f2{% endif %};">
+                
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-3 gap-2">
+                        <h6 class="fw-bold text-dark mb-0">Question {{ loop.index }} <span class="text-muted small ms-2 fw-normal">({{ "%.2f"|format(q.marks)|replace('.00', '') }} Marks)</span></h6>
+                        
+                        <div>
+                            {% if is_unanswered %}
+                                <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-dash-circle me-1"></i> Unanswered</span>
+                            {% elif is_correct %}
+                                <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-check-circle me-1"></i> Correct</span>
+                            {% else %}
+                                <span class="badge bg-danger px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-x-circle me-1"></i> Incorrect</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="fs-6 text-dark mb-4 fw-medium" style="white-space: pre-wrap; line-height: 1.6;">{{ q.question_text }}</div>
+                    
+                    <div class="row g-3">
+                        <!-- Options list -->
+                        {% set options = q.options|sort(attribute='option_order') if q.options else [] %}
+                        {% if not options %}
+                            <div class="col-12"><div class="text-muted fst-italic">No options available for this question.</div></div>
+                        {% else %}
+                            {% for option in options %}
+                                {% set is_opt_correct = (option.id == q.correct_option_id) %}
+                                {% set is_opt_selected = (ans is not none and ans.selected_option_id == option.id) %}
+                                
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-3 border d-flex flex-column h-100 gap-2 transition-all
+                                        {% if is_opt_correct %}
+                                            border-success bg-success bg-opacity-10 shadow-sm
+                                        {% elif is_opt_selected %}
+                                            border-danger bg-danger bg-opacity-10
+                                        {% else %}
+                                            border-light-subtle bg-white
+                                        {% endif %}">
+                                        
+                                        <div class="d-flex align-items-start">
+                                            <div class="me-2 mt-1 flex-shrink-0">
+                                                {% if is_opt_correct %}
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                {% elif is_opt_selected %}
+                                                    <i class="bi bi-x-circle-fill text-danger"></i>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-muted opacity-50"></i>
+                                                {% endif %}
+                                            </div>
+                                            <span class="fs-6 {% if is_opt_correct %}text-success fw-bold{% elif is_opt_selected %}text-danger fw-medium{% else %}text-dark{% endif %}" style="line-height: 1.4;">
+                                                {{ option.option_text }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mt-auto pt-2">
+                                            {% if is_opt_correct %}
+                                                <span class="badge bg-success text-white px-2 py-1 rounded small shadow-sm d-inline-flex align-items-center">
+                                                    <i class="bi bi-check2-all me-1"></i> Correct Answer
+                                                </span>
+                                            {% elif is_opt_selected %}
+                                                <span class="badge bg-danger text-white px-2 py-1 rounded small shadow-sm d-inline-flex align-items-center">
+                                                    <i class="bi bi-person-x-fill me-1"></i> Candidate Answer
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning border-0 shadow-sm rounded-4 text-center p-4 mb-0">
+                <i class="bi bi-exclamation-triangle fs-3 d-block mb-2 text-warning"></i>
+                <h5 class="fw-bold mb-1">No Questions Found</h5>
+                <p class="mb-0 text-muted">This exam does not contain any questions or they have been deleted.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .answer-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .answer-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md) !important;
+    }
+    .hover-scale {
+        transition: transform 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: scale(1.03);
+    }
+    .letter-wide {
+        letter-spacing: 0.05em;
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
+{% endblock %}
