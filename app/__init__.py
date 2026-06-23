@@ -1,3 +1,4 @@
+from datetime import datetime, UTC
 from flask import Flask
 from config import Config
 from app.extensions import db, migrate
@@ -25,5 +26,11 @@ def create_app():
     app.register_blueprint(student_exams_bp)
     app.register_blueprint(admin_backup_bp)
     app.register_blueprint(admin_bp)
+
+    @app.context_processor
+    def inject_current_year():
+        return {
+            "current_year": datetime.now(UTC).year
+        }
 
     return app
