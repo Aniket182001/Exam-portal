@@ -22,6 +22,7 @@ class Exam(db.Model):
     restrict_to_time_window = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
     start_datetime = db.Column(db.DateTime, nullable=True)
     end_datetime = db.Column(db.DateTime, nullable=True)
+    timezone = db.Column(db.String(50), server_default="Asia/Kolkata", default="Asia/Kolkata", nullable=False)
 
     # Result settings
     show_result_immediately = db.Column(db.Boolean, default=False, nullable=False)
@@ -32,6 +33,7 @@ class Exam(db.Model):
     allow_question_navigation = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
     show_progress_bar = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
     auto_submit_on_timeout = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+    shuffle_questions = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
 
     # General
     is_active = db.Column(db.Boolean, default=True, nullable=False)

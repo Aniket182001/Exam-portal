@@ -3,6 +3,7 @@ from flask import Flask
 from config import Config
 from app.extensions import db, migrate
 from app.routes import main_bp
+from zoneinfo import ZoneInfo
 
 def create_app():
     app = Flask(__name__)
@@ -32,5 +33,17 @@ def create_app():
         return {
             "current_year": datetime.now(UTC).year
         }
+
+    @app.template_filter('format_datetime_tz')
+    def format_datetime_tz(dt, tz_name="Asia/Kolkata", format='%Y-%m-%d %H:%M:%S'):
+        if not dt:
+            return 'N/A'
+        try:
+            tz = ZoneInfo(tz_name)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.astimezone(tz).strftime(format)
+        except Exception:
+            return dt.strftime(format)
 
     return app

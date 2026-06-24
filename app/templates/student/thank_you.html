@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block page_title %}Submission Successful - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <!-- Thank You Hero Card -->
+            <div class="card border-0 shadow-lg rounded-xl mb-4 overflow-hidden position-relative">
+                <!-- Background Pattern overlay -->
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="opacity: 0.05; pointer-events: none; background-image: radial-gradient(circle at 1px 1px, black 1px, transparent 0); background-size: 20px 20px;"></div>
+                
+                <!-- Success Header -->
+                <div class="bg-success text-white text-center py-5 position-relative">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-white text-success rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-check-circle-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h1 class="display-4 fw-bold mb-2">Submission Successful</h1>
+                    <p class="lead mb-0 opacity-75">Thank you for completing your examination.</p>
+                </div>
+
+                <!-- Student & Exam Details -->
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <div class="text-center border-bottom pb-4 mb-4">
+                        <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide">Exam Details</span>
+                        <h3 class="fw-bold text-dark mb-3">{{ exam.title }}</h3>
+                        
+                        <div class="d-inline-flex align-items-center bg-light border rounded-pill px-4 py-2">
+                            <i class="bi bi-person-circle text-primary me-2 fs-5"></i>
+                            <div class="text-start">
+                                <span class="d-block fw-bold text-dark lh-sm">{{ attempt.student_name }}</span>
+                                <span class="small text-muted lh-sm">{{ attempt.student_email }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submission Info -->
+                    <div class="text-center mb-5">
+                        <p class="text-muted fs-5 mb-2">Your results will be communicated by AIQM separately.</p>
+                        <div class="d-inline-flex align-items-center text-secondary small">
+                            <i class="bi bi-clock me-2"></i>
+                            Submitted At: <span class="fw-medium ms-1">{% if attempt.submitted_at %}{{ attempt.submitted_at|format_datetime_tz(exam.timezone, '%B %d, %Y at %I:%M %p %Z') }}{% else %}Unknown{% endif %}</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Home Button -->
+            <div class="text-center">
+                <a href="{{ url_for('main.home') }}" class="btn btn-outline-dark rounded-pill px-4 py-2 shadow-sm fw-bold transition-all hover-scale">
+                    <i class="bi bi-house-door-fill me-2"></i> Return to Home
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-scale:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm) !important;
+    }
+</style>
+{% endblock %}

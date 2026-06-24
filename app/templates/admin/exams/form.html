@@ -98,7 +98,18 @@
                             </div>
                         </div>
 
-                        <!-- Scheduling -->
+                        <!-- Timezone & Scheduling -->
+                        <div class="row g-4 mb-4 pb-4 border-bottom">
+                            <div class="col-md-12">
+                                <label for="timezone" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Exam Timezone</label>
+                                <select class="form-select bg-white" id="timezone" name="timezone">
+                                    {% for tz_val, tz_label in timezones %}
+                                    <option value="{{ tz_val }}" {% if exam and exam.timezone == tz_val %}selected{% elif not exam and tz_val == 'Asia/Kolkata' %}selected{% endif %}>{{ tz_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="mb-4">
                             <div class="form-check form-switch fs-5">
                                 <input class="form-check-input" type="checkbox" role="switch" id="restrict_to_time_window" name="restrict_to_time_window" {% if exam and exam.restrict_to_time_window %}checked{% endif %}>
@@ -108,14 +119,14 @@
 
                         <div class="row g-4" id="time_window_fields">
                             <div class="col-md-6">
-                                <label for="start_datetime" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Start Date & Time (UTC)</label>
+                                <label for="start_datetime" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Start Date & Time</label>
                                 <input type="datetime-local" class="form-control bg-white" id="start_datetime" name="start_datetime" 
-                                       value="{{ exam.start_datetime.strftime('%Y-%m-%dT%H:%M') if exam and exam.start_datetime else '' }}">
+                                       value="{{ exam.start_datetime|format_datetime_tz(exam.timezone, '%Y-%m-%dT%H:%M') if exam and exam.start_datetime else '' }}">
                             </div>
                             <div class="col-md-6">
-                                <label for="end_datetime" class="form-label fw-bold text-secondary small text-uppercase letter-wide">End Date & Time (UTC)</label>
+                                <label for="end_datetime" class="form-label fw-bold text-secondary small text-uppercase letter-wide">End Date & Time</label>
                                 <input type="datetime-local" class="form-control bg-white" id="end_datetime" name="end_datetime"
-                                       value="{{ exam.end_datetime.strftime('%Y-%m-%dT%H:%M') if exam and exam.end_datetime else '' }}">
+                                       value="{{ exam.end_datetime|format_datetime_tz(exam.timezone, '%Y-%m-%dT%H:%M') if exam and exam.end_datetime else '' }}">
                             </div>
                         </div>
 
@@ -196,6 +207,17 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="card border border-light-subtle shadow-sm rounded-lg">
+                                    <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-dark">Shuffle Questions</h6>
+                                            <span class="small text-muted d-block">Randomize question order for each attempt.</span>
+                                        </div>
+                                        <div class="form-check form-switch fs-4 m-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="shuffle_questions" name="shuffle_questions" {% if exam and exam.shuffle_questions %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 shadow-sm rounded-lg">
                                     <div class="card-body p-3 d-flex justify-content-between align-items-center">
                                         <div>
@@ -213,7 +235,6 @@
                     </div>
                 </div>
 
-                <!-- Footer Actions -->
                 <div class="d-flex flex-column flex-sm-row justify-content-end gap-3 mb-5">
                     <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-light border btn-lg rounded-pill px-5 fw-medium">Cancel</a>
                     <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold hover-scale">
@@ -221,6 +242,66 @@
                     </button>
                 </div>
             </form>
+            
+            {% if action == 'Edit' %}
+            <!-- Danger Zone -->
+            <div class="card border border-danger-subtle bg-danger-subtle bg-opacity-10 shadow-sm rounded-xl mb-5 overflow-hidden">
+                <div class="card-header bg-white border-bottom border-danger-subtle py-3">
+                    <h5 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Danger Zone</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Clear All Attempts</h6>
+                            <p class="text-muted small mb-0">Permanently delete all {{ attempt_count }} student attempts and answers associated with this exam. The exam structure and questions will remain untouched.</p>
+                            <p class="fw-bold text-dark mt-2 mb-0">Current Attempts: {{ attempt_count }}</p>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-danger fw-bold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#clearAllAttemptsModal">
+                                Clear All Attempts
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear All Attempts Modal -->
+            <div class="modal fade" id="clearAllAttemptsModal" tabindex="-1" aria-labelledby="clearAllAttemptsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg rounded-4">
+                        <form method="POST" action="{{ url_for('admin_exams.clear_all_attempts', exam_id=exam.id) }}">
+                            <div class="modal-header border-bottom-0 pb-0">
+                                <h5 class="modal-title fw-bold text-danger" id="clearAllAttemptsModalLabel">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Clear All Attempts
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body py-4">
+                                <p class="mb-3 fs-5 text-dark">This will permanently delete <strong>{{ attempt_count }}</strong> attempts and all associated answers.</p>
+                                <div class="alert alert-warning border-warning-subtle small mb-4">
+                                    <i class="bi bi-info-circle-fill me-2"></i>This action cannot be undone. Please proceed with caution.
+                                </div>
+                                <div class="mb-3">
+                                    <label for="exam_code_confirm" class="form-label fw-bold text-dark small text-uppercase">Type Exam Code to Confirm</label>
+                                    <input type="text" class="form-control" id="exam_code_confirm" name="exam_code_confirm" placeholder="{{ exam.exam_code }}" required autocomplete="off">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="security_pin" class="form-label fw-bold text-dark small text-uppercase">Admin Security PIN</label>
+                                    <input type="password" class="form-control" id="security_pin" name="security_pin" placeholder="Enter PIN" required autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-light rounded-pill px-4 fw-medium border" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                                    Confirm Deletion
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>

@@ -26,6 +26,19 @@
         </div>
     </div>
 
+    <!-- Search Bar -->
+    <div class="card border-0 shadow-sm rounded-xl mb-4" style="border-radius: 1rem;">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin_exams.list_exams') }}" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control rounded-pill border-light-subtle shadow-sm px-4" placeholder="Search by Exam Title or Code..." value="{{ search|default('') }}">
+                <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold transition-fast hover-scale">Search</button>
+                {% if search %}
+                    <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-light border rounded-pill px-4 shadow-sm fw-medium transition-fast hover-scale text-decoration-none d-flex align-items-center">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
     <!-- Data Card -->
     <div class="card border-0 shadow-sm rounded-xl" style="border-radius: 1rem;">
         <div class="card-body p-0">

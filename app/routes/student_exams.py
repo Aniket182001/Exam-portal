@@ -3,6 +3,7 @@ from app.extensions import db
 from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
 from datetime import datetime, timezone, timedelta
 import uuid
+import random
 
 student_exams_bp = Blueprint("student_exams", __name__)
 
@@ -90,14 +91,20 @@ def start_exam(exam_code):
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
         
     attempt_token = str(uuid.uuid4())
-    
+    question_order = None
+    if exam.shuffle_questions:
+        q_ids = [q.id for q in Question.query.filter_by(exam_id=exam.id).all()]
+        random.shuffle(q_ids)
+        question_order = q_ids
+        
     new_attempt = StudentAttempt(
         exam_id=exam.id,
         student_name=student_name,
         student_email=student_email,
         attempt_token=attempt_token,
         status="in_progress",
-        started_at=now
+        started_at=now,
+        question_order=question_order
     )
     
     db.session.add(new_attempt)
@@ -108,6 +115,24 @@ def start_exam(exam_code):
     session.pop('student_email', None)
     
     return redirect(f"/attempt/{attempt_token}/question/1")
+
+def get_ordered_questions(attempt):
+    questions = Question.query.filter_by(exam_id=attempt.exam_id).all()
+    if attempt.question_order:
+        q_dict = {q.id: q for q in questions}
+        ordered_qs = []
+        for qid in attempt.question_order:
+            if qid in q_dict:
+                ordered_qs.append(q_dict[qid])
+        
+        ordered_ids = set(attempt.question_order)
+        for q in sorted(questions, key=lambda x: x.display_order):
+            if q.id not in ordered_ids:
+                ordered_qs.append(q)
+                
+        return ordered_qs
+    else:
+        return sorted(questions, key=lambda x: x.display_order)
 
 def get_remaining_seconds(attempt):
     now = datetime.now(timezone.utc)
@@ -195,8 +220,8 @@ def question_attempt(attempt_token, question_number):
         handle_attempt_timeout(attempt)
         return redirect(f"/attempt/{attempt_token}/review")
         
-    # Fetch questions ordered by display_order ASC
-    questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
+    # Fetch questions ordered by logic
+    questions = get_ordered_questions(attempt)
     total_questions = len(questions)
     
     # Boundary validation
@@ -318,7 +343,7 @@ def review(attempt_token):
         flash("This exam attempt has already been submitted.", "info")
         return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
 
-    questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
+    questions = get_ordered_questions(attempt)
     total_questions = len(questions)
     
     # Calculate answered statistics
@@ -372,7 +397,7 @@ def view_result(attempt_token):
         else:
             flash("Your exam is still in progress. Please complete your exam first.", "info")
             # Find the first unanswered question
-            questions = Question.query.filter_by(exam_id=attempt.exam_id).order_by(Question.display_order.asc()).all()
+            questions = get_ordered_questions(attempt)
             answered_question_ids = {ans.question_id for ans in attempt.answers}
             
             first_unanswered_number = None
@@ -390,6 +415,13 @@ def view_result(attempt_token):
     if attempt.result_status is None:
         calculate_result(attempt)
             
+    if not attempt.exam.show_result_immediately:
+        return render_template(
+            "student/thank_you.html",
+            exam=attempt.exam,
+            attempt=attempt
+        )
+            
     return render_template(
         "student/result.html",
         exam=attempt.exam,
@@ -400,6 +432,10 @@ def view_result(attempt_token):
 def view_answer_sheet(attempt_token):
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
     
+    if not attempt.exam.show_result_immediately:
+        flash("Answer sheet is not available for this exam.", "danger")
+        return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
+        
     if attempt.status == "in_progress":
         remaining_seconds = get_remaining_seconds(attempt)
         if remaining_seconds == 0:
@@ -421,7 +457,7 @@ def view_answer_sheet(attempt_token):
             else:
                 return redirect(url_for('student_exams.review', attempt_token=attempt_token))
                 
-    questions = Question.query.filter_by(exam_id=attempt.exam_id).order_by(Question.display_order.asc()).all()
+    questions = get_ordered_questions(attempt)
     student_answers = {ans.question_id: ans for ans in attempt.answers}
     
     return render_template(

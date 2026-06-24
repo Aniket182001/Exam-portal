@@ -1,3 +1,6 @@
+from zoneinfo import ZoneInfo
+from datetime import timezone
+
 def generate_result_email(attempt, total_marks):
     """
     Generates the subject and body for the Result Confirmation email.
@@ -35,6 +38,8 @@ We are delighted to inform you that you have successfully completed your examina
 • Total Marks: {formatted_total}
 
 • Marks Obtained: {formatted_obtained} 🏆
+
+• Submitted At: {attempt.submitted_at.replace(tzinfo=timezone.utc).astimezone(ZoneInfo(attempt.exam.timezone)).strftime('%B %d, %Y %I:%M %p %Z') if attempt.submitted_at else "N/A"} ⏱️
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📝 Certificate Name Confirmation

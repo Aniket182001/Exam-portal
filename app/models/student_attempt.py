@@ -30,6 +30,9 @@ class StudentAttempt(db.Model):
     # Status: in_progress, submitted, expired
     status = db.Column(db.String(20), default="in_progress", nullable=False)
 
+    # Question Shuffle
+    question_order = db.Column(db.JSON, nullable=True)
+
     # Relationships
     answers = db.relationship('StudentAnswer', backref='attempt', lazy=True, cascade="all, delete-orphan")
 
