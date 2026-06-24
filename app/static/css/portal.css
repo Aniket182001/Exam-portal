@@ -645,6 +645,13 @@ a:hover {
    ================================================================ */
 .text-primary-brand { color: var(--aiqm-primary) !important; }
 .bg-primary-brand   { background-color: var(--aiqm-primary) !important; }
+
+/* Palette Colors */
+.palette-unanswered {
+    background-color: #FFF5F5 !important;
+    border: 1px solid #FFE4E4 !important;
+    color: #5C3D3D !important;
+}
 .shadow-brand       { box-shadow: 0 4px 18px rgba(249, 115, 22, 0.22) !important; }
 
 .fw-800 { font-weight: 800 !important; }
