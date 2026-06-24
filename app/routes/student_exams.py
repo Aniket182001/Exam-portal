@@ -102,7 +102,33 @@ def start_exam(exam_code):
     if not exam.is_active or time_invalid:
         flash("This exam is currently unavailable.", "danger")
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
-        
+    # Resume existing attempt logic
+    existing_attempt = StudentAttempt.query.filter_by(
+        exam_id=exam.id,
+        student_email=student_email
+    ).order_by(StudentAttempt.started_at.desc()).first()
+
+    if existing_attempt:
+        if existing_attempt.status == "submitted" or existing_attempt.submitted_at is not None:
+            flash("You have already completed this examination.", "info")
+            return redirect(url_for('student_exams.entry', exam_code=exam_code))
+            
+        if existing_attempt.status == "in_progress" and existing_attempt.submitted_at is None:
+            resume_q_num = 1
+            if existing_attempt.answers:
+                ordered_questions = get_ordered_questions(existing_attempt)
+                answered_q_ids = {ans.question_id for ans in existing_attempt.answers}
+                highest_index = -1
+                for idx, q in enumerate(ordered_questions):
+                    if q.id in answered_q_ids:
+                        highest_index = idx
+                
+                if highest_index != -1:
+                    resume_q_num = min(highest_index + 2, len(ordered_questions))
+                    
+            flash("Session restored. Continuing your existing attempt.", "success")
+            return redirect(f"/attempt/{existing_attempt.attempt_token}/question/{resume_q_num}")
+
     attempt_token = str(uuid.uuid4())
     question_order = None
     if exam.shuffle_questions:
