@@ -74,6 +74,7 @@
                             <th scope="col" class="ps-4 py-3 select-col d-none" style="width: 50px;">
                                 <input class="form-check-input" type="checkbox" id="selectAll">
                             </th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 80px;">Attempt #</th>
                             <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide name-col">Student</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Status</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Marks</th>
@@ -88,6 +89,9 @@
                         <tr>
                             <td class="ps-4 py-3 select-col d-none">
                                 <input class="form-check-input attempt-checkbox" type="checkbox" name="attempt_ids" value="{{ attempt.id }}">
+                            </td>
+                            <td class="py-3 text-center">
+                                <span class="badge bg-light text-dark border px-2 py-1 rounded-pill">Attempt {{ attempt.attempt_number }}</span>
                             </td>
                             <td class="ps-4 py-3 name-col">
                                 <div class="fw-bold text-dark">{{ attempt.student_name }}</div>

@@ -229,6 +229,30 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="card border border-light-subtle shadow-sm rounded-lg">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold text-dark">Allow Retest on Failure</h6>
+                                                <span class="small text-muted d-block">Automatically grant a retest if candidate fails.</span>
+                                            </div>
+                                            <div class="form-check form-switch fs-4 m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="allow_retest_on_failure" name="allow_retest_on_failure" {% if not exam or exam.allow_retest_on_failure %}checked{% endif %}>
+                                            </div>
+                                        </div>
+                                        <div id="max_attempts_container" class="mt-3 pt-3 border-top border-light-subtle {% if exam and not exam.allow_retest_on_failure %}d-none{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1 fw-bold text-dark small text-uppercase">Maximum Attempts</h6>
+                                                    <span class="small text-muted d-block" style="font-size: 0.75rem;">Total attempts including the first try (e.g. 2 = 1 normal + 1 retest)</span>
+                                                </div>
+                                                <div style="width: 80px;">
+                                                    <input type="number" class="form-control text-center fw-bold" id="max_attempts" name="max_attempts" min="2" max="10" value="{{ exam.max_attempts if exam else 2 }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 shadow-sm rounded-lg">
                                     <div class="card-body p-3 d-flex justify-content-between align-items-center">
                                         <div>
@@ -334,7 +358,6 @@
         border-color: var(--aiqm-primary);
     }
 </style>
-</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -346,15 +369,28 @@
                 timeWindowFields.style.display = 'flex';
             } else {
                 timeWindowFields.style.display = 'none';
-                // Optional: clear fields when hiding
-                // document.getElementById('start_datetime').value = '';
-                // document.getElementById('end_datetime').value = '';
             }
         }
         
-        if (restrictCheckbox) {
+        if (restrictCheckbox && timeWindowFields) {
             restrictCheckbox.addEventListener('change', toggleTimeWindow);
             toggleTimeWindow();
+        }
+
+        const allowRetestToggle = document.getElementById('allow_retest_on_failure');
+        const maxAttemptsContainer = document.getElementById('max_attempts_container');
+
+        function toggleMaxAttempts() {
+            if (allowRetestToggle.checked) {
+                maxAttemptsContainer.classList.remove('d-none');
+            } else {
+                maxAttemptsContainer.classList.add('d-none');
+            }
+        }
+
+        if (allowRetestToggle && maxAttemptsContainer) {
+            allowRetestToggle.addEventListener('change', toggleMaxAttempts);
+            toggleMaxAttempts();
         }
     });
 </script>

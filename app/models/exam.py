@@ -38,6 +38,10 @@ class Exam(db.Model):
     # Candidate Registration
     require_candidate_registration = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
 
+    # Retest Logic
+    allow_retest_on_failure = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
+    max_attempts = db.Column(db.Integer, server_default='2', default=2, nullable=False)
+
     # General
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

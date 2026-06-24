@@ -50,6 +50,8 @@ def create_exam():
         auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
         shuffle_questions = request.form.get("shuffle_questions") == 'on'
         require_candidate_registration = request.form.get("require_candidate_registration") == 'on'
+        allow_retest_on_failure = request.form.get("allow_retest_on_failure") == 'on'
+        max_attempts = int(request.form.get("max_attempts") or 2)
 
         # Basic Validation
         if not title or not exam_code or not duration_minutes or not passing_type or not passing_value:
@@ -93,6 +95,8 @@ def create_exam():
             auto_submit_on_timeout=auto_submit_on_timeout,
             shuffle_questions=shuffle_questions,
             require_candidate_registration=require_candidate_registration,
+            allow_retest_on_failure=allow_retest_on_failure,
+            max_attempts=max_attempts,
             restrict_to_time_window=restrict_to_time_window,
             start_datetime=start_dt,
             end_datetime=end_dt,
@@ -138,6 +142,8 @@ def edit_exam(id):
         exam.auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
         exam.shuffle_questions = request.form.get("shuffle_questions") == 'on'
         exam.require_candidate_registration = request.form.get("require_candidate_registration") == 'on'
+        exam.allow_retest_on_failure = request.form.get("allow_retest_on_failure") == 'on'
+        exam.max_attempts = int(request.form.get("max_attempts") or 2)
 
         exam.restrict_to_time_window = request.form.get("restrict_to_time_window") == 'on'
         
@@ -333,6 +339,19 @@ def get_filtered_attempts(exam_id):
 def view_attempts(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     attempts = get_filtered_attempts(exam_id)
+    
+    # Calculate Attempt #
+    all_attempts = StudentAttempt.query.filter_by(exam_id=exam_id).order_by(StudentAttempt.started_at.asc()).all()
+    attempt_counters = {}
+    attempt_num_map = {}
+    for att in all_attempts:
+        email = att.student_email
+        attempt_counters[email] = attempt_counters.get(email, 0) + 1
+        attempt_num_map[att.id] = attempt_counters[email]
+        
+    for att in attempts:
+        att.attempt_number = attempt_num_map.get(att.id, 1)
+        
     return render_template("admin/exams/attempts.html", exam=exam, attempts=attempts)
 
 @admin_exams_bp.route("/<int:exam_id>/export-results")
@@ -474,17 +493,40 @@ def view_candidates(exam_id):
         
     candidates = query.order_by(CandidateRegistration.created_at.desc()).all()
     
-    # Compute status (Attempted vs Pending) by checking StudentAttempt emails
-    attempted_emails = {a.student_email.lower() for a in StudentAttempt.query.filter_by(exam_id=exam.id).all()}
-    
-    stats = {'total': len(candidates), 'attempted': 0, 'pending': 0}
+    # Compute status based on retest logic
+    all_attempts = StudentAttempt.query.filter_by(exam_id=exam.id).order_by(StudentAttempt.started_at.asc()).all()
+    email_to_attempts = {}
+    for att in all_attempts:
+        email = att.student_email.lower()
+        if email not in email_to_attempts:
+            email_to_attempts[email] = []
+        email_to_attempts[email].append(att)
+        
+    stats = {'total': len(candidates), 'passed': 0, 'failed_retest': 0, 'failed_exhausted': 0, 'pending': 0}
     
     for c in candidates:
-        c.has_attempt = c.email.lower() in attempted_emails
-        if c.has_attempt:
-            stats['attempted'] += 1
-        else:
+        email = c.email.lower()
+        c_attempts = email_to_attempts.get(email, [])
+        
+        if not c_attempts:
+            c.status_label = "Not Attempted"
+            c.status_code = "pending"
             stats['pending'] += 1
+        else:
+            passed = any(att.result_status == "Pass" for att in c_attempts)
+            if passed:
+                c.status_label = "Passed"
+                c.status_code = "passed"
+                stats['passed'] += 1
+            else:
+                if exam.allow_retest_on_failure and len(c_attempts) < exam.max_attempts:
+                    c.status_label = "Failed (Retest Available)"
+                    c.status_code = "failed_retest"
+                    stats['failed_retest'] += 1
+                else:
+                    c.status_label = "Failed (Attempts Exhausted)"
+                    c.status_code = "failed_exhausted"
+                    stats['failed_exhausted'] += 1
             
     return render_template("admin/exams/candidates.html", exam=exam, candidates=candidates, stats=stats)
 

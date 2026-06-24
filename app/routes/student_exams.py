@@ -102,22 +102,26 @@ def start_exam(exam_code):
     if not exam.is_active or time_invalid:
         flash("This exam is currently unavailable.", "danger")
         return redirect(url_for('student_exams.entry', exam_code=exam_code))
-    # Resume existing attempt logic
-    existing_attempt = StudentAttempt.query.filter_by(
+    # Resume existing attempt & Retest logic
+    existing_attempts = StudentAttempt.query.filter_by(
         exam_id=exam.id,
         student_email=student_email
-    ).order_by(StudentAttempt.started_at.desc()).first()
+    ).order_by(StudentAttempt.started_at.asc()).all()
 
-    if existing_attempt:
-        if existing_attempt.status == "submitted" or existing_attempt.submitted_at is not None:
-            flash("You have already completed this examination.", "info")
-            return redirect(url_for('student_exams.entry', exam_code=exam_code))
-            
-        if existing_attempt.status == "in_progress" and existing_attempt.submitted_at is None:
+    if existing_attempts:
+        # 1. Block entry if ANY attempt passed
+        for attempt in existing_attempts:
+            if attempt.result_status == "Pass":
+                flash("You have already completed this examination.", "info")
+                return redirect(url_for('student_exams.entry', exam_code=exam_code))
+
+        # 2. Check for an active in_progress attempt to resume
+        in_progress_attempt = next((a for a in existing_attempts if a.status == "in_progress" and a.submitted_at is None), None)
+        if in_progress_attempt:
             resume_q_num = 1
-            if existing_attempt.answers:
-                ordered_questions = get_ordered_questions(existing_attempt)
-                answered_q_ids = {ans.question_id for ans in existing_attempt.answers}
+            if in_progress_attempt.answers:
+                ordered_questions = get_ordered_questions(in_progress_attempt)
+                answered_q_ids = {ans.question_id for ans in in_progress_attempt.answers}
                 highest_index = -1
                 for idx, q in enumerate(ordered_questions):
                     if q.id in answered_q_ids:
@@ -126,8 +130,12 @@ def start_exam(exam_code):
                 if highest_index != -1:
                     resume_q_num = min(highest_index + 2, len(ordered_questions))
                     
-            flash("Session restored. Continuing your existing attempt.", "success")
-            return redirect(f"/attempt/{existing_attempt.attempt_token}/question/{resume_q_num}")
+            return redirect(f"/attempt/{in_progress_attempt.attempt_token}/question/{resume_q_num}")
+
+        # 3. All existing attempts are submitted and failed. Check retest limits.
+        if not exam.allow_retest_on_failure or len(existing_attempts) >= exam.max_attempts:
+            flash("You have already used all available attempts for this examination. Please contact AIQM for assistance.", "danger")
+            return redirect(url_for('student_exams.entry', exam_code=exam_code))
 
     attempt_token = str(uuid.uuid4())
     question_order = None
