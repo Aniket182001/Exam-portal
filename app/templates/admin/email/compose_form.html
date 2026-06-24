@@ -32,17 +32,61 @@
                 <div class="card-body p-4 p-md-5">
                     
                     <form method="POST">
+                        {% if template.key == 'exam_invitation' %}
+                        <div class="mb-4 text-center">
+                            <div class="btn-group rounded-pill p-1 bg-light border" role="group">
+                                <input type="radio" class="btn-check" name="email_mode" id="modeSingle" value="single" checked autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill border-0 px-4 fw-medium" for="modeSingle">Single Email</label>
+
+                                <input type="radio" class="btn-check" name="email_mode" id="modeBulk" value="bulk" autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill border-0 px-4 fw-medium" for="modeBulk">Bulk Email</label>
+                            </div>
+                        </div>
+                        {% endif %}
+
                         <h5 class="fw-bold mb-4">Recipient Details</h5>
                         
-                        <div class="mb-4">
+                        <div class="mb-4" id="candidateNameWrapper">
                             <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Candidate Name</label>
-                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_name" placeholder="e.g. John Doe" required>
+                            <input type="text" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_name" id="candidateName" placeholder="e.g. John Doe" required>
                         </div>
 
                         {% if template.key in ['exam_invitation'] %}
-                        <div class="mb-4">
+                        <div class="mb-4" id="candidateEmailWrapper">
                             <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Candidate Email</label>
-                            <input type="email" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_email" placeholder="john@example.com" required>
+                            <input type="email" class="form-control form-control-lg bg-light border-0 shadow-none rounded-3" name="candidate_email" id="candidateEmail" placeholder="john@example.com" required>
+                        </div>
+
+                        <div class="mb-4 d-none" id="bulkEmailWrapper">
+                            <label class="form-label fw-bold text-muted small text-uppercase letter-wide">Recipient Emails</label>
+                            <textarea class="form-control bg-light border-0 shadow-none rounded-3" name="recipient_emails" id="recipientEmails" rows="4" placeholder="abc@gmail.com&#10;xyz@gmail.com"></textarea>
+                            <div class="text-muted small mt-1" id="recipientCountWrapper" style="display: none;">
+                                Recipients detected: <span id="recipientCount" class="fw-bold text-primary">0</span>
+                            </div>
+                            <div id="bulkEmailWarning" class="alert alert-warning small py-2 mt-2 d-none">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Large recipient lists may exceed Outlook mailto limits. Consider sending in smaller batches.
+                            </div>
+                            <div id="bulkEmailError" class="alert alert-danger small py-2 mt-2 d-none">
+                                <i class="bi bi-x-circle-fill me-1"></i> <span id="bulkEmailErrorText"></span>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <label class="form-label fw-bold text-muted small text-uppercase letter-wide mb-2">Recipient Delivery Mode</label>
+                                <div class="d-flex gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="delivery_mode" id="modeBcc" value="bcc" checked>
+                                        <label class="form-check-label text-dark" for="modeBcc">BCC <span class="text-muted small">(Recommended)</span></label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="delivery_mode" id="modeTo" value="to">
+                                        <label class="form-check-label text-dark" for="modeTo">TO</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="delivery_mode" id="modeCc" value="cc">
+                                        <label class="form-check-label text-dark" for="modeCc">CC</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="mb-4">
@@ -80,7 +124,7 @@
                         
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ url_for('admin_bp.email_center') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold">Cancel</a>
-                            <button type="submit" class="btn btn-apple-primary rounded-pill px-4 shadow-sm fw-bold hover-scale d-inline-flex align-items-center">
+                            <button type="submit" id="submitBtn" class="btn btn-apple-primary rounded-pill px-4 shadow-sm fw-bold hover-scale d-inline-flex align-items-center">
                                 Generate Email <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
                             </button>
                         </div>
@@ -101,4 +145,124 @@
         box-shadow: var(--shadow-md) !important;
     }
 </style>
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modeSingle = document.getElementById('modeSingle');
+    const modeBulk = document.getElementById('modeBulk');
+    const candidateNameWrapper = document.getElementById('candidateNameWrapper');
+    const candidateEmailWrapper = document.getElementById('candidateEmailWrapper');
+    const bulkEmailWrapper = document.getElementById('bulkEmailWrapper');
+    const candidateName = document.getElementById('candidateName');
+    const candidateEmail = document.getElementById('candidateEmail');
+    const recipientEmails = document.getElementById('recipientEmails');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Elements for bulk validation
+    const recipientCountWrapper = document.getElementById('recipientCountWrapper');
+    const recipientCountSpan = document.getElementById('recipientCount');
+    const bulkEmailWarning = document.getElementById('bulkEmailWarning');
+    const bulkEmailError = document.getElementById('bulkEmailError');
+    const bulkEmailErrorText = document.getElementById('bulkEmailErrorText');
+    const composeForm = document.querySelector('form');
+
+    function toggleMode() {
+        if (!modeSingle || !modeBulk) return;
+        
+        if (modeBulk.checked) {
+            candidateNameWrapper.classList.add('d-none');
+            candidateEmailWrapper.classList.add('d-none');
+            bulkEmailWrapper.classList.remove('d-none');
+            
+            candidateName.required = false;
+            candidateEmail.required = false;
+            recipientEmails.required = true;
+        } else {
+            candidateNameWrapper.classList.remove('d-none');
+            candidateEmailWrapper.classList.remove('d-none');
+            bulkEmailWrapper.classList.add('d-none');
+            
+            candidateName.required = true;
+            candidateEmail.required = true;
+            recipientEmails.required = false;
+        }
+    }
+
+    if (modeSingle && modeBulk) {
+        modeSingle.addEventListener('change', toggleMode);
+        modeBulk.addEventListener('change', toggleMode);
+        toggleMode();
+    }
+
+    function parseEmails(text) {
+        // Split by comma or newline
+        const rawList = text.split(/[,\n]+/);
+        const emails = [];
+        for (let item of rawList) {
+            const email = item.trim();
+            if (email) {
+                emails.push(email);
+            }
+        }
+        return emails;
+    }
+
+    function validateEmail(email) {
+        // Simple regex for email validation
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    if (recipientEmails) {
+        recipientEmails.addEventListener('input', function() {
+            const emails = parseEmails(this.value);
+            const count = emails.length;
+            
+            if (count > 0) {
+                recipientCountWrapper.style.display = 'block';
+                recipientCountSpan.textContent = count;
+            } else {
+                recipientCountWrapper.style.display = 'none';
+            }
+            
+            if (count > 50) {
+                bulkEmailWarning.classList.remove('d-none');
+            } else {
+                bulkEmailWarning.classList.add('d-none');
+            }
+            
+            // Clear errors while typing
+            bulkEmailError.classList.add('d-none');
+        });
+    }
+
+    composeForm.addEventListener('submit', function(e) {
+        if (modeBulk && modeBulk.checked) {
+            const emails = parseEmails(recipientEmails.value);
+            if (emails.length === 0) {
+                e.preventDefault();
+                bulkEmailErrorText.textContent = "Please provide at least one recipient email.";
+                bulkEmailError.classList.remove('d-none');
+                return;
+            }
+            
+            const invalidEmails = [];
+            for (let email of emails) {
+                if (!validateEmail(email)) {
+                    invalidEmails.push(email);
+                }
+            }
+            
+            if (invalidEmails.length > 0) {
+                e.preventDefault();
+                const invalidSample = invalidEmails.slice(0, 3).join(', ');
+                const andMore = invalidEmails.length > 3 ? ` and ${invalidEmails.length - 3} more` : '';
+                bulkEmailErrorText.textContent = `Invalid email address(es) detected: ${invalidSample}${andMore}. Please fix them before generating the draft.`;
+                bulkEmailError.classList.remove('d-none');
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

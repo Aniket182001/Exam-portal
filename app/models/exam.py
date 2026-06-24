@@ -35,6 +35,9 @@ class Exam(db.Model):
     auto_submit_on_timeout = db.Column(db.Boolean, server_default='1', default=True, nullable=False)
     shuffle_questions = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
 
+    # Candidate Registration
+    require_candidate_registration = db.Column(db.Boolean, server_default='0', default=False, nullable=False)
+
     # General
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -42,6 +45,7 @@ class Exam(db.Model):
     # Relationships
     questions = db.relationship('Question', backref='exam', lazy=True, cascade="all, delete-orphan")
     attempts = db.relationship('StudentAttempt', backref='exam', lazy=True, cascade="all, delete-orphan")
+    candidates = db.relationship('CandidateRegistration', backref='exam', lazy=True, cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Exam {self.exam_code}>"

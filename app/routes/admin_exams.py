@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, session
 from app.extensions import db
-from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
+from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer, CandidateRegistration
 from datetime import datetime, timezone, timedelta
 import io
 import openpyxl
@@ -49,6 +49,7 @@ def create_exam():
         show_progress_bar = request.form.get("show_progress_bar") == 'on'
         auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
         shuffle_questions = request.form.get("shuffle_questions") == 'on'
+        require_candidate_registration = request.form.get("require_candidate_registration") == 'on'
 
         # Basic Validation
         if not title or not exam_code or not duration_minutes or not passing_type or not passing_value:
@@ -91,6 +92,7 @@ def create_exam():
             show_progress_bar=show_progress_bar,
             auto_submit_on_timeout=auto_submit_on_timeout,
             shuffle_questions=shuffle_questions,
+            require_candidate_registration=require_candidate_registration,
             restrict_to_time_window=restrict_to_time_window,
             start_datetime=start_dt,
             end_datetime=end_dt,
@@ -135,6 +137,7 @@ def edit_exam(id):
         exam.show_progress_bar = request.form.get("show_progress_bar") == 'on'
         exam.auto_submit_on_timeout = request.form.get("auto_submit_on_timeout") == 'on'
         exam.shuffle_questions = request.form.get("shuffle_questions") == 'on'
+        exam.require_candidate_registration = request.form.get("require_candidate_registration") == 'on'
 
         exam.restrict_to_time_window = request.form.get("restrict_to_time_window") == 'on'
         
@@ -453,3 +456,244 @@ def compose_result_email(attempt_id):
     return render_template("admin/attempts/compose_email.html", 
                            attempt=attempt, 
                            email_data=email_data)
+
+# --- CANDIDATE REGISTRATION ROUTES ---
+
+@admin_exams_bp.route("/<int:exam_id>/candidates")
+def view_candidates(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    search = request.args.get('search', '').strip()
+    
+    query = CandidateRegistration.query.filter_by(exam_id=exam.id)
+    
+    if search:
+        query = query.filter(db.or_(
+            CandidateRegistration.candidate_name.ilike(f'%{search}%'),
+            CandidateRegistration.email.ilike(f'%{search}%')
+        ))
+        
+    candidates = query.order_by(CandidateRegistration.created_at.desc()).all()
+    
+    # Compute status (Attempted vs Pending) by checking StudentAttempt emails
+    attempted_emails = {a.student_email.lower() for a in StudentAttempt.query.filter_by(exam_id=exam.id).all()}
+    
+    stats = {'total': len(candidates), 'attempted': 0, 'pending': 0}
+    
+    for c in candidates:
+        c.has_attempt = c.email.lower() in attempted_emails
+        if c.has_attempt:
+            stats['attempted'] += 1
+        else:
+            stats['pending'] += 1
+            
+    return render_template("admin/exams/candidates.html", exam=exam, candidates=candidates, stats=stats)
+
+@admin_exams_bp.route("/<int:exam_id>/candidates/add", methods=["POST"])
+def add_candidate(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    name = request.form.get("candidate_name")
+    email = request.form.get("email")
+    phone = request.form.get("phone")
+    
+    if not name or not email:
+        flash("Name and email are required.", "danger")
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    existing = CandidateRegistration.query.filter_by(exam_id=exam.id, email=email).first()
+    if existing:
+        flash(f"Candidate with email {email} is already registered.", "warning")
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    new_candidate = CandidateRegistration(
+        candidate_name=name,
+        email=email,
+        phone=phone,
+        exam_id=exam.id
+    )
+    db.session.add(new_candidate)
+    db.session.commit()
+    
+    flash("Candidate registered successfully.", "success")
+    return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+
+@admin_exams_bp.route("/<int:exam_id>/candidates/<int:candidate_id>/delete", methods=["POST"])
+def delete_candidate(exam_id, candidate_id):
+    candidate = CandidateRegistration.query.get_or_404(candidate_id)
+    if candidate.exam_id != exam_id:
+        abort(404)
+        
+    db.session.delete(candidate)
+    db.session.commit()
+    flash("Candidate registration deleted.", "success")
+    return redirect(url_for('admin_exams.view_candidates', exam_id=exam_id))
+
+@admin_exams_bp.route("/<int:exam_id>/candidates/delete_selected", methods=["POST"])
+def delete_selected_candidates(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    candidate_ids = request.form.getlist("candidate_ids")
+    
+    if not candidate_ids:
+        flash("No candidates selected for deletion.", "warning")
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    try:
+        CandidateRegistration.query.filter(
+            CandidateRegistration.id.in_(candidate_ids),
+            CandidateRegistration.exam_id == exam.id
+        ).delete(synchronize_session=False)
+        db.session.commit()
+        flash(f"Successfully deleted {len(candidate_ids)} selected candidates.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("An error occurred while deleting selected candidates.", "danger")
+        
+    return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+
+@admin_exams_bp.route("/<int:exam_id>/candidates/import", methods=["POST"])
+def import_candidates(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    
+    if 'file' not in request.files:
+        flash('No file part', 'danger')
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file', 'danger')
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        flash('Invalid file format. Please upload an Excel file.', 'danger')
+        return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+        
+    try:
+        workbook = openpyxl.load_workbook(file)
+        sheet = workbook.active
+        
+        imported = 0
+        skipped = 0
+        blanks = 0
+        
+        # Read headers
+        headers = [cell.value for cell in sheet[1]]
+        
+        # Simple mapping assuming Name, Email, Phone
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if len(row) >= 2:
+                name = str(row[0]).strip() if row[0] else ''
+                email = str(row[1]).strip() if row[1] else ''
+                phone = str(row[2]).strip() if len(row) > 2 and row[2] else None
+                
+                if not name or not email:
+                    blanks += 1
+                    continue
+                    
+                existing = CandidateRegistration.query.filter_by(exam_id=exam.id, email=email).first()
+                if existing:
+                    skipped += 1
+                    continue
+                    
+                new_candidate = CandidateRegistration(
+                    candidate_name=name,
+                    email=email,
+                    phone=phone,
+                    exam_id=exam.id
+                )
+                db.session.add(new_candidate)
+                imported += 1
+            else:
+                blanks += 1
+                
+        db.session.commit()
+        flash(f"Import complete: {imported} imported, {skipped} duplicate emails skipped, {blanks} invalid/blank rows skipped.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error processing file: {str(e)}", "danger")
+        
+    return redirect(url_for('admin_exams.view_candidates', exam_id=exam.id))
+
+@admin_exams_bp.route("/<int:exam_id>/candidates/export")
+def export_candidates(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    search = request.args.get('search', '').strip()
+    
+    query = CandidateRegistration.query.filter_by(exam_id=exam.id)
+    if search:
+        query = query.filter(db.or_(
+            CandidateRegistration.candidate_name.ilike(f'%{search}%'),
+            CandidateRegistration.email.ilike(f'%{search}%')
+        ))
+        
+    candidates = query.order_by(CandidateRegistration.created_at.desc()).all()
+    attempted_emails = {a.student_email.lower() for a in StudentAttempt.query.filter_by(exam_id=exam.id).all()}
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Candidates"
+    
+    headers = ["Name", "Email", "Phone", "Status", "Registered On"]
+    ws.append(headers)
+    
+    from app.utils.time_filters import format_datetime_tz
+    
+    for c in candidates:
+        status = "Attempted" if c.email.lower() in attempted_emails else "Pending"
+        registered_on = format_datetime_tz(c.created_at, exam.timezone, '%Y-%m-%d %H:%M:%S') if c.created_at else "-"
+        ws.append([
+            c.candidate_name,
+            c.email,
+            c.phone or "-",
+            status,
+            registered_on
+        ])
+        
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+        
+    excel_file = io.BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    filename = f"{exam.exam_code}_Candidates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return send_file(
+        excel_file,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename
+    )
+
+@admin_exams_bp.route("/candidates/template")
+def download_candidate_template():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Template"
+    
+    headers = ["Name", "Email", "Phone"]
+    ws.append(headers)
+    
+    # Add a sample row
+    ws.append(["John Doe", "john.doe@example.com", "+1234567890"])
+    
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 35
+    ws.column_dimensions['C'].width = 20
+    
+    excel_file = io.BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    return send_file(
+        excel_file,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="candidate_template.xlsx"
+    )

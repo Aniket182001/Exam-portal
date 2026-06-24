@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, abort
 from app.extensions import db
-from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer
+from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer, CandidateRegistration
 from datetime import datetime, timezone, timedelta
 import uuid
 import random
@@ -42,8 +42,21 @@ def entry(exam_code):
             flash("Name and email are required to enter the exam.", "danger")
             return render_template("student/entry.html", exam=exam)
             
+        student_name = student_name.strip()
+        student_email = student_email.strip()
+
+        if exam.require_candidate_registration:
+            registration = CandidateRegistration.query.filter_by(
+                exam_id=exam.id,
+                email=student_email
+            ).first()
+            
+            if not registration:
+                flash("Your email is not registered for this examination. Please contact AIQM for assistance.", "danger")
+                return render_template("student/entry.html", exam=exam)
+            
         # Store securely in session for the next steps
-        session['student_name'] = student_name.strip()
+        session['student_name'] = student_name
         session['student_email'] = student_email.strip()
         
         return redirect(url_for('student_exams.instructions', exam_code=exam_code))

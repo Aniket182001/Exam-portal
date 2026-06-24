@@ -133,7 +133,19 @@ def compose_template(template_key):
         recipient_email = request.form.get("candidate_email", "") or request.form.get("login_email", "")
 
         if template_key == "exam_invitation":
-            candidate_name = request.form.get("candidate_name", "")
+            email_mode = request.form.get("email_mode", "single")
+            delivery_mode = "to"
+            
+            if email_mode == "bulk":
+                raw_emails = request.form.get("recipient_emails", "")
+                import re
+                emails = [e.strip() for e in re.split(r'[,\n]+', raw_emails) if e.strip()]
+                recipient_email = ", ".join(emails)
+                delivery_mode = request.form.get("delivery_mode", "bcc")
+                candidate_name = "Candidate"
+            else:
+                candidate_name = request.form.get("candidate_name", "")
+
             exam_id = request.form.get("exam_id")
             exam = Exam.query.get(exam_id)
             if exam:
@@ -161,11 +173,16 @@ def compose_template(template_key):
             body = body.replace("{candidate_name}", candidate_name)
             body = body.replace("{course_name}", course_name)
             
+        # Default delivery_mode for non-invitation templates
+        if template_key != "exam_invitation":
+            delivery_mode = "to"
+
         return render_template("admin/email/compose_result.html", 
                                template=template, 
                                subject=subject, 
                                body=body, 
-                               recipient_email=recipient_email)
+                               recipient_email=recipient_email,
+                               delivery_mode=delivery_mode)
 
     exams = Exam.query.filter_by(is_active=True).all() if template_key == "exam_invitation" else []
     courses = ["Lean Six Sigma Black Belt", "Lean Six Sigma Green Belt", "Total Quality Management"]

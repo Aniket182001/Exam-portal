@@ -4,6 +4,7 @@ from .question import Question
 from .question_option import QuestionOption
 from .student_attempt import StudentAttempt
 from .student_answer import StudentAnswer
+from .candidate_registration import CandidateRegistration
 
 __all__ = [
     'User',
@@ -11,5 +12,6 @@ __all__ = [
     'Question',
     'QuestionOption',
     'StudentAttempt',
-    'StudentAnswer'
+    'StudentAnswer',
+    'CandidateRegistration'
 ]

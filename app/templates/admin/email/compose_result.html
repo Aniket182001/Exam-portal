@@ -96,6 +96,7 @@
     const emailBodyInput = document.getElementById('emailBody');
     const emailSubjectInput = document.getElementById('emailSubject');
     const recipientEmail = document.getElementById('recipientEmail').value;
+    const deliveryMode = "{{ delivery_mode|default('to') }}";
     const outlookBtn = document.getElementById('outlookBtn');
 
     // Update outlook link whenever subject or body changes
@@ -105,7 +106,17 @@
     function updateOutlookLink() {
         const subject = encodeURIComponent(emailSubjectInput.value);
         const body = encodeURIComponent(emailBodyInput.value);
-        outlookBtn.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`;
+        
+        let mailtoLink = `mailto:`;
+        if (deliveryMode === 'bcc') {
+            mailtoLink += `?bcc=${recipientEmail}&subject=${subject}&body=${body}`;
+        } else if (deliveryMode === 'cc') {
+            mailtoLink += `?cc=${recipientEmail}&subject=${subject}&body=${body}`;
+        } else {
+            mailtoLink += `${recipientEmail}?subject=${subject}&body=${body}`;
+        }
+        
+        outlookBtn.href = mailtoLink;
     }
 
     // Initialize the outlook link

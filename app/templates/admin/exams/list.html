@@ -71,6 +71,9 @@
                             </td>
                             <td class="pe-4 py-3 text-end">
                                 <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ url_for('admin_exams.view_candidates', exam_id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Manage Candidates">
+                                        <i class="bi bi-person-badge-fill text-warning me-1"></i> Candidates
+                                    </a>
                                     <a href="{{ url_for('admin_exams.view_attempts', exam_id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Attempts">
                                         <i class="bi bi-people-fill text-info me-1"></i> Attempts
                                     </a>
