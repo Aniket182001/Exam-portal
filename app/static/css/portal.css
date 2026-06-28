@@ -112,6 +112,15 @@ a:hover {
     box-shadow: var(--shadow-sm);
     border-bottom: 1px solid var(--aiqm-gray-200);
     position: relative; /* anchor for mobile dropdown */
+    transition: box-shadow 0.28s ease, backdrop-filter 0.28s ease, background 0.28s ease;
+}
+
+/* Scrolled state — added by JS when window.scrollY > 40 */
+.aiqm-navbar--scrolled {
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    background: rgba(255, 255, 255, 0.92) !important;
 }
 
 .aiqm-navbar .navbar-brand {
@@ -136,6 +145,13 @@ a:hover {
     font-weight: 900;
     color: var(--aiqm-primary);
     flex-shrink: 0;
+}
+
+.aiqm-navbar .navbar-brand {
+    transition: transform 0.25s ease;
+}
+.aiqm-navbar .navbar-brand:hover {
+    transform: scale(1.02);
 }
 
 .aiqm-navbar .navbar-brand .brand-text {
@@ -164,15 +180,36 @@ a:hover {
     font-size: 0.9rem;
     padding: 0.5rem 1rem !important;
     border-radius: var(--radius-sm);
-    transition: all var(--transition-fast);
+    transition: color 0.18s ease, background-color 0.18s ease;
     letter-spacing: 0.2px;
     margin: 0 0.2rem;
+    position: relative;
+}
+
+/* Underline grow indicator */
+.aiqm-navbar .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 1rem;
+    right: 1rem;
+    height: 2px;
+    border-radius: 2px;
+    background: #F5A623;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.18s ease;
+}
+
+.aiqm-navbar .nav-link:hover::after,
+.aiqm-navbar .nav-link.active::after {
+    transform: scaleX(1);
 }
 
 .aiqm-navbar .nav-link:hover,
 .aiqm-navbar .nav-link.active {
-    color: var(--aiqm-primary-dark) !important;
-    background-color: var(--aiqm-peach);
+    color: #0A1628 !important;
+    background-color: transparent;
 }
 
 .aiqm-navbar .navbar-toggler {
@@ -399,77 +436,198 @@ a:hover {
 /* ================================================================
    HOMEPAGE — HERO SECTION (Apple Inspired)
    ================================================================ */
+/* ================================================================
+   HERO SECTION — Version 2 (Premium Signature)
+   ================================================================ */
 .hero-section {
-    background-color: var(--aiqm-white);
-    padding: 10rem 0 8rem;
+    background: #F9F8F6 radial-gradient(ellipse at center, rgba(170,185,165,0.08) 0%, transparent 70%);
+    padding: 11rem 0 9rem;
     position: relative;
     overflow: hidden;
     text-align: center;
 }
 
-/* Elegant ultra-soft mesh gradient background */
-.hero-section::before {
-    content: '';
+/* ── Phase 2: Signature SVG Line Layer ── */
+.hero-svg-v2 {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.03) 0%, transparent 60%),
-                radial-gradient(circle at 80% 80%, rgba(245, 245, 247, 1) 0%, transparent 50%);
-    pointer-events: none;
     z-index: 0;
+    pointer-events: none;
+}
+.hero-svg-v2 svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.hero-svg-v2 line {
+    transform-origin: center;
+    transform: scaleX(0); /* Hidden initially for intro animation */
 }
 
+/* Optional Shimmer after intro */
+@keyframes svg-shimmer-v2 {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.95; }
+}
+
+/* ── Content Wrapper ── */
+.hero-content-wrap {
+    position: relative;
+    z-index: 10;
+}
+
+/* ── Typography (Phase 3 Targets) ── */
 .hero-title {
-    font-size: clamp(3.5rem, 7vw, 5.5rem);
-    font-weight: 800;
-    color: #1D1D1F;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    color: #0A1628;
     line-height: 1.05;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.6rem;
     letter-spacing: -0.02em;
+    
+    transform: translateY(18px);
     opacity: 0;
-    animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+    will-change: transform, opacity;
 }
 
 .hero-subtitle {
-    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
-    color: #86868B;
-    font-weight: 500;
-    max-width: 700px;
-    margin: 0 auto 3rem;
-    line-height: 1.5;
-    letter-spacing: -0.01em;
+    font-size: 18px;
+    color: #666666;
+    max-width: 520px;
+    margin: 0 auto 2.8rem;
+    line-height: 1.6;
+    
+    transform: translateY(18px);
     opacity: 0;
-    animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+    will-change: transform, opacity;
 }
 
-/* Premium Apple-style primary button */
+.hero-hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 1rem;
+    opacity: 0;
+    will-change: opacity;
+}
+
+/* ── Global Button: btn-apple-primary ── */
 .btn-apple-primary {
     background-color: #1D1D1F;
     color: #FFFFFF !important;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 1rem;
     letter-spacing: -0.01em;
-    padding: 1.1rem 2.5rem;
+    padding: 1rem 2.4rem;
     border-radius: 999px;
     border: none;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
 }
-
 .btn-apple-primary:hover {
-    transform: scale(1.03);
+    transform: translateY(-2px);
     background-color: #000000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+.btn-apple-primary .hero-btn-arrow {
+    display: inline-block;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-apple-primary:hover .hero-btn-arrow {
+    transform: translateX(6px);
 }
 
-.hero-controls {
+/* ── Hero Version 2 CTA Button ── */
+.btn-v2-primary {
+    background-color: #0A1628;
+    color: #FFFFFF !important;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 1rem 2.4rem;
+    border-radius: 999px;
+    border: none;
+    
+    transform: scale(0.96);
     opacity: 0;
-    animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+    will-change: transform, opacity, background-color, box-shadow;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.btn-v2-primary:hover {
+    transform: translateY(-2px) scale(1) !important;
+    background-color: #15243B !important;
+    box-shadow: 0 8px 24px rgba(10, 22, 40, 0.15);
+}
+.btn-v2-primary i {
+    display: inline-block;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-v2-primary:hover i {
+    transform: translateX(6px);
 }
 
-@keyframes fade-up {
-    0% { opacity: 0; transform: translateY(30px); }
-    100% { opacity: 1; transform: translateY(0); }
+/* ── Phase 1: Logo Pulse Animation (Injected via JS) ── */
+.v2-logo-intro {
+    animation: logo-scale-up-v2 400ms ease-out forwards;
+    position: relative;
+    z-index: 1;
 }
+@keyframes logo-scale-up-v2 {
+    0% { transform: scale(0.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.v2-logo-intro::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 60px; height: 60px;
+    background: rgba(170,185,165,0.09);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    animation: pulse-out-v2 600ms ease-out forwards;
+    pointer-events: none;
+    z-index: -1;
+}
+@keyframes pulse-out-v2 {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* ── Intro Complete State ── */
+.hero-section.intro-complete .hero-title,
+.hero-section.intro-complete .hero-subtitle {
+    transform: translateY(0);
+    opacity: 1;
+}
+.hero-section.intro-complete .btn-v2-primary {
+    transform: scale(1);
+    opacity: 1;
+}
+.hero-section.intro-complete .hero-hint {
+    opacity: 1;
+}
+.hero-section.intro-complete .hero-svg-v2 line {
+    transform: scaleX(1);
+}
+.hero-section.intro-complete .hero-svg-v2 {
+    animation: svg-shimmer-v2 25s ease-in-out infinite alternate;
+}
+
+/* ── Reduced Motion Override ── */
+@media (prefers-reduced-motion: reduce) {
+    .v2-logo-intro, .v2-logo-intro::before { 
+        animation: none !important; opacity: 1 !important; transform: none !important; 
+    }
+    .hero-title, .hero-subtitle, .btn-v2-primary, .hero-hint { 
+        opacity: 1 !important; transform: none !important; transition: none !important; 
+    }
+    .hero-svg-v2 line { 
+        transform: scaleX(1) !important; transition: none !important; 
+    }
+    .hero-svg-v2 { animation: none !important; }
+}
+
+
 
 /* ================================================================
    HOMEPAGE — FEATURE CARDS (Apple Minimal)
@@ -514,7 +672,7 @@ a:hover {
     border-radius: 32px !important;
     padding: 3.5rem 2.5rem;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03) !important;
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     height: 100%;
     position: relative;
     overflow: hidden;
@@ -522,8 +680,9 @@ a:hover {
 }
 
 .feature-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-8px);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.12) !important;
+    border-color: rgba(0,0,0,0.08) !important;
 }
 
 .feature-icon {
@@ -538,12 +697,13 @@ a:hover {
     background: #F5F5F7;
     color: var(--aiqm-primary);
     box-shadow: none;
-    transition: transform 0.4s ease, background-color 0.4s ease;
+    transition: transform 0.25s ease, background-color 0.25s ease, color 0.25s ease;
 }
 
 .feature-card:hover .feature-icon {
-    transform: scale(1.1);
-    background: rgba(249, 115, 22, 0.1);
+    transform: scale(1.08);
+    background: rgba(245, 166, 35, 0.12);
+    color: #F5A623;
 }
 
 .feature-card h5 {
@@ -868,5 +1028,108 @@ body.exam-mode .aiqm-footer {
 @media (max-width: 480px) {
     .hero-title {
         font-size: 2rem;
+    }
+}
+
+/* ================================================================
+   SCROLL REVEAL — Phase 5.2
+   ================================================================ */
+
+/* Hidden state — applied by JS before element enters viewport */
+.sr-hidden {
+    opacity: 0;
+    transform: translateY(32px);
+    transition:
+        opacity  650ms cubic-bezier(0.22, 1, 0.36, 1) var(--sr-delay, 0ms),
+        transform 650ms cubic-bezier(0.22, 1, 0.36, 1) var(--sr-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+/* Visible state — added by IntersectionObserver once */
+.sr-visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+/* Honour system accessibility preference — skip animations entirely */
+@media (prefers-reduced-motion: reduce) {
+    .sr-hidden {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
+/* ================================================================
+   PHASE 3 — PREMIUM MICRO INTERACTIONS
+   All transitions use CSS transforms only. No layout shifts.
+   ================================================================ */
+
+/* ── Consistent easing tokens (override any legacy 'all' transitions) ── */
+:root {
+    --ease-spring:  cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-smooth:  cubic-bezier(0.4, 0, 0.2, 1);
+    --dur-fast:     0.18s;
+    --dur-std:      0.24s;
+    --dur-slow:     0.32s;
+}
+
+/* ── Feature card: border lift + deeper shadow on hover ── */
+.feature-card {
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    transition:
+        transform  var(--dur-std) var(--ease-spring),
+        box-shadow var(--dur-std) var(--ease-spring),
+        border-color var(--dur-std) ease !important;
+}
+
+.feature-card:hover {
+    transform: translateY(-6px) scale(1.015) !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.09) !important;
+    border-color: rgba(0, 0, 0, 0.10) !important;
+}
+
+/* ── Feature icon: scale + vibrant orange on card hover ── */
+.feature-icon {
+    transition:
+        transform  var(--dur-std) var(--ease-spring),
+        color      var(--dur-std) ease,
+        background-color var(--dur-std) ease;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.08);
+    color: var(--aiqm-primary) !important;
+    background-color: rgba(249, 115, 22, 0.12);
+}
+
+/* ── Navbar links: consistent timing (underline already set above) ── */
+.aiqm-navbar .nav-link {
+    transition:
+        color            var(--dur-std) ease,
+        background-color var(--dur-std) ease !important;
+}
+
+/* ── Dropdowns: smooth reveal ── */
+.dropdown-menu {
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) var(--ease-smooth) !important;
+}
+
+/* ── Global anchor / button resets to consistent feel ── */
+a {
+    transition: color var(--dur-fast) ease, opacity var(--dur-fast) ease;
+}
+
+/* ── Honour reduced-motion for all Phase 3 effects ── */
+@media (prefers-reduced-motion: reduce) {
+    .feature-card,
+    .feature-icon,
+    .aiqm-navbar,
+    .aiqm-navbar .nav-link,
+    .aiqm-navbar .nav-link::after,
+    .btn-apple-primary,
+    .btn-apple-primary .hero-btn-arrow {
+        transition: none !important;
+        animation: none !important;
     }
 }

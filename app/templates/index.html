@@ -4,31 +4,48 @@
 
 {% block content %}
 <!-- ============================================================
-     HERO SECTION
+     HERO SECTION — Premium Redesign
 ============================================================= -->
-<section class="hero-section">
-    <div class="container position-relative z-1">
-        <div class="row align-items-center justify-content-center text-center">
-            <div class="col-lg-8">
+<section class="hero-section" id="heroSection">
+    
+    <!-- Signature SVG Line Layer -->
+    <div class="hero-svg-v2" aria-hidden="true">
+        <svg width="100%" height="100%" viewBox="0 0 1440 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <!-- Center Line (Orange) -->
+            <line x1="0" y1="300" x2="1440" y2="300" stroke="#F5A623" stroke-width="1.5" opacity="0.15" />
+            <!-- Staggered Navy Lines -->
+            <line x1="0" y1="120" x2="1440" y2="120" stroke="#0A1628" stroke-width="0.5" opacity="0.04" />
+            <line x1="0" y1="180" x2="1440" y2="180" stroke="#0A1628" stroke-width="1" opacity="0.03" />
+            <line x1="0" y1="240" x2="1440" y2="240" stroke="#0A1628" stroke-width="0.5" opacity="0.05" />
+            <line x1="0" y1="380" x2="1440" y2="380" stroke="#0A1628" stroke-width="1" opacity="0.03" />
+            <line x1="0" y1="450" x2="1440" y2="450" stroke="#0A1628" stroke-width="0.5" opacity="0.06" />
+            <line x1="0" y1="510" x2="1440" y2="510" stroke="#0A1628" stroke-width="1" opacity="0.04" />
+            <line x1="0" y1="570" x2="1440" y2="570" stroke="#0A1628" stroke-width="0.5" opacity="0.03" />
+        </svg>
+    </div>
 
+    <!-- Clean Content Container -->
+    <div class="container hero-content-wrap">
+        <div class="row justify-content-center text-center">
+            <div class="col-12">
                 <h1 class="hero-title">AIQM Learning Platform</h1>
                 <p class="hero-subtitle">A unified platform for AIQM students to learn, complete examinations, and earn professional certifications.</p>
-                
-                <div class="d-flex flex-column align-items-center mt-4 hero-controls">
-                    <button type="button" class="btn btn-apple-primary" data-bs-toggle="modal" data-bs-target="#studentExamModal">
+                <div class="d-flex flex-column align-items-center">
+                    <button type="button" class="btn btn-v2-primary" data-bs-toggle="modal" data-bs-target="#studentExamModal">
                         Start Examination <i class="bi bi-arrow-right ms-2"></i>
                     </button>
-                    <p class="text-muted small mt-3 mb-0" style="font-weight: 500;">Enter your AIQM exam code to begin your assessment.</p>
+                    <p class="hero-hint">Enter your AIQM exam code to begin your assessment.</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
+
 <!-- ============================================================
      BEFORE YOU BEGIN SECTION
 ============================================================= -->
-<section class="features-section">
+<section class="features-section" id="beforeBegin">
     <div class="container">
         <div class="text-center mb-5 pb-3">
             <span class="section-label">Preparation</span>
@@ -82,7 +99,7 @@
 <!-- ============================================================
      HOW IT WORKS SECTION
 ============================================================= -->
-<section class="features-section pt-0">
+<section class="features-section pt-0" id="howItWorks">
     <div class="container">
         <div class="text-center mb-5 pb-3">
             <span class="section-label">Process</span>
@@ -167,4 +184,117 @@
     </div>
   </div>
 </div>
+
+{% block extra_scripts %}
+<script>
+(function () {
+    'use strict';
+
+    /* ── 1. SIGNATURE REVEAL ANIMATION (Version 2) ── */
+    var heroEl = document.getElementById('heroSection');
+    var isPlayed = sessionStorage.getItem('aiqm_v2_intro');
+    var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (isPlayed || prefersReduced) {
+        // Skip animation entirely
+        if (heroEl) heroEl.classList.add('intro-complete');
+    } else if (heroEl) {
+        // PHASE 1: Navbar Logo Animation (0-400ms)
+        var logo = document.querySelector('.brand-logo');
+        if (logo) logo.classList.add('v2-logo-intro');
+
+        // PHASE 2: SVG Lines (400ms - 1000ms)
+        setTimeout(function() {
+            var lines = heroEl.querySelectorAll('.hero-svg-v2 line');
+            if (lines.length > 0) {
+                // Center line immediately
+                lines[0].style.transition = 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1)';
+                lines[0].style.transform = 'scaleX(1)';
+                // Remaining lines staggered
+                for (var i = 1; i < lines.length; i++) {
+                    lines[i].style.transition = 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1) ' + (i * 60) + 'ms';
+                    lines[i].style.transform = 'scaleX(1)';
+                }
+            }
+        }, 400);
+
+        // PHASE 3: Typography & CTA (1000ms - 1800ms)
+        setTimeout(function() {
+            var title = heroEl.querySelector('.hero-title');
+            var subtitle = heroEl.querySelector('.hero-subtitle');
+            var btn = heroEl.querySelector('.btn-v2-primary');
+            var hint = heroEl.querySelector('.hero-hint');
+
+            if (title) {
+                title.style.transition = 'transform 600ms ease-out, opacity 600ms ease-out';
+                title.style.transform = 'translateY(0)';
+                title.style.opacity = '1';
+            }
+            if (subtitle) {
+                setTimeout(function() {
+                    subtitle.style.transition = 'transform 600ms ease-out, opacity 600ms ease-out';
+                    subtitle.style.transform = 'translateY(0)';
+                    subtitle.style.opacity = '1';
+                }, 100);
+            }
+            if (btn) {
+                setTimeout(function() {
+                    btn.style.transition = 'transform 400ms ease-out, opacity 400ms ease-out, background-color 0.2s ease';
+                    btn.style.transform = 'scale(1)';
+                    btn.style.opacity = '1';
+                }, 200);
+            }
+            if (hint) {
+                setTimeout(function() {
+                    hint.style.transition = 'opacity 400ms ease-out';
+                    hint.style.opacity = '1';
+                    
+                    // Mark complete, allow shimmer
+                    heroEl.classList.add('intro-complete');
+                    sessionStorage.setItem('aiqm_v2_intro', 'true');
+                }, 400); // Sequence completes by 1400ms (< 1800ms limit)
+            }
+        }, 1000);
+    }
+
+    /* ── 2. SCROLL REVEAL (Phase 5.2 IntersectionObserver) ── */
+    if (!('IntersectionObserver' in window)) return;
+    if (prefersReduced) return;
+
+    var STAGGER = 100; // Strict 100ms delay per child element
+
+    var SECTIONS = [
+        ['#beforeBegin', ['.section-label', '.section-title', '.section-desc', '.col-md-4']],
+        ['#howItWorks',  ['.section-label', '.section-title', '.section-desc', '.col-md-4']],
+        ['#globalFooter', ['.footer-brand', '.footer-org', '.footer-copy', 'img']]
+    ];
+
+    var revealObs = new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('sr-visible');
+            obs.unobserve(entry.target); // Animate only once
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    SECTIONS.forEach(function (def) {
+        var section = document.querySelector(def[0]);
+        if (!section) return;
+
+        var delay = 0; // Reset delay for each section
+        def[1].forEach(function (sel) {
+            var els = section.querySelectorAll(sel);
+            els.forEach(function (el) {
+                el.classList.add('sr-hidden');
+                el.style.setProperty('--sr-delay', delay + 'ms');
+                delay += STAGGER;
+                revealObs.observe(el);
+            });
+        });
+    });
+
+})();
+</script>
+{% endblock %}
+
 {% endblock %}
