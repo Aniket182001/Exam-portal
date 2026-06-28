@@ -46,4 +46,8 @@ def create_app():
         except Exception:
             return dt.strftime(format)
 
+    # Register CLI commands
+    from app.cli import create_admin_command
+    app.cli.add_command(create_admin_command)
+
     return app
