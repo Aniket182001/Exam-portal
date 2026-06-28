@@ -31,9 +31,6 @@
                 <i class="bi bi-upload me-2"></i> Import
             </button>
             {% if candidates %}
-            <button type="button" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" id="toggleSelectBtn">
-                <i class="bi bi-check2-square me-2" id="toggleSelectIcon"></i> <span id="toggleSelectText">Select</span>
-            </button>
             <a href="{{ url_for('admin_exams.export_candidates', exam_id=exam.id, search=request.args.get('search')) }}" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" id="exportAllBtn">
                 <i class="bi bi-download me-2"></i> Export Candidates
             </a>
@@ -127,7 +124,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light border-bottom">
                         <tr>
-                            <th scope="col" class="ps-4 py-3 select-col d-none" style="width: 50px;">
+                            <th scope="col" class="ps-4 py-3 select-col" style="width: 50px;">
                                 <input class="form-check-input" type="checkbox" id="selectAll">
                             </th>
                             <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide name-col">Name</th>
@@ -141,7 +138,7 @@
                     <tbody class="border-top-0">
                         {% for candidate in candidates %}
                         <tr>
-                            <td class="ps-4 py-3 select-col d-none">
+                            <td class="ps-4 py-3 select-col">
                                 <input class="form-check-input candidate-checkbox" type="checkbox" name="candidate_ids" value="{{ candidate.id }}" data-has-attempt="{{ 'true' if candidate.status_code != 'pending' else 'false' }}">
                             </td>
                             <td class="ps-4 py-3 name-col fw-bold text-dark">
@@ -334,64 +331,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const toggleSelectBtn = document.getElementById('toggleSelectBtn');
-    if (!toggleSelectBtn) return;
-    
-    const exportAllBtn = document.getElementById('exportAllBtn');
-    const selectCols = document.querySelectorAll('.select-col');
-    const nameCols = document.querySelectorAll('.name-col');
-    const selectAllCheckbox = document.getElementById('selectAll');
+    // New bulk-selection.js handles checkbox selection, range selection, and Ctrl+A logic.
     const checkboxes = document.querySelectorAll('.candidate-checkbox');
-    const toggleSelectText = document.getElementById('toggleSelectText');
-    const toggleSelectIcon = document.getElementById('toggleSelectIcon');
-    const deleteSelectedWarning = document.getElementById('deleteSelectedWarning');
-    
-    let isSelectMode = false;
-    
-    toggleSelectBtn.addEventListener('click', function() {
-        isSelectMode = !isSelectMode;
-        
-        if (isSelectMode) {
-            toggleSelectText.textContent = "Cancel Selection";
-            toggleSelectIcon.classList.replace("bi-check2-square", "bi-x-circle");
-            toggleSelectBtn.classList.replace("btn-outline-dark", "btn-outline-secondary");
-            if (exportAllBtn) exportAllBtn.classList.add("d-none");
-            document.getElementById('deleteSelectedBtn').classList.remove("d-none");
-            
-            selectCols.forEach(col => col.classList.remove("d-none"));
-            nameCols.forEach(col => col.classList.remove("ps-4"));
-            nameCols.forEach(col => col.classList.add("ps-2"));
-        } else {
-            toggleSelectText.textContent = "Select";
-            toggleSelectIcon.classList.replace("bi-x-circle", "bi-check2-square");
-            toggleSelectBtn.classList.replace("btn-outline-secondary", "btn-outline-dark");
-            if (exportAllBtn) exportAllBtn.classList.remove("d-none");
-            document.getElementById('deleteSelectedBtn').classList.add("d-none");
-            
-            selectCols.forEach(col => col.classList.add("d-none"));
-            nameCols.forEach(col => col.classList.remove("ps-2"));
-            nameCols.forEach(col => col.classList.add("ps-4"));
-            
-            // Uncheck all
-            selectAllCheckbox.checked = false;
-            checkboxes.forEach(cb => cb.checked = false);
-        }
-    });
-    
-    selectAllCheckbox.addEventListener('change', function() {
-        checkboxes.forEach(cb => {
-            cb.checked = selectAllCheckbox.checked;
-        });
-    });
-    
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const allChecked = Array.from(checkboxes).every(c => c.checked);
-            const someChecked = Array.from(checkboxes).some(c => c.checked);
-            selectAllCheckbox.checked = allChecked;
-            selectAllCheckbox.indeterminate = someChecked && !allChecked;
-        });
-    });
 
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
     if (deleteSelectedBtn) {
@@ -409,11 +350,14 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('deleteSelectedCount').textContent = count;
             
             // Check if any selected has attempt
-            const hasAttempts = checkedBoxes.some(c => c.getAttribute('data-has-attempt') === 'true');
-            if (hasAttempts) {
-                deleteSelectedWarning.classList.remove('d-none');
-            } else {
-                deleteSelectedWarning.classList.add('d-none');
+            const deleteSelectedWarning = document.getElementById('deleteSelectedWarning');
+            if (deleteSelectedWarning) {
+                const hasAttempts = checkedBoxes.some(c => c.getAttribute('data-has-attempt') === 'true');
+                if (hasAttempts) {
+                    deleteSelectedWarning.classList.remove('d-none');
+                } else {
+                    deleteSelectedWarning.classList.add('d-none');
+                }
             }
         });
     }

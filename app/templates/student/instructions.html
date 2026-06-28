@@ -3,7 +3,7 @@
 {% block page_title %}Instructions - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<div class="apple-glass-bg py-4 py-md-5">
+<div class="apple-glass-bg py-4 py-md-5 page-fade-in mobile-spacer-for-sticky">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-9">
@@ -18,7 +18,7 @@
                     </div>
                 </div>
 
-                <div class="apple-card-soft mb-5">
+                <div class="apple-card-soft mb-5 stagger-reveal">
                     <div class="card-header bg-white border-bottom py-4 px-4 px-md-5">
                         <h5 class="mb-0 fw-bold" style="color: #1D1D1F; letter-spacing: -0.01em;">Exam Overview</h5>
                     </div>
@@ -78,7 +78,7 @@
                 </div>
 
                 {% if exam.instructions %}
-                <div class="apple-card-soft mb-5" style="background-color: #FAFAFA;">
+                <div class="apple-card-soft mb-5 stagger-reveal" style="background-color: #FAFAFA;">
                     <div class="card-body p-4 p-md-5">
                         <h5 class="fw-bold mb-4" style="color: #1D1D1F; letter-spacing: -0.01em;"><i class="bi bi-journal-text me-2" style="color: #86868B;"></i>Specific Instructions</h5>
                         <div style="white-space: pre-wrap; font-size: 1.05rem; line-height: 1.7; color: #1D1D1F;">{{ exam.instructions }}</div>
@@ -86,7 +86,7 @@
                 </div>
                 {% endif %}
 
-                <div class="apple-alert-warm d-flex align-items-start p-4 p-md-5 mb-5">
+                <div class="apple-alert-warm d-flex align-items-start p-4 p-md-5 mb-5 stagger-reveal">
                     <i class="bi bi-exclamation-triangle-fill fs-3 me-4 mt-1" style="color: #EA580C;"></i>
                     <div>
                         <h5 class="fw-bold mb-2" style="color: #1D1D1F;">Important Notice</h5>
@@ -94,7 +94,7 @@
                     </div>
                 </div>
 
-                <div class="apple-card-soft mb-5" style="background-color: #FAFAFA;">
+                <div class="apple-card-soft mb-5 stagger-reveal" style="background-color: #FAFAFA;">
                     <div class="card-body p-4 p-md-5">
                         <h5 class="fw-bold mb-4" style="color: #1D1D1F; letter-spacing: -0.01em;"><i class="bi bi-palette-fill me-2" style="color: #86868B;"></i>Question Status Guide</h5>
                         
@@ -115,9 +115,9 @@
                     </div>
                 </div>
 
-                <div class="text-center pb-5">
-                    <form id="start-exam-form" action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST">
-                        <button type="submit" class="btn btn-apple-primary px-5 py-4 d-inline-flex align-items-center">
+                <div class="text-center mt-5 mb-5 mobile-sticky-btn-container">
+                    <form action="{{ url_for('student_exams.start_exam', exam_code=exam.exam_code) }}" method="POST" id="start-exam-form" class="m-0">
+                        <button type="submit" class="btn btn-apple-primary px-5 py-4 d-inline-flex align-items-center w-100 justify-content-center" style="max-width: 400px; border-radius: 16px; box-shadow: var(--shadow-md);">
                             START EXAM NOW <i class="bi bi-arrow-right ms-3"></i>
                         </button>
                     </form>
@@ -153,8 +153,15 @@
     document.addEventListener("DOMContentLoaded", function() {
         const startForm = document.getElementById("start-exam-form");
         if(startForm) {
+            const submitBtn = startForm.querySelector('button[type="submit"]');
+            
             startForm.addEventListener("submit", function(e) {
                 e.preventDefault();
+                
+                // Show loading state
+                const originalHtml = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'PREPARING EXAM... <div class="spinner-border spinner-border-sm text-white ms-3" role="status"></div>';
                 
                 const navbar = document.getElementById("globalNavbar");
                 const footer = document.getElementById("globalFooter");
@@ -171,6 +178,14 @@
                 }, 350);
             });
         }
+        
+        // Staggered reveal of instruction cards
+        const reveals = document.querySelectorAll('.stagger-reveal');
+        reveals.forEach((el, i) => {
+            setTimeout(() => {
+                el.classList.add('revealed');
+            }, 100 + (i * 120)); // Stagger by 120ms
+        });
     });
 </script>
 {% endblock %}

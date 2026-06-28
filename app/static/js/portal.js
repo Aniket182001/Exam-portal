@@ -107,3 +107,24 @@ document.addEventListener('shown.bs.modal', function (event) {
         focusable.focus();
     }
 });
+
+// 4. Global Keyboard Shortcuts (Phase 3.1)
+document.addEventListener('keydown', function(e) {
+    // Ignore if typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+    }
+
+    // Press '/' to focus search
+    if (e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[name="search"]');
+        if (searchInput) {
+            searchInput.focus();
+            // Move cursor to end
+            const val = searchInput.value;
+            searchInput.value = '';
+            searchInput.value = val;
+        }
+    }
+});

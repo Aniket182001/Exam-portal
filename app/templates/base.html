@@ -135,6 +135,35 @@
 
     <!-- Global Portal Scripts (Productivity & Shortcuts) -->
     <script src="{{ url_for('static', filename='js/portal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/palette.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bulk-selection.js') }}"></script>
+
+    <!-- Phase 3.2: Floating Bulk Action Bar -->
+    <div id="aiqm-bulk-bar" class="aiqm-bulk-bar">
+        <div class="aiqm-bulk-count">
+            <span class="badge rounded-pill" id="aiqm-bulk-count-text">0 selected</span>
+        </div>
+        <div class="aiqm-bulk-actions" id="aiqm-bulk-actions">
+            <!-- Dynamic Actions Cloned Here -->
+        </div>
+        <button type="button" class="aiqm-bulk-close" id="aiqm-bulk-close" title="Clear Selection (Esc)">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <!-- Phase 3.1: Command Palette Overlay -->
+    <div id="aiqm-command-palette" class="aiqm-palette-backdrop">
+        <div class="aiqm-palette-modal" role="dialog" aria-modal="true" aria-label="Command Palette">
+            <div class="aiqm-palette-header">
+                <i class="bi bi-search"></i>
+                <input type="text" class="aiqm-palette-input" id="palette-search-input" placeholder="Type a command or search..." autocomplete="off" spellcheck="false">
+                <span class="badge bg-light text-muted border px-2 py-1 me-2" style="font-size: 0.65rem;">ESC</span>
+            </div>
+            <div class="aiqm-palette-body" id="palette-results-container">
+                <!-- Results populated by palette.js -->
+            </div>
+        </div>
+    </div>
 
     {% block extra_scripts %}{% endblock %}
 

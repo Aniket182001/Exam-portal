@@ -17,8 +17,8 @@
             </div>
         </div>
         
-        <div class="d-flex align-items-center gap-3">
-            <div id="exam-timer" data-seconds="{{ remaining_seconds }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all">
+        <div class="d-flex align-items-center">
+            <div id="exam-timer" data-end-timestamp="{{ end_timestamp }}" class="badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all">
                 <i class="bi bi-stopwatch me-2 text-primary"></i>
                 <span id="timer-display" class="font-monospace fw-bold">00:00:00</span>
             </div>
@@ -32,7 +32,7 @@
     {% endif %}
 </div>
 
-<div class="container-fluid px-lg-5 pt-3 pt-md-4 pb-4 pb-md-5">
+<div class="container-fluid px-lg-5 pt-3 pt-md-4 pb-4 pb-md-5 transition-all" id="exam-content-area">
     <form method="POST" action="{{ url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number) }}" id="exam-form">
         <div class="row g-4 g-lg-5">
             <!-- Main Question Area -->
@@ -173,20 +173,70 @@
     </form>
 </div>
 
+<!-- Submission Loading Overlay -->
+<div id="submission-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(255, 255, 255, 0.95); z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;">
+    <div id="submission-spinner" class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem; border-width: 0.25rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div id="submission-icon" class="text-success mb-3" style="display: none; font-size: 4rem; animation: aiqm-fade-in-exam 0.3s ease-out forwards;">
+        <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <h3 id="submission-text" class="fw-bold text-dark mb-2">Submitting your responses...</h3>
+    <p id="submission-subtext" class="text-muted fs-5">Please do not close this window.</p>
+</div>
+
+<!-- Finish Exam Modal -->
+<div class="modal fade" id="finishExamModal" tabindex="-1" aria-labelledby="finishExamModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+      <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+        <h5 class="modal-title fw-bold fs-4" id="finishExamModalLabel">Submit Examination</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body py-4 px-4">
+        <p class="text-muted mb-4 fs-6">Are you sure you want to submit your exam? You will not be able to change your answers after submission.</p>
+        
+        <div class="d-flex gap-3 mb-4">
+            <div class="flex-fill bg-success bg-opacity-10 rounded-4 p-3 text-center border border-success border-opacity-25">
+                <div class="fs-2 fw-bold text-success" id="modal-answered-count">0</div>
+                <div class="small fw-medium text-success text-uppercase" style="letter-spacing: 0.5px;">Answered</div>
+            </div>
+            <div class="flex-fill bg-warning bg-opacity-10 rounded-4 p-3 text-center border border-warning border-opacity-25">
+                <div class="fs-2 fw-bold text-warning" id="modal-unanswered-count">0</div>
+                <div class="small fw-medium text-warning text-uppercase" style="letter-spacing: 0.5px;">Unanswered</div>
+            </div>
+        </div>
+        
+        <div id="modal-unanswered-warning" class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark d-flex align-items-center rounded-3 mb-0" style="display: none;">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4 me-3"></i>
+            <div class="small fw-medium">You have unanswered questions. You can still go back and review them before submitting.</div>
+        </div>
+      </div>
+      <div class="modal-footer border-top-0 pt-0 pb-4 px-4 gap-2">
+        <button type="button" class="btn text-secondary fw-bold bg-light hover-bg-gray px-4 py-2 rounded-pill flex-fill border" data-bs-dismiss="modal">Review Questions</button>
+        <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill flex-fill shadow-sm" id="confirm-submit-btn">Submit Exam</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
     /* Radio Button Customization */
     .custom-radio {
         cursor: pointer;
+        transition: transform 0.15s ease;
     }
     .custom-radio:checked {
         background-color: var(--aiqm-primary);
         border-color: var(--aiqm-primary);
+        transform: scale(1.1);
     }
     
     /* Option Label Styling */
     .option-group .list-group-item {
         border-color: var(--aiqm-gray-200);
         margin-bottom: 0.75rem;
+        transition: all 0.15s ease;
     }
     .option-group .list-group-item:hover {
         background-color: var(--aiqm-gray-50);
@@ -212,13 +262,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all 0.15s ease;
     }
     .palette-btn:hover {
-        transform: scale(1.05);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm) !important;
         z-index: 1;
     }
     .current-q {
-        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3) !important;
+        box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.3) !important;
+        transform: scale(1.05);
+        z-index: 2;
     }
 
     /* Action Next Hover */
@@ -226,49 +280,276 @@
         box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
         transform: translateY(-2px);
     }
+
+    /* Fade Transition */
+    .exam-fade-out {
+        opacity: 0;
+        transform: translateY(5px);
+        pointer-events: none;
+    }
+    .exam-fade-in {
+        animation: aiqm-fade-in-exam 0.2s ease-out forwards;
+    }
+    @keyframes aiqm-fade-in-exam {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .exam-fade-out { opacity: 0; transform: none; }
+        .exam-fade-in { animation: none; opacity: 1; }
+        .custom-radio:checked { transform: none; }
+        .palette-btn:hover { transform: none; }
+        .current-q { transform: none; }
+    }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Option highlighting logic
-        const radios = document.querySelectorAll('input[name="option_id"]');
-        const clearBtnContainer = document.getElementById("clear-btn-container");
+        let isSaving = false;
 
-        radios.forEach(radio => {
-            radio.addEventListener("change", () => {
-                // Remove active classes
-                document.querySelectorAll(".option-group .list-group-item").forEach(l => {
-                    l.classList.remove("border-primary", "bg-primary-subtle", "bg-opacity-10");
-                    l.classList.add("border-light-subtle");
+        // Premium Submission Handler
+        async function executePremiumSubmission(form) {
+            // Disable all interactive controls
+            const allInputs = form.querySelectorAll('input, button');
+            allInputs.forEach(input => input.disabled = true);
+            
+            const overlay = document.getElementById('submission-overlay');
+            const subText = document.getElementById('submission-subtext');
+            const subTitle = document.getElementById('submission-text');
+            const icon = document.getElementById('submission-icon');
+            const spinner = document.getElementById('submission-spinner');
+            
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'all';
+            
+            const formData = new FormData(form);
+            formData.append("action", "finish");
+            
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow'
                 });
-
-                // Add active classes to selected
-                const label = radio.closest(".list-group-item");
-                if (label) {
-                    label.classList.remove("border-light-subtle");
-                    label.classList.add("border-primary", "bg-primary-subtle", "bg-opacity-10");
-                }
                 
-                if (clearBtnContainer) {
-                    clearBtnContainer.style.display = "block";
+                if (response.ok || response.type === 'opaqueredirect' || response.status === 0 || response.status === 302) {
+                    // Success state
+                    spinner.style.display = 'none';
+                    icon.style.display = 'block';
+                    subTitle.textContent = "Examination Submitted";
+                    subTitle.className = "fw-bold text-success mb-2";
+                    subText.textContent = "";
+                    
+                    setTimeout(() => {
+                        window.location.href = response.url || window.location.href; // Usually redirected to review
+                    }, 700);
+                } else {
+                    fallbackNativeSubmit(form);
                 }
+            } catch (err) {
+                console.error("Submission failed, falling back to native", err);
+                fallbackNativeSubmit(form);
+            }
+        }
+        
+        function fallbackNativeSubmit(form) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'action';
+            input.value = 'finish';
+            form.appendChild(input);
+            form.submit();
+        }
+
+        // Initialize exam event listeners for the current DOM
+        function initExamEvents() {
+            const form = document.getElementById('exam-form');
+            if (!form) return;
+
+            const radios = document.querySelectorAll('input[name="option_id"]');
+            const clearBtnContainer = document.getElementById("clear-btn-container");
+
+            radios.forEach(radio => {
+                radio.addEventListener("change", () => {
+                    // Visual update
+                    document.querySelectorAll(".option-group .list-group-item").forEach(l => {
+                        l.classList.remove("border-primary", "bg-primary-subtle", "bg-opacity-10");
+                        l.classList.add("border-light-subtle");
+                    });
+                    const label = radio.closest(".list-group-item");
+                    if (label) {
+                        label.classList.remove("border-light-subtle");
+                        label.classList.add("border-primary", "bg-primary-subtle", "bg-opacity-10");
+                    }
+                    if (clearBtnContainer) clearBtnContainer.style.display = "block";
+
+                    // Trigger Silent Autosave
+                    performSilentAutosave(form);
+                });
             });
-        });
+
+            // Initialize Keyboard Listeners
+            document.removeEventListener('keydown', handleKeyboardNav);
+            document.addEventListener('keydown', handleKeyboardNav);
+            
+            // Intercept Finish Button
+            const finishButtons = form.querySelectorAll('button[name="action"][value="finish"]');
+            finishButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    let answeredCount = document.querySelectorAll('.palette-btn.btn-success').length;
+                    const currentBtn = document.querySelector('.palette-btn.current-q');
+                    if (currentBtn && !currentBtn.classList.contains('btn-success') && document.querySelector('input[name="option_id"]:checked')) {
+                        answeredCount++;
+                    }
+                    
+                    const totalCount = document.querySelectorAll('.palette-btn').length;
+                    
+                    // Fallback if palette is not enabled
+                    if (totalCount === 0) {
+                        executePremiumSubmission(form);
+                        return;
+                    }
+                    
+                    const unansweredCount = totalCount - answeredCount;
+                    
+                    document.getElementById('modal-answered-count').textContent = answeredCount;
+                    document.getElementById('modal-unanswered-count').textContent = unansweredCount;
+                    
+                    const warning = document.getElementById('modal-unanswered-warning');
+                    if (unansweredCount > 0) {
+                        warning.style.setProperty('display', 'flex', 'important');
+                    } else {
+                        warning.style.setProperty('display', 'none', 'important');
+                    }
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('finishExamModal'));
+                    modal.show();
+                });
+            });
+            
+            const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+            if (confirmSubmitBtn) {
+                // Ensure we don't attach multiple times if initExamEvents runs again
+                const newBtn = confirmSubmitBtn.cloneNode(true);
+                confirmSubmitBtn.parentNode.replaceChild(newBtn, confirmSubmitBtn);
+                newBtn.addEventListener('click', function() {
+                    this.disabled = true;
+                    const modalEl = document.getElementById('finishExamModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    
+                    executePremiumSubmission(form);
+                });
+            }
+            
+            // Add fade-in animation on load
+            const contentArea = document.getElementById('exam-content-area');
+            if (contentArea) {
+                contentArea.classList.add('exam-fade-in');
+                setTimeout(() => {
+                    contentArea.classList.remove('exam-fade-in');
+                }, 200);
+            }
+        }
+
+        function handleKeyboardNav(e) {
+            // Don't interfere if user is typing in an input
+            if (e.target.tagName === 'INPUT' && e.target.type !== 'radio') return;
+            
+            const form = document.getElementById('exam-form');
+            if (!form) return;
+            
+            if (e.key === 'ArrowRight') {
+                const nextBtn = form.querySelector('button[name="action"][value="next"]');
+                if (nextBtn) nextBtn.click();
+            } else if (e.key === 'ArrowLeft') {
+                const prevBtn = form.querySelector('button[name="action"][value="prev"]');
+                if (prevBtn) prevBtn.click();
+            } else if (e.key >= '1' && e.key <= '9') {
+                const index = parseInt(e.key) - 1;
+                const radios = form.querySelectorAll('input[name="option_id"]');
+                if (radios[index]) {
+                    radios[index].checked = true;
+                    radios[index].dispatchEvent(new Event('change'));
+                }
+            }
+        }
+
+        async function performSilentAutosave(form, retryCount = 0) {
+            if (!navigator.onLine) {
+                setTimeout(() => performSilentAutosave(form, retryCount + 1), 3000);
+                return;
+            }
+            
+            isSaving = true;
+            
+            const formData = new FormData(form);
+            try {
+                // Submit form without action button data (backend will save and redirect)
+                // We use manual redirect to prevent fetching the whole page on autosave
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    redirect: 'manual'
+                });
+                
+                // If redirect manual is used, status 0 or 302 means success for a redirect
+                if (response.ok || response.type === 'opaqueredirect' || response.status === 0 || response.status === 302) {
+                    // Update palette visually if not already green
+                    const currentQBtn = document.querySelector('.palette-btn.current-q');
+                    if (currentQBtn && !currentQBtn.classList.contains('btn-success')) {
+                        currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
+                        currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
+                    }
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (err) {
+                console.error("Autosave failed", err);
+                // Retry after 3 seconds
+                setTimeout(() => performSilentAutosave(form, retryCount + 1), 3000);
+            } finally {
+                isSaving = false;
+            }
+        }
+        
+        initExamEvents();
 
         // Timer Logic
         const timerElement = document.getElementById("exam-timer");
         const timerDisplay = document.getElementById("timer-display");
-        const timerIcon = timerElement.querySelector("i");
+        const timerIcon = timerElement ? timerElement.querySelector("i") : null;
         
         if (timerElement && timerDisplay) {
-            let remainingSeconds = parseInt(timerElement.getAttribute("data-seconds")) || 0;
+            const endTimestamp = parseInt(timerElement.getAttribute("data-end-timestamp")) || Date.now();
             
             function updateDisplay() {
+                const now = Date.now();
+                const remainingSeconds = Math.max(0, Math.floor((endTimestamp - now) / 1000));
+                
                 if (remainingSeconds <= 0) {
                     timerDisplay.textContent = "00:00:00";
                     timerElement.className = "badge bg-danger text-white px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all";
                     timerIcon.className = "bi bi-stopwatch me-2 text-white";
-                    return;
+                    
+                    const overlay = document.getElementById('submission-overlay');
+                    if (overlay) {
+                        document.getElementById('submission-text').textContent = "Time has expired. Submitting your responses...";
+                        document.getElementById('submission-subtext').textContent = "";
+                        overlay.style.opacity = '1';
+                        overlay.style.pointerEvents = 'all';
+                        
+                        setTimeout(() => {
+                            window.location.reload(); // Server handles the timeout submission natively
+                        }, 1200);
+                    } else {
+                        window.location.reload();
+                    }
+                    
+                    return true; // Indicates timer finished
                 }
                 
                 const h = Math.floor(remainingSeconds / 3600);
@@ -283,12 +564,12 @@
                 
                 timerDisplay.textContent = formattedTime;
                 
-                if (remainingSeconds < 60) {
-                    // Danger (< 1m)
-                    timerElement.className = "badge bg-danger text-white px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all shadow-lg animate__animated animate__pulse animate__infinite";
+                if (remainingSeconds < 120) {
+                    // Danger pulse (< 2m)
+                    timerElement.className = "badge bg-danger text-white px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all shadow-lg animate__animated animate__pulse animate__infinite animate__slower";
                     timerIcon.className = "bi bi-exclamation-triangle-fill me-2 text-white";
-                } else if (remainingSeconds < 300) {
-                    // Warning (< 5m)
+                } else if (remainingSeconds < 600) {
+                    // Warning (< 10m)
                     timerElement.className = "badge bg-warning text-dark border border-warning px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all";
                     timerIcon.className = "bi bi-stopwatch me-2 text-dark";
                 } else {
@@ -296,19 +577,25 @@
                     timerElement.className = "badge bg-light text-dark border border-secondary-subtle px-3 py-2 fs-5 rounded-pill shadow-sm d-flex align-items-center transition-all";
                     timerIcon.className = "bi bi-stopwatch me-2 text-primary";
                 }
+                
+                return false;
             }
             
-            updateDisplay();
+            // Initial render
+            const isFinished = updateDisplay();
             
-            const timerInterval = setInterval(() => {
-                remainingSeconds--;
-                updateDisplay();
-                
-                if (remainingSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    window.location.reload();
-                }
-            }, 1000);
+            if (!isFinished) {
+                const timerInterval = setInterval(() => {
+                    const finished = updateDisplay();
+                    
+                    if (finished) {
+                        clearInterval(timerInterval);
+                        window.location.reload();
+                    }
+                }, 1000);
+            } else {
+                window.location.reload();
+            }
         }
     });
 </script>

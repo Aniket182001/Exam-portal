@@ -85,6 +85,14 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mb-0 mt-1">
                                             <li>
+                                                <button type="button" class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2 star-exam" 
+                                                        data-exam-id="{{ exam.id }}" 
+                                                        data-exam-title="{{ exam.title|escape }}" 
+                                                        data-exam-url="{{ url_for('admin_exams.view_attempts', exam_id=exam.id) }}">
+                                                    <i class="bi bi-star"></i> Favorite
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <a class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2" href="{{ url_for('admin_exams.edit_exam', id=exam.id) }}">
                                                     <i class="bi bi-pencil-square text-secondary"></i> Edit Exam
                                                 </a>

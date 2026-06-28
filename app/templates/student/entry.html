@@ -3,11 +3,11 @@
 {% block page_title %}Access Exam - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<div class="apple-glass-bg py-5">
+<div class="apple-glass-bg py-5 page-fade-in">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-8 col-lg-6">
-                <div class="apple-card-soft mt-md-4">
+                <div class="apple-card-soft mt-md-4" id="entryCard">
                     <div class="text-center py-5 pb-4">
                         <div class="mb-3 d-flex justify-content-center">
                             <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
@@ -28,7 +28,7 @@
                                 </div>
                             </div>
                         {% else %}
-                            <form method="POST" class="needs-validation mt-2">
+                            <form method="POST" class="needs-validation mt-2" id="entryForm" novalidate>
                                 <div class="mb-4">
                                     <label for="student_name" class="form-label text-secondary fw-bold small text-uppercase letter-wide">Full Name <span class="text-danger">*</span></label>
                                     <div class="apple-input-wrapper">
@@ -47,8 +47,9 @@
                                 </div>
                                 
                                 <div class="d-grid mt-2">
-                                    <button type="submit" class="btn btn-apple-primary w-100 py-3" style="border-radius: 16px;">
-                                        Proceed to Instructions <i class="bi bi-arrow-right ms-2"></i>
+                                    <button type="submit" class="btn btn-apple-primary w-100 py-3 d-flex justify-content-center align-items-center" style="border-radius: 16px;" id="submitBtn">
+                                        <span id="btnText">Proceed to Instructions <i class="bi bi-arrow-right ms-2"></i></span>
+                                        <div class="spinner-border spinner-border-sm text-white ms-2 d-none" role="status" id="btnSpinner"></div>
                                     </button>
                                 </div>
                             </form>
@@ -65,4 +66,46 @@
 </div>
 
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('entryForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const entryCard = document.getElementById('entryCard');
+
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Add shake animation
+            entryCard.classList.remove('aiqm-shake');
+            void entryCard.offsetWidth; // trigger reflow
+            entryCard.classList.add('aiqm-shake');
+        } else {
+            // Valid form, show loading state and prevent double submission
+            submitBtn.disabled = true;
+            btnText.innerHTML = 'Verifying...';
+            btnSpinner.classList.remove('d-none');
+            
+            // Allow form to submit normally
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Enter key support for inputs
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitBtn.click(); // Trigger form submit visually
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

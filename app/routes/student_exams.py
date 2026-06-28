@@ -262,6 +262,11 @@ def question_attempt(attempt_token, question_number):
     # Calculate time remaining Authoritatively using helper
     remaining_seconds = get_remaining_seconds(attempt)
     
+    # Calculate absolute end timestamp for client-side single source of truth
+    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
+    end_time = started_at_utc + timedelta(minutes=exam.duration_minutes)
+    end_timestamp = int(end_time.timestamp() * 1000)
+    
     # Server-side Expiration Check
     if remaining_seconds == 0:
         handle_attempt_timeout(attempt)
@@ -370,7 +375,8 @@ def question_attempt(attempt_token, question_number):
         progress=progress,
         questions=questions,
         answered_question_ids=answered_question_ids,
-        remaining_seconds=remaining_seconds
+        remaining_seconds=remaining_seconds,
+        end_timestamp=end_timestamp
     )
 
 @student_exams_bp.route("/attempt/<attempt_token>/review", methods=["GET"])
