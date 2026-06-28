@@ -1569,3 +1569,71 @@ a {
     min-width: 140px;
     width: 140px;
 }
+
+/* ================================================================
+   PHASE 2.5: PRODUCTIVITY & STANDARDIZATION
+   ================================================================ */
+
+/* ── Standardized Disabled States ── */
+button:disabled, .btn:disabled, .btn.disabled {
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+    opacity: 0.65 !important;
+    pointer-events: none;
+}
+
+/* ── Sticky Action Bars ── */
+.sticky-toolbar {
+    position: sticky;
+    top: 70px;
+    z-index: 1020;
+    margin-bottom: var(--spacing-md);
+}
+
+/* ── Skeleton Components Extension ── */
+.skeleton-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+.skeleton-table .skeleton-row {
+    height: 3rem;
+    width: 100%;
+}
+.skeleton-card {
+    height: 120px;
+    width: 100%;
+}
+.skeleton-form-section {
+    height: 48px;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+/* ── Standardized Headers and Toolbars ── */
+.admin-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+    .admin-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+.admin-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+@media (min-width: 768px) {
+    .admin-toolbar {
+        flex-direction: row;
+        align-items: center;
+    }
+}

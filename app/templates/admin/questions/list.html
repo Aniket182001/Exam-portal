@@ -6,7 +6,7 @@
 <div class="container py-4">
     
     <!-- Page Header & Breadcrumbs -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="admin-header">
         <div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1">
@@ -24,12 +24,12 @@
                 </h3>
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-outline-primary rounded-pill px-4 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" style="background-color: var(--aiqm-lavender); color: var(--aiqm-lavender-dark); border-color: transparent;">
-                <i class="bi bi-file-earmark-arrow-up-fill me-2"></i> Import Questions
+        <div class="admin-toolbar">
+            <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" style="background-color: var(--aiqm-lavender); color: var(--aiqm-lavender-dark); border-color: transparent;">
+                <i class="bi bi-file-earmark-arrow-up-fill me-2"></i> Import
             </a>
-            <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-plus-circle-fill me-2"></i> Add New Question
+            <a href="{{ url_for('admin_questions.create_question', exam_id=exam.id) }}" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-plus-circle-fill me-2"></i> Add Question
             </a>
         </div>
     </div>
@@ -146,12 +146,12 @@
             </div>
             {% else %}
             <!-- Empty State -->
-            <div class="text-center py-5 px-3">
-                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-question-circle text-muted fs-1"></i>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-question-circle"></i>
                 </div>
-                <h4 class="fw-bold text-dark">No Questions Yet</h4>
-                <p class="text-muted mb-4 max-w-sm mx-auto">This examination currently has no questions. Click the button below to start building your exam.</p>
+                <h4 class="empty-state-title">No Questions Yet</h4>
+                <p class="empty-state-desc">This examination currently has no questions. Click the button below to start building your exam.</p>
                 <div class="d-flex gap-3 justify-content-center">
                     <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-outline-primary rounded-pill px-4 shadow-sm fw-bold">
                         <i class="bi bi-file-earmark-arrow-up-fill me-2"></i> Import Questions

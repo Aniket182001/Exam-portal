@@ -96,3 +96,14 @@ window.showToast = function(message, type = "success") {
         toast.classList.remove('show');
     }, 2000); // 2 second auto-dismiss per requirement
 };
+
+// 3. Global Modal Focus Management (Phase 2.5)
+document.addEventListener('shown.bs.modal', function (event) {
+    const modal = event.target;
+    // Find first autofocus element, or fallback to first visible input
+    const focusable = modal.querySelector('[autofocus]') || 
+                      modal.querySelector('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])');
+    if (focusable) {
+        focusable.focus();
+    }
+});
