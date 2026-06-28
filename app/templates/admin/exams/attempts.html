@@ -3,7 +3,7 @@
 {% block page_title %}Attempts - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid px-4 px-xl-5 py-4">
     <!-- Breadcrumb & Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
@@ -63,10 +63,10 @@
     </div>
 
     <!-- Data Card -->
-    <div class="card border-0 shadow-sm rounded-xl overflow-hidden">
+    <div class="card border-0 shadow-sm rounded-xl" style="border-radius: 1rem;">
         <div class="card-body p-0">
             {% if attempts %}
-            <div class="table-responsive">
+            <div class="table-responsive" style="overflow: visible;">
                 <form id="actionForm" method="POST">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light border-bottom">
@@ -133,25 +133,37 @@
                                 {% endif %}
                             </td>
                             <td class="pe-4 py-3 text-end">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Result" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                <div class="table-actions">
+                                    <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Result" {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; pointer-events: none;"{% endif %}>
                                         <i class="bi bi-bar-chart-fill text-primary me-1"></i> Result
                                     </a>
-                                    <a href="{{ url_for('admin_bp.view_candidate_answers', attempt_id=attempt.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled{% endif %}>
+                                    <a href="{{ url_for('admin_bp.view_candidate_answers', attempt_id=attempt.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Answer Sheet" {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; pointer-events: none;"{% endif %}>
                                         <i class="bi bi-file-earmark-text-fill text-info me-1"></i> Answers
                                     </a>
-                                    <a href="{{ url_for('admin_exams.compose_result_email', attempt_id=attempt.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Compose Email" {% if attempt.status != 'submitted' %}disabled{% endif %}>
-                                        <i class="bi bi-envelope-paper-fill text-warning me-1"></i> Email
-                                    </a>
-                                    <button type="button" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark copy-result-btn" title="Copy Result"
-                                            data-candidate-name="{{ attempt.student_name }}"
-                                            data-candidate-email="{{ attempt.student_email }}"
-                                            data-exam-title="{{ exam.title }}"
-                                            data-obtained-marks="{{ attempt.total_marks_obtained if attempt.total_marks_obtained is not none else '-' }}"
-                                            data-total-marks="{{ attempt.exam.questions|length }}"
-                                            {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; cursor: not-allowed; pointer-events: none;"{% endif %}>
-                                        <i class="bi bi-clipboard text-secondary me-1"></i> Copy Result
-                                    </button>
+                                    
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm bg-white border shadow-sm rounded-3 hover-scale text-dark d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;" title="More Actions">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 mt-1">
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('admin_exams.compose_result_email', attempt_id=attempt.id) }}" {% if attempt.status != 'submitted' %}style="opacity: 0.5; pointer-events: none;"{% endif %}>
+                                                    <i class="bi bi-envelope-paper-fill text-warning"></i> Email Result
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item d-flex align-items-center gap-2 py-2 copy-result-btn" type="button"
+                                                        data-candidate-name="{{ attempt.student_name }}"
+                                                        data-candidate-email="{{ attempt.student_email }}"
+                                                        data-exam-title="{{ exam.title }}"
+                                                        data-obtained-marks="{{ attempt.total_marks_obtained if attempt.total_marks_obtained is not none else '-' }}"
+                                                        data-total-marks="{{ attempt.exam.questions|length }}"
+                                                        {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; cursor: not-allowed;"{% endif %}>
+                                                    <i class="bi bi-clipboard text-secondary"></i> Copy Result
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
