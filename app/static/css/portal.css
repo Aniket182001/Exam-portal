@@ -111,6 +111,7 @@ a:hover {
     height: var(--navbar-height);
     box-shadow: var(--shadow-sm);
     border-bottom: 1px solid var(--aiqm-gray-200);
+    position: relative; /* anchor for mobile dropdown */
 }
 
 .aiqm-navbar .navbar-brand {
@@ -423,7 +424,7 @@ a:hover {
     color: #1D1D1F;
     line-height: 1.05;
     margin-bottom: 1.5rem;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.02em;
     opacity: 0;
     animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
 }
@@ -664,6 +665,67 @@ a:hover {
 .rounded-xl { border-radius: var(--radius-lg) !important; }
 .rounded-lg  { border-radius: var(--radius-md) !important; }
 .rounded-sm  { border-radius: var(--radius-sm) !important; }
+
+/* ================================================================
+   MOBILE NAVBAR DROPDOWN PANEL
+   Targets Bootstrap's lg breakpoint (< 992px) — desktop unaffected
+   ================================================================ */
+@media (max-width: 991.98px) {
+
+    /* The collapsible panel itself */
+    .aiqm-navbar .navbar-collapse {
+        position: absolute;
+        top: calc(var(--navbar-height) + 6px); /* float just below navbar */
+        left: 12px;
+        right: 12px;
+        z-index: 1050;
+
+        /* Card appearance */
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+        padding: 12px;
+
+        /* Animation: hidden state */
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+        transition: opacity 0.22s ease, transform 0.22s ease;
+
+        /* Prevent collapsed content from collapsing visually mid-animation */
+        display: block !important;
+        overflow: hidden;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        transition: max-height 0.25s ease, opacity 0.22s ease, transform 0.22s ease, padding 0.22s ease;
+    }
+
+    /* Shown state — Bootstrap adds .show to the element */
+    .aiqm-navbar .navbar-collapse.show {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        max-height: 400px; /* generous ceiling for content */
+        padding: 12px;
+    }
+
+    /* Individual nav links inside the mobile panel */
+    .aiqm-navbar .navbar-collapse .nav-link {
+        display: block;
+        padding: 0.75rem 1rem !important;
+        margin: 2px 0;
+        border-radius: 12px;
+        font-size: 0.95rem;
+    }
+
+    /* Ensure ul fills the card width */
+    .aiqm-navbar .navbar-collapse .navbar-nav {
+        width: 100%;
+        gap: 0 !important;
+    }
+}
 
 /* ================================================================
    RESPONSIVE ADJUSTMENTS
