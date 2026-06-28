@@ -81,7 +81,7 @@
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Score</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Result</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Submitted At</th>
-                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end">Actions</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
@@ -132,7 +132,7 @@
                                     -
                                 {% endif %}
                             </td>
-                            <td class="pe-4 py-3 text-end">
+                            <td class="pe-4 py-3 text-end action-col">
                                 <div class="table-actions">
                                     <a href="{{ url_for('student_exams.view_result', attempt_token=attempt.attempt_token) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Result" {% if attempt.status != 'submitted' %}disabled style="opacity: 0.5; pointer-events: none;"{% endif %}>
                                         <i class="bi bi-bar-chart-fill text-primary me-1"></i> Result
@@ -174,12 +174,12 @@
             </div>
             {% else %}
             <!-- Empty State -->
-            <div class="text-center py-5 px-3">
-                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 80px; height: 80px;">
-                    <i class="bi bi-journal-x text-muted fs-1"></i>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-journal-x"></i>
                 </div>
-                <h4 class="fw-bold text-dark">No Attempts Yet</h4>
-                <p class="text-muted mb-0 mx-auto">No students have attempted this examination yet.</p>
+                <h4 class="empty-state-title">No Attempts Yet</h4>
+                <p class="empty-state-desc">No students have attempted this examination yet.</p>
             </div>
             {% endif %}
         </div>
@@ -373,37 +373,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast("Result copied to clipboard.");
             }).catch(err => {
                 console.error("Failed to copy text: ", err);
-                alert("Failed to copy result to clipboard.");
+                if (typeof window.showToast === 'function') {
+                    window.showToast("Failed to copy result.", "danger");
+                }
             });
         });
     });
     
-    function showToast(message) {
-        let toast = document.getElementById('appleToast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'appleToast';
-            toast.className = 'apple-toast';
-            toast.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> <span class="toast-text"></span>`;
-            document.body.appendChild(toast);
-        }
-        toast.querySelector('.toast-text').textContent = message;
-        
-        // Reset state for animations
-        toast.classList.remove('show');
-        
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 50);
-        
-        if (window.toastTimeout) {
-            clearTimeout(window.toastTimeout);
-        }
-        
-        window.toastTimeout = setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
+
 });
 </script>
 {% endblock %}

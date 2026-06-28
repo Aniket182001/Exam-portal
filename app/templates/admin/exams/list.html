@@ -51,7 +51,7 @@
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Title</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Duration</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center">Status</th>
-                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end" style="border-top-right-radius: 1rem;">Actions</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col" style="border-top-right-radius: 1rem;">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
@@ -69,49 +69,54 @@
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2 rounded-pill"><i class="bi bi-dash-circle-fill me-1"></i> Inactive</span>
                                 {% endif %}
                             </td>
-                            <td class="pe-4 py-3 text-end">
+                            <td class="pe-4 py-3 text-end action-col">
                                 <div class="d-flex gap-2 justify-content-end">
-                                    <a href="{{ url_for('admin_exams.view_candidates', exam_id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Manage Candidates">
-                                        <i class="bi bi-person-badge-fill text-warning me-1"></i> Candidates
-                                    </a>
                                     <a href="{{ url_for('admin_exams.view_attempts', exam_id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="View Attempts">
                                         <i class="bi bi-people-fill text-info me-1"></i> Attempts
                                     </a>
                                     <a href="{{ url_for('admin_questions.list_questions', exam_id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Manage Questions">
                                         <i class="bi bi-list-task text-primary me-1"></i> Questions
                                     </a>
-                                    <a href="{{ url_for('admin_exams.edit_exam', id=exam.id) }}" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" title="Edit Exam">
-                                        <i class="bi bi-pencil-square text-secondary me-1"></i> Edit
-                                    </a>
-                                    <div class="dropstart">
-                                        <button class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center justify-content-center text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions" style="width: 32px; height: 32px;">
                                             <i class="bi bi-three-dots"></i>
                                         </button>
-                                        <ul class="dropdown-menu shadow border-0 rounded-3 mb-0">
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mb-0 mt-1">
+                                            <li>
+                                                <a class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2" href="{{ url_for('admin_exams.edit_exam', id=exam.id) }}">
+                                                    <i class="bi bi-pencil-square text-secondary"></i> Edit Exam
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2" href="{{ url_for('admin_exams.view_candidates', exam_id=exam.id) }}">
+                                                    <i class="bi bi-person-badge-fill text-warning"></i> Candidates
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form action="{{ url_for('admin_exams.toggle_exam', id=exam.id) }}" method="POST" class="m-0">
                                                     {% if exam.is_active %}
-                                                        <button type="submit" class="dropdown-item py-2 fw-medium text-warning">
-                                                            <i class="bi bi-pause-circle-fill me-2"></i> Pause Exam
+                                                        <button type="submit" class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2 text-warning">
+                                                            <i class="bi bi-pause-circle-fill"></i> Pause Exam
                                                         </button>
                                                     {% else %}
-                                                        <button type="submit" class="dropdown-item py-2 fw-medium text-success">
-                                                            <i class="bi bi-play-circle-fill me-2"></i> Activate Exam
+                                                        <button type="submit" class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2 text-success">
+                                                            <i class="bi bi-play-circle-fill"></i> Activate Exam
                                                         </button>
                                                     {% endif %}
                                                 </form>
                                             </li>
                                             <li>
                                                 <form action="{{ url_for('admin_exams.duplicate_exam', exam_id=exam.id) }}" method="POST" class="m-0">
-                                                    <button type="submit" class="dropdown-item py-2 fw-medium">
-                                                        <i class="bi bi-files text-secondary me-2"></i> Duplicate Exam
+                                                    <button type="submit" class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2">
+                                                        <i class="bi bi-files text-secondary"></i> Duplicate Exam
                                                     </button>
                                                 </form>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <button type="button" class="dropdown-item py-2 fw-bold text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ exam.id }}">
-                                                    <i class="bi bi-trash-fill me-2"></i> Delete
+                                                <button type="button" class="dropdown-item py-2 fw-bold d-flex align-items-center gap-2 text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ exam.id }}">
+                                                    <i class="bi bi-trash-fill"></i> Delete
                                                 </button>
                                             </li>
                                         </ul>

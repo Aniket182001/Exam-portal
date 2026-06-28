@@ -46,7 +46,7 @@
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 50%">Question Text</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 15%">Options</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 10%">Marks</th>
-                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end" style="width: 20%">Actions</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col" style="width: 20%">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
@@ -66,16 +66,77 @@
                             <td class="py-3 text-center text-dark fw-bold">
                                 {{ question.marks }}
                             </td>
-                            <td class="pe-4 py-3 text-end">
-                                <div class="btn-group shadow-sm">
-                                    <a href="{{ url_for('admin_questions.edit_question', question_id=question.id) }}" class="btn btn-sm btn-light border text-primary" title="Edit Question">
+                            <td class="pe-4 py-3 text-end action-col">
+                                <div class="d-flex gap-2 justify-content-end align-items-center">
+                                    <!-- Inline Status Indicator -->
+                                    <span class="save-status text-muted small fw-medium d-none me-2" id="status-{{ question.id }}">
+                                        <i class="bi bi-check-circle-fill text-success"></i> Saved
+                                    </span>
+
+                                    <!-- Quick Edit Toggle -->
+                                    <button type="button" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-primary toggle-edit-btn" data-bs-toggle="collapse" data-bs-target="#editRow{{ question.id }}" aria-expanded="false" aria-controls="editRow{{ question.id }}" title="Quick Edit">
                                         <i class="bi bi-pencil-square"></i> <span class="d-none d-lg-inline ms-1">Edit</span>
-                                    </a>
-                                    <form action="{{ url_for('admin_questions.delete_question', question_id=question.id) }}" method="POST" class="d-inline mb-0" onsubmit="return confirm('Are you sure you want to permanently delete this question and all its options? This action cannot be undone.');">
-                                        <button type="submit" class="btn btn-sm btn-light border text-danger" title="Delete Question">
-                                            <i class="bi bi-trash3-fill"></i>
+                                    </button>
+
+                                    <!-- Overflow Actions -->
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center justify-content-center text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-three-dots"></i>
                                         </button>
-                                    </form>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mb-0 mt-1">
+                                            <li>
+                                                <a href="{{ url_for('admin_questions.edit_question', question_id=question.id) }}" class="dropdown-item py-2 fw-medium d-flex align-items-center gap-2">
+                                                    <i class="bi bi-box-arrow-up-right text-secondary"></i> Advanced Edit
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form action="{{ url_for('admin_questions.delete_question', question_id=question.id) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to permanently delete this question and all its options? This action cannot be undone.');">
+                                                    <button type="submit" class="dropdown-item py-2 fw-bold d-flex align-items-center gap-2 text-danger">
+                                                        <i class="bi bi-trash-fill"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Expanded Inline Edit Row -->
+                        <tr class="p-0 border-0 bg-light">
+                            <td colspan="5" class="p-0 border-0">
+                                <div class="collapse" id="editRow{{ question.id }}">
+                                    <div class="p-4 border-start border-4 border-primary m-3 bg-white shadow-sm rounded-3">
+                                        <form class="inline-edit-form" data-question-id="{{ question.id }}" onsubmit="return false;">
+                                            <input type="hidden" name="question_text" value="{{ question.question_text|escape }}">
+                                            
+                                            <div class="row g-4">
+                                                <!-- Options List -->
+                                                <div class="col-md-9">
+                                                    <label class="form-label fw-bold small text-uppercase text-muted letter-wide mb-3">Answer Options (Select Correct)</label>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        {% for option in question.options|sort(attribute='option_order') %}
+                                                        <label class="d-flex align-items-center p-2 border rounded-3 transition-fast hover-bg-light cursor-pointer option-label {% if question.correct_option_id == option.id %}border-primary bg-primary-subtle{% endif %}">
+                                                            <input type="radio" name="correct_option_index" value="{{ loop.index0 }}" class="form-check-input me-3 mt-0 inline-radio" {% if question.correct_option_id == option.id %}checked{% endif %}>
+                                                            <input type="hidden" name="option_text[]" value="{{ option.option_text|escape }}">
+                                                            <span class="fw-medium text-dark">{{ option.option_text }}</span>
+                                                        </label>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Marks -->
+                                                <div class="col-md-3 border-start">
+                                                    <label class="form-label fw-bold small text-uppercase text-muted letter-wide mb-3">Marks</label>
+                                                    <input type="number" step="0.5" min="0.5" name="marks" class="form-control fw-bold fs-5 text-center inline-marks" value="{{ question.marks }}">
+                                                    <div class="form-text text-muted small mt-2">
+                                                        <i class="bi bi-info-circle me-1"></i> Changes save automatically.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -123,4 +184,134 @@
         background-color: var(--aiqm-gray-100);
     }
 </style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Label highlighting for radios
+    document.querySelectorAll('.inline-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const form = this.closest('form');
+            form.querySelectorAll('.option-label').forEach(label => {
+                label.classList.remove('border-primary', 'bg-primary-subtle');
+            });
+            this.closest('.option-label').classList.add('border-primary', 'bg-primary-subtle');
+        });
+    });
+
+    const activeSaves = {};
+    const saveQueues = {};
+
+    function showStatus(questionId, state) {
+        const statusEl = document.getElementById(`status-${questionId}`);
+        if (!statusEl) return;
+        
+        statusEl.classList.remove('d-none');
+        if (state === 'saving') {
+            statusEl.innerHTML = `<span class="spinner-border spinner-border-sm text-primary me-1" role="status"></span> Saving...`;
+            statusEl.classList.remove('text-success', 'text-danger');
+            statusEl.classList.add('text-primary');
+        } else if (state === 'saved') {
+            statusEl.innerHTML = `<i class="bi bi-check-circle-fill text-success me-1"></i> Saved`;
+            statusEl.classList.remove('text-primary', 'text-danger');
+            statusEl.classList.add('text-success');
+            setTimeout(() => {
+                if (statusEl.innerHTML.includes('Saved')) {
+                    statusEl.classList.add('d-none');
+                }
+            }, 3000);
+        } else if (state === 'error') {
+            statusEl.innerHTML = `<i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> Failed <a href="#" class="text-danger text-decoration-underline ms-1 retry-btn" data-qid="${questionId}">Retry</a>`;
+            statusEl.classList.remove('text-primary', 'text-success');
+            statusEl.classList.add('text-danger');
+            
+            const retryBtn = statusEl.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const form = document.querySelector(`form[data-question-id="${questionId}"]`);
+                    if(form) performSave(questionId, form);
+                });
+            }
+        }
+    }
+
+    async function performSave(questionId, form) {
+        if (activeSaves[questionId]) {
+            saveQueues[questionId] = true;
+            return;
+        }
+
+        activeSaves[questionId] = true;
+        showStatus(questionId, 'saving');
+
+        const formData = new FormData(form);
+        const url = form.getAttribute('action') || `/admin/questions/${questionId}/edit`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            // Consider it successful if OK or if we hit a redirect (meaning save succeeded on backend)
+            if (response.ok || response.redirected) {
+                showStatus(questionId, 'saved');
+            } else {
+                showStatus(questionId, 'error');
+            }
+        } catch (error) {
+            console.error("Save error:", error);
+            showStatus(questionId, 'error');
+        } finally {
+            activeSaves[questionId] = false;
+            if (saveQueues[questionId]) {
+                saveQueues[questionId] = false;
+                performSave(questionId, form);
+            }
+        }
+    }
+
+    // Trigger on radio change
+    document.querySelectorAll('.inline-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const form = this.closest('form');
+            const qId = form.getAttribute('data-question-id');
+            performSave(qId, form);
+        });
+    });
+
+    // Trigger on marks input (debounce)
+    document.querySelectorAll('.inline-marks').forEach(input => {
+        let debounceTimer;
+        input.addEventListener('input', function() {
+            const form = this.closest('form');
+            const qId = form.getAttribute('data-question-id');
+            clearTimeout(debounceTimer);
+            
+            // Show typing indicator
+            const statusEl = document.getElementById(`status-${qId}`);
+            if (statusEl) {
+                statusEl.classList.remove('d-none');
+                statusEl.innerHTML = `<span class="text-muted"><i class="bi bi-pencil me-1"></i>Typing...</span>`;
+            }
+            
+            debounceTimer = setTimeout(() => {
+                performSave(qId, form);
+            }, 500);
+        });
+        
+        input.addEventListener('blur', function() {
+            const form = this.closest('form');
+            const qId = form.getAttribute('data-question-id');
+            clearTimeout(debounceTimer);
+            performSave(qId, form);
+        });
+    });
+});
+</script>
 {% endblock %}

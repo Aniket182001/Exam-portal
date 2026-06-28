@@ -137,6 +137,12 @@
             btnElement.innerHTML = '<i class="bi bi-check-lg"></i> Copied!';
             btnElement.classList.replace('btn-outline-secondary', 'btn-success');
             btnElement.classList.add('text-white');
+            
+            let toastMsg = "Text copied.";
+            if (elementId === 'emailSubject') toastMsg = "Subject copied.";
+            if (elementId === 'emailBody') toastMsg = "Body copied.";
+            if (typeof window.showToast === 'function') window.showToast(toastMsg);
+            
             setTimeout(() => {
                 btnElement.innerHTML = originalHtml;
                 btnElement.classList.replace('btn-success', 'btn-outline-secondary');
@@ -153,7 +159,9 @@
         const fullEmail = `To: ${recipient}\nSubject: ${subject}\n\n${body}`;
         
         navigator.clipboard.writeText(fullEmail).then(() => {
-            alert('Entire email copied to clipboard!');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Entire email copied to clipboard!');
+            }
         });
     }
 </script>

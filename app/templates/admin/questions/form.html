@@ -260,14 +260,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const rows = document.querySelectorAll('.option-row');
         if (rows.length < 2 || rows.length > 6) {
             e.preventDefault();
-            alert('Please provide between 2 and 6 options.');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Please provide between 2 and 6 options.', 'warning');
+            }
             return false;
         }
         
         const checked = document.querySelector('input[name="correct_option_index"]:checked');
         if (!checked) {
             e.preventDefault();
-            alert('Please select the correct answer using the radio buttons.');
+            if (typeof window.showToast === 'function') {
+                window.showToast('Please select the correct answer using the radio buttons.', 'warning');
+            }
             return false;
         }
     });

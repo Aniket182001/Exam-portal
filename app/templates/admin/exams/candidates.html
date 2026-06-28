@@ -133,7 +133,7 @@
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Phone</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Registered On</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Status</th>
-                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end">Actions</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
@@ -165,10 +165,19 @@
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 rounded-pill">⚪ Not Attempted</span>
                                 {% endif %}
                             </td>
-                            <td class="pe-4 py-3 text-end">
-                                <button type="button" class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center text-danger" title="Delete Candidate" data-bs-toggle="modal" data-bs-target="#deleteSingleModal{{ candidate.id }}">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
+                            <td class="pe-4 py-3 text-end action-col">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-sm bg-white border shadow-sm rounded-3 fw-medium hover-scale d-inline-flex align-items-center justify-content-center text-dark" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="More Actions" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mb-0 mt-1">
+                                        <li>
+                                            <button type="button" class="dropdown-item py-2 fw-bold d-flex align-items-center gap-2 text-danger" data-bs-toggle="modal" data-bs-target="#deleteSingleModal{{ candidate.id }}">
+                                                <i class="bi bi-trash-fill"></i> Delete Candidate
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
 
                                 <!-- Delete Single Modal -->
                                 <div class="modal fade" id="deleteSingleModal{{ candidate.id }}" tabindex="-1" aria-hidden="true">
@@ -390,7 +399,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (count === 0) {
                 e.preventDefault();
                 e.stopPropagation();
-                alert("Please select at least one candidate to delete.");
+                if (typeof window.showToast === 'function') {
+                    window.showToast("Please select at least one candidate to delete.", "warning");
+                }
                 return;
             }
             document.getElementById('deleteSelectedCount').textContent = count;
