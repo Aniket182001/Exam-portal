@@ -236,6 +236,104 @@ def delete_question(question_id):
     flash("Question deleted successfully.", "success")
     return redirect(url_for('admin_questions.list_questions', exam_id=exam_id))
 
+@admin_questions_bp.route("/exams/<int:exam_id>/questions/delete_selected", methods=["POST"])
+def delete_selected_questions(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    question_ids = request.form.getlist("question_ids")
+    
+    if not question_ids:
+        flash("Please select at least one question to delete.", "warning")
+        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+        
+    try:
+        # Cascade delete is typically handled by SQLAlchemy relationships, 
+        # but to be safe and use bulk delete we can delete options first if needed.
+        # Since models use cascade="all, delete-orphan", we can query and delete the questions.
+        Question.query.filter(
+            Question.exam_id == exam.id,
+            Question.id.in_(question_ids)
+        ).delete(synchronize_session=False)
+        
+        db.session.commit()
+        flash(f"Successfully deleted {len(question_ids)} selected questions.", "success")
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Failed to delete questions for exam {exam_id}: {e}")
+        flash("An error occurred while deleting the selected questions. Please check the logs.", "danger")
+        
+    return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+@admin_questions_bp.route("/exams/<int:exam_id>/questions/duplicate_selected", methods=["POST"])
+def duplicate_selected_questions(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    question_ids = request.form.getlist("question_ids")
+    
+    if not question_ids:
+        flash("Please select at least one question to duplicate.", "warning")
+        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+        
+    try:
+        # Load all questions for the exam ordered by display_order
+        all_questions = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.asc()).all()
+        
+        # Identify the selected questions in their current display order
+        selected_questions = [q for q in all_questions if str(q.id) in question_ids]
+        
+        if not selected_questions:
+            flash("No valid questions selected.", "warning")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+            
+        # Find the index of the LAST selected question in the all_questions list
+        last_selected_q = selected_questions[-1]
+        insert_index = all_questions.index(last_selected_q) + 1
+        
+        new_questions = []
+        # Duplicate questions
+        for q in selected_questions:
+            new_q = Question(
+                exam_id=exam.id,
+                question_text=q.question_text,
+                marks=q.marks,
+                display_order=0 # Will be updated below
+            )
+            db.session.add(new_q)
+            db.session.flush() # Flush to get the new question ID
+            
+            # Map old option ID to new option ID for correct_option_id
+            option_id_map = {}
+            for opt in q.options:
+                new_opt = QuestionOption(
+                    question_id=new_q.id,
+                    option_text=opt.option_text,
+                    option_order=opt.option_order
+                )
+                db.session.add(new_opt)
+                db.session.flush() # Flush to get new option ID
+                option_id_map[opt.id] = new_opt.id
+                
+            if q.correct_option_id in option_id_map:
+                new_q.correct_option_id = option_id_map[q.correct_option_id]
+                
+            new_questions.append(new_q)
+            
+        # Insert duplicated questions immediately after the last selected question
+        all_questions = all_questions[:insert_index] + new_questions + all_questions[insert_index:]
+        
+        # Renumber all questions continuously
+        for idx, q in enumerate(all_questions):
+            q.display_order = idx + 1
+            
+        db.session.commit()
+        flash(f"Successfully duplicated {len(selected_questions)} questions.", "success")
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Failed to duplicate questions for exam {exam_id}: {e}")
+        flash("An error occurred while duplicating the selected questions. Please check the logs.", "danger")
+        
+    return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
 @admin_questions_bp.route("/exams/<int:exam_id>/questions/import", methods=["GET", "POST"])
 def upload_import(exam_id):
     exam = Exam.query.get_or_404(exam_id)

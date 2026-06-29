@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!table) return; // Only run on pages with tables
 
     const selectAllCheckbox = document.getElementById('selectAll');
-    const rowCheckboxes = Array.from(table.querySelectorAll('tbody .form-check-input'));
+    const rowCheckboxes = Array.from(table.querySelectorAll('tbody td.select-col input[type="checkbox"]'));
     
     if (rowCheckboxes.length === 0) return; // No selectable rows
 
@@ -18,14 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const bulkCloseBtn = document.getElementById('aiqm-bulk-close');
     
     let lastCheckedIndex = -1;
-    let selectedCount = 0;
+    let selectedIds = new Set();
 
     // --- Core Selection Logic ---
     function updateSelectionState() {
-        selectedCount = rowCheckboxes.filter(cb => cb.checked).length;
+        selectedIds.clear();
         
-        // Highlight rows
         rowCheckboxes.forEach(cb => {
+            // Only add valid values to the set
+            if (cb.checked && cb.value) {
+                selectedIds.add(cb.value);
+            }
+            
+            // Highlight rows
             const tr = cb.closest('tr');
             if (cb.checked) {
                 tr.classList.add('selected-row');
@@ -34,16 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Update Select All checkbox state
+        // Update Select All checkbox state based on unique selections
         if (selectAllCheckbox) {
-            selectAllCheckbox.checked = selectedCount > 0 && selectedCount === rowCheckboxes.length;
-            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < rowCheckboxes.length;
+            selectAllCheckbox.checked = selectedIds.size > 0 && selectedIds.size === rowCheckboxes.length;
+            selectAllCheckbox.indeterminate = selectedIds.size > 0 && selectedIds.size < rowCheckboxes.length;
         }
 
-        // Update Floating Bar
+        // Update Floating Bar with unique count
         if (bulkBar && bulkCountText) {
-            if (selectedCount > 0) {
-                bulkCountText.textContent = `${selectedCount} selected`;
+            if (selectedIds.size > 0) {
+                bulkCountText.textContent = `${selectedIds.size} selected`;
                 bulkBar.classList.add('show');
                 populateDynamicActions();
             } else {
@@ -125,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Esc to clear selection
-        if (e.key === 'Escape' && selectedCount > 0) {
+        if (e.key === 'Escape' && selectedIds.size > 0) {
             clearSelection();
         }
 
@@ -143,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchForms = document.querySelectorAll('form[method="GET"]');
     searchForms.forEach(form => {
         form.addEventListener('submit', (e) => {
-            if (selectedCount > 0) {
+            if (selectedIds.size > 0) {
                 // If they have selections, we clear them before submitting
                 // Alternatively, we could prevent submission and warn.
                 if(window.showToast) window.showToast('Filtering cleared your current selection.', 'warning');

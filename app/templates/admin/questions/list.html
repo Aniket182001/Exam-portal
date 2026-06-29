@@ -25,6 +25,17 @@
             </div>
         </div>
         <div class="admin-toolbar d-flex gap-2">
+            <!-- Hidden Bulk Actions (Cloned into floating bar by bulk-selection.js) -->
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold action-btn d-none shadow-sm me-2" data-bs-toggle="modal" data-bs-target="#duplicateSelectedModal">
+                <i class="bi bi-files me-2"></i> Duplicate Selected
+            </button>
+            <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold action-btn d-none shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteSelectedModal">
+                <i class="bi bi-trash-fill me-2"></i> Delete Selected
+            </button>
+            
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" id="toggleSelectionModeBtn">
+                <i class="bi bi-check-all me-2"></i> Select
+            </button>
             <a href="{{ url_for('admin_questions.export_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" style="background-color: rgba(25, 135, 84, 0.1); color: #198754; border-color: transparent;">
                 <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export
             </a>
@@ -45,6 +56,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light border-bottom">
                         <tr>
+                            <th scope="col" class="ps-4 py-3 select-col d-none" style="width: 50px;">
+                                <input class="form-check-input" type="checkbox" id="selectAll">
+                            </th>
                             <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 60px;">No.</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Question Text</th>
                             <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 120px;">Options</th>
@@ -54,7 +68,10 @@
                     </thead>
                     <tbody class="border-top-0">
                         {% for question in questions %}
-                        <tr>
+                        <tr class="question-row cursor-pointer">
+                            <td class="ps-4 py-3 select-col d-none">
+                                <input class="form-check-input" type="checkbox" name="question_ids" value="{{ question.id }}" form="actionForm">
+                            </td>
                             <td class="ps-4 py-3">
                                 <span class="badge bg-light text-dark border px-2 py-1">{{ loop.index }}</span>
                             </td>
@@ -107,8 +124,8 @@
                         </tr>
                         
                         <!-- Expanded Inline Edit Row -->
-                        <tr class="p-0 border-0 bg-light">
-                            <td colspan="5" class="p-0 border-0">
+                        <tr class="p-0 border-0 bg-light inline-edit-container">
+                            <td colspan="6" class="p-0 border-0">
                                 <div class="collapse" id="editRow{{ question.id }}">
                                     <div class="p-4 border-start border-4 border-primary m-3 bg-white shadow-sm rounded-3">
                                         <form class="inline-edit-form" data-question-id="{{ question.id }}" onsubmit="return false;">
@@ -169,6 +186,56 @@
     </div>
 </div>
 
+<form id="actionForm" method="POST"></form>
+
+<!-- Delete Selected Modal -->
+<div class="modal fade" id="deleteSelectedModal" tabindex="-1" aria-labelledby="deleteSelectedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="deleteSelectedModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Delete Selected Questions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0 fs-5 text-dark">Delete <strong id="deleteSelectedCount">0</strong> selected questions?</p>
+                <p class="text-muted small mt-2 mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-medium border" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="actionForm" formaction="{{ url_for('admin_questions.delete_selected_questions', exam_id=exam.id) }}" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                    Yes, Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Selected Modal -->
+<div class="modal fade" id="duplicateSelectedModal" tabindex="-1" aria-labelledby="duplicateSelectedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary" id="duplicateSelectedModalLabel">
+                    <i class="bi bi-files me-2"></i>Duplicate Selected Questions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0 fs-5 text-dark">Duplicate <strong id="duplicateSelectedCount">0</strong> selected questions?</p>
+                <p class="text-muted small mt-2 mb-0">The duplicates will be inserted immediately after the last selected question.</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4 fw-medium border" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="actionForm" formaction="{{ url_for('admin_questions.duplicate_selected_questions', exam_id=exam.id) }}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                    Yes, Duplicate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .hover-scale {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -190,8 +257,57 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/bulk-selection.js') }}?v=1.1"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Selection Mode Toggle
+    const toggleBtn = document.getElementById('toggleSelectionModeBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.querySelectorAll('.select-col').forEach(el => el.classList.toggle('d-none'));
+            toggleBtn.classList.toggle('active');
+            if (toggleBtn.classList.contains('active')) {
+                toggleBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i> Cancel Selection';
+                toggleBtn.classList.replace('btn-outline-secondary', 'btn-secondary');
+            } else {
+                toggleBtn.innerHTML = '<i class="bi bi-check-all me-2"></i> Select';
+                toggleBtn.classList.replace('btn-secondary', 'btn-outline-secondary');
+                // Clear selection when disabling
+                if(document.getElementById('aiqm-bulk-close')) {
+                    document.getElementById('aiqm-bulk-close').click();
+                }
+            }
+        });
+    }
+
+    // Row click to select (excluding buttons/links)
+    document.querySelectorAll('.question-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('button, a, input, .dropdown')) return;
+            const cb = row.querySelector('.form-check-input');
+            if (cb && !cb.closest('.select-col').classList.contains('d-none')) {
+                cb.click(); 
+            }
+        });
+    });
+
+    // Update modal count when opened
+    const deleteModal = document.getElementById('deleteSelectedModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function () {
+            const count = document.querySelectorAll('input[name="question_ids"]:checked').length;
+            document.getElementById('deleteSelectedCount').textContent = count;
+        });
+    }
+
+    const duplicateModal = document.getElementById('duplicateSelectedModal');
+    if (duplicateModal) {
+        duplicateModal.addEventListener('show.bs.modal', function () {
+            const count = document.querySelectorAll('input[name="question_ids"]:checked').length;
+            document.getElementById('duplicateSelectedCount').textContent = count;
+        });
+    }
+
     // Label highlighting for radios
     document.querySelectorAll('.inline-radio').forEach(radio => {
         radio.addEventListener('change', function() {
