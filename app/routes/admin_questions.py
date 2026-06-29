@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from app.extensions import db
 from app.models import Exam, Question, QuestionOption
 import os
 import json
 import uuid
+import io
+import openpyxl
 from werkzeug.utils import secure_filename
 from app.services.import_parsers import get_parser
 # New modular import engine (runs in parallel; does not replace existing flow yet)
@@ -22,6 +24,71 @@ def list_questions(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     questions = Question.query.filter_by(exam_id=exam_id).order_by(Question.display_order.asc()).all()
     return render_template("admin/questions/list.html", exam=exam, questions=questions)
+
+@admin_questions_bp.route("/exams/<int:exam_id>/questions/export")
+def export_questions(exam_id):
+    exam = Exam.query.get_or_404(exam_id)
+    questions = Question.query.filter_by(exam_id=exam_id).order_by(Question.display_order.asc()).all()
+    
+    if not questions:
+        flash("This exam has no questions to export.", "warning")
+        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+        
+    try:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Questions"
+        
+        headers = [
+            "Question", "Option 1", "Option 2", "Option 3", 
+            "Option 4", "Option 5", "Option 6", "Correct Answer", "Marks"
+        ]
+        ws.append(headers)
+        
+        from openpyxl.styles import Font
+        for col_idx in range(1, len(headers) + 1):
+            ws.cell(row=1, column=col_idx).font = Font(bold=True)
+            
+        for q in questions:
+            row_data = [q.question_text]
+            
+            opts = sorted(q.options, key=lambda x: x.option_order)
+            correct_letter = ""
+            
+            # Append options 1 to 6
+            for i in range(6):
+                if i < len(opts):
+                    row_data.append(opts[i].option_text)
+                    if opts[i].id == q.correct_option_id:
+                        correct_letter = chr(ord('A') + i)
+                else:
+                    row_data.append("")
+                    
+            row_data.append(correct_letter)
+            row_data.append(q.marks)
+            
+            ws.append(row_data)
+            
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        filename = f"{exam.title}.xlsx"
+        # Sanitize filename
+        filename = "".join([c for c in filename if c.isalpha() or c.isdigit() or c in (' ', '-', '_')]).rstrip()
+        filename = filename + ".xlsx" if not filename.endswith(".xlsx") else filename
+        
+        return send_file(
+            output,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to export questions for exam {exam_id}: {e}")
+        flash("Failed to generate export file. Please check server logs.", "danger")
+        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
 
 @admin_questions_bp.route("/exams/<int:exam_id>/questions/create", methods=["GET", "POST"])
 def create_question(exam_id):
@@ -233,6 +300,7 @@ def upload_import(exam_id):
                 with open(json_path, 'w', encoding='utf-8') as f:
                     json.dump({
                         "questions":       parsed_questions,
+                        "engine_questions": engine_result.to_dict_list() if 'engine_result' in locals() else [],
                         "engine_metadata": engine_metadata,
                     }, f)
                     
@@ -263,12 +331,14 @@ def preview_import(exam_id, import_id):
         data = json.load(f)
         # Support both legacy (plain list) and new (dict with questions key) formats
         parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
+        engine_questions = data.get("engine_questions", []) if isinstance(data, dict) else []
         engine_metadata  = data.get("engine_metadata") if isinstance(data, dict) else None
         
     return render_template(
         "admin/questions/import_preview.html",
         exam=exam,
         questions=parsed_questions,
+        engine_questions=engine_questions,
         import_id=import_id,
         engine_metadata=engine_metadata,
     )
@@ -291,6 +361,73 @@ def confirm_import(exam_id):
         
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
+        
+    # Check if frontend submitted AI workspace edits
+    edits_json = request.form.get("edits_json")
+    if edits_json:
+        try:
+            from app.services.import_engine.models import ExtractedQuestion, ExtractionResult
+            from app.services.import_engine.validator import ValidatorLayer
+            
+            edits = json.loads(edits_json)
+            engine_questions = data.get("engine_questions", [])
+            objects_to_validate = []
+            
+            for eq in engine_questions:
+                q_id = eq.get("id")
+                
+                # Check if edited or skipped
+                if q_id in edits:
+                    edit = edits[q_id]
+                    if edit.get("status") == "skipped":
+                        continue
+                        
+                    eq["question"] = edit.get("question_text", eq.get("question", ""))
+                    eq["options"] = edit.get("options", eq.get("options", []))
+                    
+                    correct_idx = edit.get("correct_option_index")
+                    if correct_idx is not None and str(correct_idx).strip():
+                        eq["correct_option_index"] = int(correct_idx)
+                    else:
+                        eq["correct_option_index"] = None
+                        
+                    marks = edit.get("marks")
+                    if marks is not None and str(marks).strip():
+                        eq["marks"] = float(marks)
+
+                # Reconstruct ExtractedQuestion for validation
+                obj = ExtractedQuestion(
+                    question_text=eq.get("question", ""),
+                    options=eq.get("options", []),
+                    correct_option_index=eq.get("correct_option_index"),
+                    marks=eq.get("marks", 1.0)
+                )
+                objects_to_validate.append(obj)
+                
+            # Re-run validation
+            result = ExtractionResult(questions=objects_to_validate)
+            ValidatorLayer().validate(result)
+            
+            parsed_questions = []
+            invalid_count = 0
+            for obj in result.questions:
+                if obj.is_valid:
+                    parsed_questions.append({
+                        "question": obj.question_text,
+                        "options": obj.options,
+                        "correct_option_index": obj.correct_option_index or 0,
+                        "marks": obj.marks
+                    })
+                else:
+                    invalid_count += 1
+            
+            if invalid_count > 0:
+                flash(f"{invalid_count} questions were excluded from import due to lingering validation errors.", "warning")
+                
+        except Exception as e:
+            flash(f"Failed to process AI review edits: {str(e)}", "danger")
+            return redirect(url_for('admin_questions.upload_import', exam_id=exam.id))
+    else:
         # Support both legacy (plain list) and new (dict with questions key) formats
         parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
         
@@ -339,5 +476,9 @@ def confirm_import(exam_id):
     if os.path.exists(json_path):
         os.remove(json_path)
         
-    flash(f"Successfully imported {count} questions.", "success")
+    if count == 0:
+        flash("0 questions were imported. Please review any validation errors or skipped items.", "danger")
+    else:
+        flash(f"Successfully imported {count} questions.", "success")
+        
     return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))

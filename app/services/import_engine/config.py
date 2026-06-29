@@ -87,14 +87,14 @@ class ImportEngineConfig:
 
     @property
     def gemini_model(self) -> str:
-        return os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip()
+        return os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
     @property
     def gemini_timeout(self) -> int:
         try:
-            return int(os.getenv("GEMINI_TIMEOUT", "30"))
+            return int(os.getenv("GEMINI_TIMEOUT", "120"))
         except ValueError:
-            return 30
+            return 120
 
     # ------------------------------------------------------------------
     # OpenAI (future)

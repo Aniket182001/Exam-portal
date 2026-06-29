@@ -62,6 +62,9 @@ class ExtractedQuestion:
     Every field that is not available is left at its default value so
     the downstream validator can flag it without crashing.
     """
+    # A unique identifier for tracking edits in the UI
+    id: str = field(default_factory=lambda: __import__('uuid').uuid4().hex)
+
     # Core content
     question_text: str = ""
     options: list[str] = field(default_factory=list)
@@ -119,6 +122,30 @@ class ExtractedQuestion:
             "marks": self.marks,
         }
 
+    def to_dict(self) -> dict:
+        """
+        Export full rich data for the AI Review Workspace.
+        Retains legacy fields for backward compatibility.
+        """
+        legacy = self.to_legacy_dict()
+        
+        # Add rich properties
+        legacy.update({
+            "id": self.id,
+            "confidence": self.confidence,
+            "reason": self.metadata.get("ai_reason", ""),
+            "raw_text": self.raw_text,
+            "source_page": self.source_page,
+            "is_valid": self.is_valid,
+            "has_warnings": self.has_warnings,
+            "validation_messages": [
+                {"message": m.message, "severity": m.severity.value} 
+                for m in self.validation_messages
+            ],
+            "metadata": self.metadata
+        })
+        return legacy
+
 
 # ---------------------------------------------------------------------------
 # Top-level Extraction Result
@@ -171,3 +198,10 @@ class ExtractionResult:
         pipeline and preview UI expect, ensuring 100 % backward compatibility.
         """
         return [q.to_legacy_dict() for q in self.valid_questions]
+
+    def to_dict_list(self) -> list[dict]:
+        """
+        Returns all questions (valid and invalid) as dicts, containing
+        rich metadata for the review workspace.
+        """
+        return [q.to_dict() for q in self.questions]

@@ -37,11 +37,12 @@ class GoogleFormsExtractor(BaseExtractor):
         result.extractor_name = self.extractor_name
         result.warnings.append(_PARTIAL_MSG)
 
-        # Best-effort fallback — future: parse Google Forms layout specifically
         fallback_result = TextPdfExtractor().extract(filepath)
         result.questions = fallback_result.questions
         result.total_pages = fallback_result.total_pages
         result.errors.extend(fallback_result.errors)
+        result.warnings.extend(fallback_result.warnings)
+        result.metadata.update(fallback_result.metadata)
 
         logger.info(
             "GoogleFormsExtractor: extracted %d questions (fallback mode)",

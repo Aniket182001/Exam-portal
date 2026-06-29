@@ -4,6 +4,9 @@ from config import Config
 from app.extensions import db, migrate
 from app.routes import main_bp
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)

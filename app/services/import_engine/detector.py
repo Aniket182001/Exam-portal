@@ -21,6 +21,7 @@ from typing import Any
 
 from app.services.import_engine.config import engine_config
 from app.services.import_engine.models import DetectionResult, DocumentType
+from app.services.import_engine.fingerprints import FingerprintRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -30,39 +31,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # These are read at call time via properties, not module load time.
 
-# ---------------------------------------------------------------------------
-# Known PDF platform signatures
-# Tuple of (substring_to_search, document_type, weight)
-# These are searched in PDF metadata fields: Producer, Creator, Author.
-# ---------------------------------------------------------------------------
-_PDF_PLATFORM_SIGNATURES: list[tuple[str, DocumentType, float]] = [
-    # Microsoft Forms exports
-    ("microsoft forms",     DocumentType.MICROSOFT_FORMS,   0.90),
-    ("microsoft office",    DocumentType.MICROSOFT_FORMS,   0.55),
-    ("word",                DocumentType.MICROSOFT_FORMS,   0.40),
-
-    # Google Forms exports
-    ("google",              DocumentType.GOOGLE_FORMS,      0.70),
-    ("chromium",            DocumentType.GOOGLE_FORMS,      0.55),
-    ("skia",                DocumentType.GOOGLE_FORMS,      0.60),  # Chrome PDF renderer
-
-    # AIQM LMS exports
-    ("aiqm",                DocumentType.AIQM_LMS,          0.95),
-    ("aiqm lms",            DocumentType.AIQM_LMS,          0.99),
-]
-
-# Text-based signatures searched in the first ~1000 chars of extracted text
-_TEXT_CONTENT_SIGNATURES: list[tuple[str, DocumentType, float]] = [
-    # AIQM LMS
-    ("aiqm",                DocumentType.AIQM_LMS,          0.90),
-    ("examination portal",  DocumentType.AIQM_LMS,          0.75),
-
-    # Microsoft Forms
-    ("microsoft forms",     DocumentType.MICROSOFT_FORMS,   0.85),
-
-    # Google Forms
-    ("google forms",        DocumentType.GOOGLE_FORMS,      0.85),
-]
+# Kept for reference; engine_config.ocr_chars_per_page_threshold is used at runtime
 
 _MIN_TEXT_CHARS_PER_PAGE = 80  # kept for reference; engine_config.ocr_chars_per_page_threshold is used at runtime
 
@@ -268,7 +237,7 @@ class DocumentDetector:
     ) -> tuple[DocumentType | None, float]:
         best_type: DocumentType | None = None
         best_conf = 0.0
-        for substr, dtype, weight in _PDF_PLATFORM_SIGNATURES:
+        for substr, dtype, weight in FingerprintRegistry.PDF_PLATFORM_SIGNATURES:
             if substr in meta_blob and weight > best_conf:
                 best_type = dtype
                 best_conf = weight
@@ -280,7 +249,7 @@ class DocumentDetector:
         text_lower = text.lower()
         best_type: DocumentType | None = None
         best_conf = 0.0
-        for substr, dtype, weight in _TEXT_CONTENT_SIGNATURES:
+        for substr, dtype, weight in FingerprintRegistry.TEXT_CONTENT_SIGNATURES:
             if substr in text_lower and weight > best_conf:
                 best_type = dtype
                 best_conf = weight

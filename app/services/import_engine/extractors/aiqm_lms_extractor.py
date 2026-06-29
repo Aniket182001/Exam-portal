@@ -50,6 +50,8 @@ class AiqmLmsExtractor(BaseExtractor):
         result.questions = fallback.questions
         result.total_pages = fallback.total_pages
         result.errors.extend(fallback.errors)
+        result.warnings.extend(fallback.warnings)
+        result.metadata.update(fallback.metadata)
 
         logger.info(
             "AiqmLmsExtractor: extracted %d questions (fallback mode)",

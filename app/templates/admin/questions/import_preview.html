@@ -3,160 +3,504 @@
 {% block page_title %}Preview Import - {{ exam.title }}{% endblock %}
 
 {% block content %}
-<div class="container py-4 py-md-5">
+<div class="container-fluid py-4 py-md-5 px-md-5">
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide">Import Questions</span>
-            <h2 class="mb-0 text-dark fw-bold">Data Preview</h2>
+            <h2 class="mb-0 text-dark fw-bold">AI Review Workspace</h2>
         </div>
-        <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-outline-secondary rounded-pill">
-            <i class="bi bi-x-circle me-1"></i> Cancel
-        </a>
+        <div>
+            {% if engine_questions %}
+            <button class="btn btn-outline-secondary rounded-pill me-2" onclick="toggleLegacy()">
+                <i class="bi bi-arrow-left-right me-1"></i> Toggle Legacy View
+            </button>
+            {% endif %}
+            <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-outline-secondary rounded-pill">
+                <i class="bi bi-x-circle me-1"></i> Cancel
+            </a>
+        </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-xl mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold text-dark">
-                <i class="bi bi-table text-primary me-2"></i>Parsed Questions ({{ questions|length }})
-            </h5>
-            <form action="{{ url_for('admin_questions.confirm_import', exam_id=exam.id) }}" method="POST" class="d-inline">
-                <input type="hidden" name="import_id" value="{{ import_id }}">
-                <button type="submit" class="btn btn-success rounded-pill fw-bold shadow-sm px-4">
-                    <i class="bi bi-check2-circle me-1"></i> Confirm & Save
-                </button>
-            </form>
-        </div>
-        <div class="card-body p-0">
-            {% if not questions %}
-                <div class="text-center py-5">
-                    <div class="mb-3 opacity-50">
-                        <i class="bi bi-file-earmark-x fs-1 text-muted"></i>
+    <!-- AI Review Workspace -->
+    {% if engine_questions %}
+    <div id="ai-workspace">
+        <!-- Dashboard -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-xl h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="fw-bold text-dark fs-3" id="dash-total">0</div>
+                        <div class="small text-muted fw-bold text-uppercase tracking-wider">Total Questions</div>
                     </div>
-                    <h5 class="fw-bold text-dark">No valid questions found</h5>
-                    <p class="text-muted mb-0">The parser could not extract any valid questions from the uploaded file. Please check the formatting.</p>
                 </div>
-            {% else %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="px-4 py-3" style="width: 5%;">#</th>
-                                <th class="px-4 py-3" style="width: 35%;">Question</th>
-                                <th class="px-4 py-3" style="width: 45%;">Options (Correct is highlighted)</th>
-                                <th class="px-4 py-3 text-center" style="width: 15%;">Marks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for q in questions %}
-                            <tr>
-                                <td class="px-4 py-3 text-muted fw-bold">{{ loop.index }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="text-dark">{{ q.question }}</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <ul class="list-unstyled mb-0 small">
-                                        {% for opt in q.options %}
-                                            <li class="mb-1 {% if loop.index0 == q.correct_option_index %}text-success fw-bold{% else %}text-muted{% endif %}">
-                                                {% if loop.index0 == q.correct_option_index %}
-                                                    <i class="bi bi-check-circle-fill me-1"></i>
-                                                {% else %}
-                                                    <i class="bi bi-dash me-1"></i>
-                                                {% endif %}
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-xl h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="fw-bold text-success fs-3" id="dash-ready">0</div>
+                        <div class="small text-muted fw-bold text-uppercase tracking-wider">Ready</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-xl h-100" style="cursor: pointer; transition: 0.2s;" onclick="startReviewQueue()" id="card-needs-review" onmouseover="this.classList.add('shadow')" onmouseout="this.classList.remove('shadow')">
+                    <div class="card-body p-4 text-center bg-warning bg-opacity-10 rounded-xl">
+                        <div class="fw-bold text-warning fs-3" id="dash-review">0</div>
+                        <div class="small text-muted fw-bold text-uppercase tracking-wider">Needs Review</div>
+                        <div class="badge bg-warning text-dark mt-2" id="btn-start-queue">Start Review Queue <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-xl h-100">
+                    <div class="card-body p-4 text-center">
+                        <div class="fw-bold text-dark fs-6 mt-2">{{ engine_metadata.ai_document_type or engine_metadata.doc_type | replace('_',' ') | title }}</div>
+                        <div class="small text-muted fw-bold text-uppercase tracking-wider mt-1">Format</div>
+                        {% if engine_metadata.ai_reasoning %}
+                        <div class="small text-muted mt-2" style="font-size:0.75rem;">{{ engine_metadata.ai_reasoning }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters & Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="btn-group shadow-sm rounded-pill" role="group" id="filter-group">
+                <button type="button" class="btn btn-outline-primary active" id="filter-all" onclick="setFilter('all')">All</button>
+                <button type="button" class="btn btn-outline-primary" id="filter-needs_review" onclick="setFilter('needs_review')">Needs Review</button>
+                <button type="button" class="btn btn-outline-primary" id="filter-ready" onclick="setFilter('ready')">Ready</button>
+                <button type="button" class="btn btn-outline-primary" id="filter-skipped" onclick="setFilter('skipped')">Skipped</button>
+            </div>
+            <div>
+                <form action="{{ url_for('admin_questions.confirm_import', exam_id=exam.id) }}" method="POST" id="ai-confirm-form" class="d-inline">
+                    <input type="hidden" name="import_id" value="{{ import_id }}">
+                    <input type="hidden" name="edits_json" id="edits_json_input">
+                    <button type="button" onclick="submitAIWorkspace()" class="btn btn-success rounded-pill fw-bold shadow-sm px-4">
+                        <i class="bi bi-check2-circle me-1"></i> Confirm & Save
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Queue Header (hidden by default) -->
+        <div id="queue-header" class="d-none mb-3 alert alert-warning border-0 bg-warning bg-opacity-10 d-flex justify-content-between align-items-center rounded-xl">
+            <div>
+                <i class="bi bi-list-check me-2"></i> <strong id="queue-progress">Reviewing 1 of X</strong>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill me-2" onclick="exitReviewQueue()">Exit Queue</button>
+                <button class="btn btn-sm btn-primary rounded-pill fw-bold" onclick="nextInQueue()">Skip to Next</button>
+            </div>
+        </div>
+
+        <!-- Dynamic Container for Question Cards -->
+        <div id="questions-container"></div>
+    </div>
+    {% endif %}
+
+    <!-- Legacy Workspace -->
+    <div id="legacy-workspace" class="{% if engine_questions %}d-none{% endif %}">
+        <div class="card border-0 shadow-sm rounded-xl mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark">
+                    <i class="bi bi-table text-primary me-2"></i>Legacy Parser Output
+                </h5>
+                <form action="{{ url_for('admin_questions.confirm_import', exam_id=exam.id) }}" method="POST" class="d-inline">
+                    <input type="hidden" name="import_id" value="{{ import_id }}">
+                    <button type="submit" class="btn btn-success rounded-pill fw-bold shadow-sm px-4">
+                        <i class="bi bi-check2-circle me-1"></i> Confirm & Save Legacy
+                    </button>
+                </form>
+            </div>
+            <div class="card-body p-0">
+                {% if not questions %}
+                    <div class="text-center py-5">
+                        <h5 class="fw-bold text-dark">No valid questions found</h5>
+                    </div>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="px-4 py-3">Question</th>
+                                    <th class="px-4 py-3">Options</th>
+                                    <th class="px-4 py-3">Marks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for q in questions %}
+                                <tr>
+                                    <td class="px-4 py-3">{{ q.question }}</td>
+                                    <td class="px-4 py-3">
+                                        <ul class="list-unstyled small mb-0">
+                                            {% for opt in q.options %}
+                                            <li class="{% if loop.index0 == q.correct_option_index %}text-success fw-bold{% endif %}">
                                                 {{ opt }}
                                             </li>
-                                        {% endfor %}
-                                    </ul>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <span class="badge bg-light text-dark border px-3 py-1 rounded-pill">{{ q.marks }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    {% if engine_metadata %}
-    <div class="card border-0 shadow-sm rounded-xl mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center" 
-             style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#enginePanel" aria-expanded="false">
-            <h6 class="mb-0 fw-bold text-dark">
-                <i class="bi bi-cpu text-primary me-2"></i>
-                Import Engine Detection Report
-                <span class="badge bg-primary-subtle text-primary ms-2 fw-medium" style="font-size:0.78rem;">
-                    {{ engine_metadata.doc_type | upper | replace("_"," ") }}
-                </span>
-                {% if engine_metadata.detection_confidence %}
-                <span class="badge {% if engine_metadata.detection_confidence >= 0.8 %}bg-success-subtle text-success{% elif engine_metadata.detection_confidence >= 0.5 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} ms-1 fw-medium" style="font-size:0.78rem;">
-                    {{ "%.0f"|format(engine_metadata.detection_confidence * 100) }}% confidence
-                </span>
-                {% endif %}
-            </h6>
-            <i class="bi bi-chevron-down text-muted"></i>
-        </div>
-        <div class="collapse" id="enginePanel">
-            <div class="card-body p-4">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <div class="bg-light rounded-3 p-3 text-center">
-                            <div class="fw-bold text-dark fs-4">{{ engine_metadata.question_count or 0 }}</div>
-                            <div class="small text-muted">Questions Extracted</div>
-                        </div>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td class="px-4 py-3">{{ q.marks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="col-md-3">
-                        <div class="bg-success bg-opacity-10 rounded-3 p-3 text-center">
-                            <div class="fw-bold text-success fs-4">{{ engine_metadata.valid_count or 0 }}</div>
-                            <div class="small text-muted">Valid Questions</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="bg-light rounded-3 p-3 text-center">
-                            <div class="fw-bold text-dark small">{{ engine_metadata.extractor_name or "—" }}</div>
-                            <div class="small text-muted">Extractor Used</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="bg-light rounded-3 p-3 text-center">
-                            {% if engine_metadata.ai_document_type %}
-                            <div class="fw-bold text-dark small" title="{{ engine_metadata.ai_reasoning or '' }}">{{ engine_metadata.ai_document_type }} (AI)</div>
-                            <div class="small text-muted">Detected Type</div>
-                            {% else %}
-                            <div class="fw-bold text-dark small">{{ engine_metadata.doc_type | replace("_"," ") | title }}</div>
-                            <div class="small text-muted">Detected Type</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                {% if engine_metadata.warnings %}
-                <div class="alert alert-warning border-0 bg-warning bg-opacity-10 rounded-3 mb-3">
-                    <div class="fw-bold mb-1 small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Engine Warnings</div>
-                    {% for w in engine_metadata.warnings %}
-                    <div class="small text-dark">• {{ w }}</div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if engine_metadata.errors %}
-                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 rounded-3 mb-3">
-                    <div class="fw-bold mb-1 small"><i class="bi bi-x-circle-fill me-1"></i>Engine Errors</div>
-                    {% for e in engine_metadata.errors %}
-                    <div class="small text-dark">• {{ e }}</div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if engine_metadata.detection_signals %}
-                <details class="mt-2">
-                    <summary class="small text-muted fw-medium" style="cursor:pointer;">Detection Signals (debug)</summary>
-                    <pre class="bg-light rounded-3 p-3 mt-2 small text-muted" style="font-size:0.75rem; white-space:pre-wrap;">{{ engine_metadata.detection_signals | tojson(indent=2) }}</pre>
-                </details>
                 {% endif %}
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
+
+<!-- AI Workspace Logic -->
+{% if engine_questions %}
+<script>
+// State
+let allQuestions = JSON.parse(`{{ engine_questions | tojson | safe }}`);
+let edits = {}; // { q_id: { status: 'skipped'|'edited', question_text: '', ... } }
+let currentFilter = 'all'; // all, needs_review, ready, skipped
+let queueMode = false;
+let queueIndices = [];
+let queueCurrent = 0;
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+    // Populate raw_text with placeholder if missing to avoid breaking layout
+    allQuestions.forEach(q => {
+        if(!q.raw_text) q.raw_text = "(No raw text available from extractor)";
+    });
+    updateDashboard();
+    renderQuestions();
+});
+
+function toggleLegacy() {
+    document.getElementById('ai-workspace').classList.toggle('d-none');
+    document.getElementById('legacy-workspace').classList.toggle('d-none');
+}
+
+function setFilter(filter) {
+    if(queueMode) exitReviewQueue();
+    currentFilter = filter;
+    
+    // Update active pill
+    document.querySelectorAll('#filter-group button').forEach(b => b.classList.remove('active'));
+    document.getElementById('filter-' + filter).classList.add('active');
+    
+    renderQuestions();
+}
+
+function startReviewQueue() {
+    setFilter('needs_review');
+    queueIndices = [];
+    allQuestions.forEach((q, idx) => {
+        if(isNeedsReview(q)) queueIndices.push(idx);
+    });
+    
+    if(queueIndices.length === 0) return;
+    
+    queueMode = true;
+    queueCurrent = 0;
+    
+    document.getElementById('queue-header').classList.remove('d-none');
+    document.getElementById('filter-group').classList.add('d-none');
+    
+    renderQuestions();
+}
+
+function exitReviewQueue() {
+    queueMode = false;
+    document.getElementById('queue-header').classList.add('d-none');
+    document.getElementById('filter-group').classList.remove('d-none');
+    renderQuestions();
+}
+
+function nextInQueue() {
+    queueCurrent++;
+    if(queueCurrent >= queueIndices.length) {
+        exitReviewQueue();
+        setFilter('all');
+    } else {
+        renderQuestions();
+    }
+}
+
+// Logic
+function isSkipped(q) {
+    return edits[q.id] && edits[q.id].status === 'skipped';
+}
+
+function isNeedsReview(q) {
+    if (isSkipped(q)) return false;
+    if (edits[q.id] && (edits[q.id].status === 'edited' || edits[q.id].status === 'approved')) return false;
+    
+    // Condition for needs review: confidence < 0.9 or has warnings/errors or no correct option
+    let hasError = !q.is_valid;
+    let hasWarning = q.has_warnings;
+    let lowConf = q.confidence < 0.9;
+    let noAns = q.correct_option_index === null || q.correct_option_index === undefined;
+    return hasError || hasWarning || lowConf || noAns;
+}
+
+function updateDashboard() {
+    let total = allQuestions.length;
+    let skipped = 0;
+    let needs_review = 0;
+    let ready = 0;
+    
+    allQuestions.forEach(q => {
+        if (isSkipped(q)) {
+            skipped++;
+        } else if (isNeedsReview(q)) {
+            needs_review++;
+        } else {
+            ready++;
+        }
+    });
+    
+    document.getElementById('dash-total').textContent = total;
+    document.getElementById('dash-ready').textContent = ready;
+    document.getElementById('dash-review').textContent = needs_review;
+}
+
+function getFilteredQuestions() {
+    if (queueMode) {
+        return [allQuestions[queueIndices[queueCurrent]]];
+    }
+    
+    return allQuestions.filter(q => {
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'skipped') return isSkipped(q);
+        if (currentFilter === 'needs_review') return isNeedsReview(q);
+        if (currentFilter === 'ready') return !isSkipped(q) && !isNeedsReview(q);
+        return true;
+    });
+}
+
+function escapeHtml(unsafe) {
+    if (!unsafe) return "";
+    return String(unsafe)
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+function renderQuestions() {
+    const container = document.getElementById('questions-container');
+    const questionsToRender = getFilteredQuestions();
+    
+    if (queueMode) {
+        document.getElementById('queue-progress').textContent = `Reviewing ${queueCurrent + 1} of ${queueIndices.length}`;
+    }
+    
+    if (questionsToRender.length === 0) {
+        container.innerHTML = `<div class="text-center py-5 text-muted">No questions match this filter.</div>`;
+        return;
+    }
+    
+    let html = '';
+    questionsToRender.forEach(q => {
+        let isEdited = edits[q.id] && edits[q.id].status === 'edited';
+        let skipped = isSkipped(q);
+        
+        let qText = escapeHtml(q.question_text);
+        let marks = q.marks;
+        let cIdx = q.correct_option_index;
+        
+        if (isEdited) {
+            qText = escapeHtml(edits[q.id].question_text);
+            marks = edits[q.id].marks;
+            cIdx = edits[q.id].correct_option_index;
+        }
+        
+        let needsRev = isNeedsReview(q);
+        
+        // Validation messages
+        let validationHtml = '';
+        if (needsRev && !skipped) {
+            validationHtml += `<div class="alert alert-warning py-2 small mb-2 border-0 bg-warning bg-opacity-10"><strong><i class="bi bi-exclamation-triangle"></i> Review Reason:</strong> `;
+            let reasons = [];
+            if (q.confidence < 0.9) reasons.push(`Low AI Confidence (${Math.round(q.confidence*100)}%)`);
+            if (q.reason) reasons.push(`AI Note: ${escapeHtml(q.reason)}`);
+            if (cIdx === null || cIdx === undefined) reasons.push("Missing correct answer.");
+            if (q.validation_messages && q.validation_messages.length > 0) {
+                q.validation_messages.forEach(m => reasons.push(escapeHtml(m.message)));
+            }
+            validationHtml += `<ul class="mb-0">` + reasons.map(r => `<li>${r}</li>`).join('') + `</ul></div>`;
+        }
+        
+        let opts = isEdited ? edits[q.id].options : q.options;
+        let optionsHtml = opts.map((opt, i) => {
+            let isCorrect = (i == cIdx);
+            return `<div class="p-2 mb-1 rounded ${isCorrect ? 'bg-success bg-opacity-10 text-success fw-bold border border-success' : 'bg-light text-dark'}">
+                ${isCorrect ? '<i class="bi bi-check-circle-fill me-1"></i>' : '<span class="me-3 text-muted">' + String.fromCharCode(65+i) + '</span>'} 
+                ${escapeHtml(opt)}
+            </div>`;
+        }).join('');
+        
+        html += `
+        <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden" id="card-${q.id}" style="${skipped ? 'opacity:0.6;' : ''}">
+            <!-- Normal View -->
+            <div id="view-${q.id}" class="row g-0">
+                <!-- Left: Raw Text Preview -->
+                <div class="col-md-5 bg-light p-4 border-end" style="max-height: 500px; overflow-y: auto;">
+                    <div class="small text-muted text-uppercase tracking-wider fw-bold mb-3"><i class="bi bi-file-text me-1"></i> Original Extracted Text</div>
+                    <pre class="small text-dark" style="white-space: pre-wrap; font-family: monospace; font-size: 0.85rem;">${escapeHtml(q.raw_text)}</pre>
+                </div>
+                <!-- Right: Parsed Output -->
+                <div class="col-md-7 p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>${validationHtml}</div>
+                        <div class="text-end">
+                            <span class="badge bg-light text-dark border">Page ${q.source_page || '?'}</span>
+                            <span class="badge ${q.confidence >= 0.9 ? 'bg-success' : 'bg-warning text-dark'}">${Math.round(q.confidence*100)}% Conf</span>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-3">${qText}</h5>
+                    <div class="mb-3">
+                        ${optionsHtml}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div class="text-muted small"><strong>Marks:</strong> ${marks}</div>
+                        <div>
+                            ${skipped ? 
+                                `<button class="btn btn-sm btn-outline-secondary rounded-pill me-2" onclick="unskipQuestion('${q.id}')">Restore</button>` :
+                                `<button class="btn btn-sm btn-outline-danger rounded-pill me-2" onclick="skipQuestion('${q.id}')">Skip (Delete)</button>
+                                 <button class="btn btn-sm btn-outline-primary rounded-pill me-2" onclick="editQuestion('${q.id}')">Edit</button>`
+                            }
+                            ${queueMode ? `<button class="btn btn-sm btn-success rounded-pill fw-bold" onclick="approveAndNext('${q.id}')">Approve & Next</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edit View (Hidden by default) -->
+            <div id="edit-${q.id}" class="p-4 d-none bg-white">
+                <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Edit Question</h5>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Question Text</label>
+                    <textarea class="form-control form-control-sm" id="edit-text-${q.id}" rows="3">${qText}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted">Options (One per line)</label>
+                    <textarea class="form-control form-control-sm" id="edit-opts-${q.id}" rows="4" oninput="updateRadios('${q.id}')">${opts.join('\n')}</textarea>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold text-muted">Correct Option</label>
+                        <div id="edit-correct-group-${q.id}" class="d-flex flex-wrap gap-3 mt-1">
+                            ${opts.map((o, i) => `
+                                <div class="form-check form-check-inline me-0">
+                                    <input class="form-check-input" type="radio" name="edit-correct-${q.id}" id="edit-correct-${q.id}-${i}" value="${i}" ${cIdx === i ? 'checked' : ''}>
+                                    <label class="form-check-label fw-bold text-dark" for="edit-correct-${q.id}-${i}">${String.fromCharCode(65+i)}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">Marks</label>
+                        <input type="number" step="0.5" class="form-control form-control-sm" id="edit-marks-${q.id}" value="${marks}">
+                    </div>
+                </div>
+                <div class="text-end">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill me-2" onclick="cancelEdit('${q.id}')">Cancel</button>
+                    <button class="btn btn-primary btn-sm rounded-pill fw-bold px-4" onclick="saveEdit('${q.id}')">Save Changes</button>
+                    ${queueMode ? `<button class="btn btn-success btn-sm rounded-pill fw-bold px-4 ms-2" onclick="saveAndNext('${q.id}')">Save & Next</button>` : ''}
+                </div>
+            </div>
+        </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function skipQuestion(id) {
+    if(!edits[id]) edits[id] = {};
+    edits[id].status = 'skipped';
+    updateDashboard();
+    renderQuestions();
+}
+
+function unskipQuestion(id) {
+    if(edits[id]) edits[id].status = 'edited'; // Or revert to ready if not edited
+    updateDashboard();
+    renderQuestions();
+}
+
+function editQuestion(id) {
+    document.getElementById('view-' + id).classList.add('d-none');
+    document.getElementById('edit-' + id).classList.remove('d-none');
+}
+
+function cancelEdit(id) {
+    document.getElementById('view-' + id).classList.remove('d-none');
+    document.getElementById('edit-' + id).classList.add('d-none');
+}
+
+function updateRadios(id) {
+    let optsLines = document.getElementById('edit-opts-' + id).value.split('\n').map(o => o.trim()).filter(o => o);
+    let group = document.getElementById('edit-correct-group-' + id);
+    let currentChecked = group.querySelector('input:checked');
+    let cIdx = currentChecked ? parseInt(currentChecked.value) : 0;
+    
+    let html = optsLines.map((o, i) => `
+        <div class="form-check form-check-inline me-0">
+            <input class="form-check-input" type="radio" name="edit-correct-${id}" id="edit-correct-${id}-${i}" value="${i}" ${cIdx === i ? 'checked' : ''}>
+            <label class="form-check-label fw-bold text-dark" for="edit-correct-${id}-${i}">${String.fromCharCode(65+i)}</label>
+        </div>
+    `).join('');
+    group.innerHTML = html;
+}
+
+function saveEditData(id) {
+    let qText = document.getElementById('edit-text-' + id).value;
+    let optsLines = document.getElementById('edit-opts-' + id).value.split('\n').map(o => o.trim()).filter(o => o);
+    
+    let group = document.getElementById('edit-correct-group-' + id);
+    let currentChecked = group.querySelector('input:checked');
+    let cIdx = currentChecked ? parseInt(currentChecked.value) : null;
+    
+    let marks = parseFloat(document.getElementById('edit-marks-' + id).value);
+    
+    if(isNaN(marks)) marks = 1.0;
+    
+    if(!edits[id]) edits[id] = {};
+    edits[id].status = 'edited';
+    edits[id].question_text = qText;
+    edits[id].options = optsLines;
+    edits[id].correct_option_index = cIdx;
+    edits[id].marks = marks;
+}
+
+function saveEdit(id) {
+    saveEditData(id);
+    updateDashboard();
+    renderQuestions();
+}
+
+function saveAndNext(id) {
+    saveEditData(id);
+    updateDashboard();
+    nextInQueue();
+}
+
+function approveAndNext(id) {
+    if(!edits[id]) edits[id] = {};
+    edits[id].status = 'approved';
+    updateDashboard();
+    nextInQueue();
+}
+
+function submitAIWorkspace() {
+    let editsJson = JSON.stringify(edits);
+    document.getElementById('edits_json_input').value = editsJson;
+    document.getElementById('ai-confirm-form').submit();
+}
+</script>
+{% endif %}
 {% endblock %}

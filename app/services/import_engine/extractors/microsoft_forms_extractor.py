@@ -37,13 +37,12 @@ class MicrosoftFormsExtractor(BaseExtractor):
         result.extractor_name = self.extractor_name
         result.warnings.append(_PARTIAL_MSG)
 
-        # Best-effort: reuse generic text extraction
-        # Future: parse the Forms-specific layout (question title blocks,
-        #         choice bubbles, header/footer stripping, etc.)
         fallback_result = TextPdfExtractor().extract(filepath)
         result.questions = fallback_result.questions
         result.total_pages = fallback_result.total_pages
         result.errors.extend(fallback_result.errors)
+        result.warnings.extend(fallback_result.warnings)
+        result.metadata.update(fallback_result.metadata)
 
         logger.info(
             "MicrosoftFormsExtractor: extracted %d questions (fallback mode)",

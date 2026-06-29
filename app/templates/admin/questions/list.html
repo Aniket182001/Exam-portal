@@ -24,7 +24,10 @@
                 </h3>
             </div>
         </div>
-        <div class="admin-toolbar">
+        <div class="admin-toolbar d-flex gap-2">
+            <a href="{{ url_for('admin_questions.export_questions', exam_id=exam.id) }}" class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" style="background-color: rgba(25, 135, 84, 0.1); color: #198754; border-color: transparent;">
+                <i class="bi bi-file-earmark-arrow-down-fill me-2"></i> Export
+            </a>
             <a href="{{ url_for('admin_questions.upload_import', exam_id=exam.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" style="background-color: var(--aiqm-lavender); color: var(--aiqm-lavender-dark); border-color: transparent;">
                 <i class="bi bi-file-earmark-arrow-up-fill me-2"></i> Import
             </a>
@@ -38,15 +41,15 @@
     <div class="card border-0 shadow-sm rounded-xl overflow-hidden">
         <div class="card-body p-0">
             {% if questions %}
-            <div class="table-responsive">
+            <div class="table-responsive" style="overflow: visible;">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light border-bottom">
                         <tr>
-                            <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 5%">No.</th>
-                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 50%">Question Text</th>
-                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 15%">Options</th>
-                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 10%">Marks</th>
-                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col" style="width: 20%">Actions</th>
+                            <th scope="col" class="ps-4 py-3 text-muted font-monospace small text-uppercase letter-wide" style="width: 60px;">No.</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide">Question Text</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 120px;">Options</th>
+                            <th scope="col" class="py-3 text-muted font-monospace small text-uppercase letter-wide text-center" style="width: 100px;">Marks</th>
+                            <th scope="col" class="pe-4 py-3 text-muted font-monospace small text-uppercase letter-wide text-end action-col" style="width: 160px; min-width: 140px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">

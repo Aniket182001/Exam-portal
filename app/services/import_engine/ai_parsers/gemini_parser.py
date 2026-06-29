@@ -134,7 +134,7 @@ RULES:
 - Identify document type from layout/signatures.
 - Never invent missing content.
 - Return confidence per question and reason.
-- Return ONLY a valid JSON object matching the schema — no prose.
+- Return ONLY a valid JSON object matching the schema. DO NOT wrap the output in markdown blocks like ```json.
 - If a question has no clear options, skip it.
 
 DOCUMENT TEXT:
@@ -255,7 +255,7 @@ class GeminiParser(BaseAIParser):
     def _build_request_body(
         self,
         prompt: str,
-        include_image: bytes | None = None,
+        images: list[bytes] | None = None,
     ) -> dict[str, Any]:
         """
         Build the Gemini REST API request body.
@@ -263,15 +263,16 @@ class GeminiParser(BaseAIParser):
         """
         parts: list[dict] = [{"text": prompt}]
 
-        # Attach an image part if provided (for Vision models)
-        if include_image:
+        # Attach image parts if provided (for Vision models)
+        if images:
             import base64
-            parts.append({
-                "inline_data": {
-                    "mime_type": "image/jpeg",
-                    "data": base64.b64encode(include_image).decode("utf-8"),
-                }
-            })
+            for img in images:
+                parts.append({
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": base64.b64encode(img).decode("utf-8"),
+                    }
+                })
 
         body = {
             "contents": [{"parts": parts}],
@@ -316,8 +317,8 @@ class GeminiParser(BaseAIParser):
             f"?key={engine_config.gemini_api_key}"
         )
         
-        include_image = request.page_image if request else None
-        body = self._build_request_body(prompt, include_image=include_image)
+        images = request.images if request else None
+        body = self._build_request_body(prompt, images=images)
         data = json.dumps(body).encode("utf-8")
         
         req = urllib.request.Request(
@@ -378,13 +379,45 @@ class GeminiParser(BaseAIParser):
         raw = (response.raw_output or "").strip()
         if not raw:
             return result
+            
+        # Strip markdown json blocks if Gemini returns them anyway
+        if raw.startswith("```json"):
+            raw = raw[7:]
+        elif raw.startswith("```"):
+            raw = raw[3:]
+        if raw.endswith("```"):
+            raw = raw[:-3]
+        raw = raw.strip()
 
+        payload = None
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError as exc:
-            result.warnings.append(f"AI response JSON parse error: {exc}")
-            logger.warning("GeminiParser: JSON decode failed — %s", exc)
-            return result
+            # Aggressive repair for truncated JSON (MAX_TOKENS limit)
+            logger.warning("GeminiParser: JSON decode failed — attempting aggressive repair")
+            repaired_raw = raw
+            # If it ends abruptly, try to close open strings, objects and arrays
+            if repaired_raw.count('"') % 2 != 0:
+                repaired_raw += '"'
+            # Try appending closing brackets up to 5 times
+            success = False
+            for brackets in ["}", "}]}", "]}]}", "} ] }", "]}", "]} }"]:
+                try:
+                    payload = json.loads(repaired_raw + brackets)
+                    success = True
+                    result.warnings.append("AI response was truncated (MAX_TOKENS). Partial extraction recovered.")
+                    break
+                except json.JSONDecodeError:
+                    pass
+            
+            if not success:
+                try:
+                    import ast
+                    payload = ast.literal_eval(raw)
+                except Exception:
+                    result.warnings.append(f"AI response JSON parse error: {exc}. Truncated beyond repair.")
+                    logger.warning("GeminiParser: Aggressive JSON repair failed.")
+                    return result
 
         if not isinstance(payload, dict):
             result.warnings.append("AI response was not a JSON object.")

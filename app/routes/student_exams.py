@@ -4,6 +4,7 @@ from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAn
 from datetime import datetime, timezone, timedelta
 import uuid
 import random
+from sqlalchemy import func
 
 student_exams_bp = Blueprint("student_exams", __name__)
 
@@ -14,9 +15,24 @@ def add_cache_headers(response):
     response.headers['Pragma'] = 'no-cache'
     return response
 
+def _get_exam_or_redirect(exam_code, current_endpoint):
+    """Helper to perform case-insensitive lookup or redirect with a warning instead of 404."""
+    exam = Exam.query.filter_by(exam_code=exam_code).first()
+    if exam:
+        return exam, None
+        
+    exam_ci = Exam.query.filter(func.lower(Exam.exam_code) == func.lower(exam_code)).first()
+    if exam_ci:
+        return None, redirect(url_for(current_endpoint, exam_code=exam_ci.exam_code))
+        
+    flash("Exam not found: We couldn't find an exam with that code. Please check the exam code and try again. Exam codes are case-sensitive.", "warning")
+    return None, redirect(url_for('main.home'))
+
 @student_exams_bp.route("/exam/<exam_code>", methods=["GET", "POST"])
 def entry(exam_code):
-    exam = Exam.query.filter_by(exam_code=exam_code).first_or_404()
+    exam, redirect_resp = _get_exam_or_redirect(exam_code, 'student_exams.entry')
+    if redirect_resp:
+        return redirect_resp
     
     if not exam.is_active:
         flash("This exam is currently not active.", "danger")
@@ -65,7 +81,9 @@ def entry(exam_code):
 
 @student_exams_bp.route("/exam/<exam_code>/instructions", methods=["GET"])
 def instructions(exam_code):
-    exam = Exam.query.filter_by(exam_code=exam_code).first_or_404()
+    exam, redirect_resp = _get_exam_or_redirect(exam_code, 'student_exams.instructions')
+    if redirect_resp:
+        return redirect_resp
     
     # Ensure they came through the entry page
     if not session.get('student_name') or not session.get('student_email'):
@@ -85,7 +103,9 @@ def instructions(exam_code):
 
 @student_exams_bp.route("/exam/<exam_code>/start", methods=["POST"])
 def start_exam(exam_code):
-    exam = Exam.query.filter_by(exam_code=exam_code).first_or_404()
+    exam, redirect_resp = _get_exam_or_redirect(exam_code, 'student_exams.start_exam')
+    if redirect_resp:
+        return redirect_resp
     
     student_name = session.get('student_name')
     student_email = session.get('student_email')
