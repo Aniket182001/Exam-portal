@@ -1,0 +1,52 @@
+"""
+Microsoft Forms PDF Extractor  (stub)
+======================================
+Handles PDFs exported from Microsoft Forms.
+
+Status: ARCHITECTURE STUB
+  - Detection routes Microsoft Forms PDFs here correctly.
+  - Full extraction logic (table parsing, checkbox detection) is deferred.
+  - Falls back to TextPdfExtractor heuristics as a best-effort fallback.
+"""
+
+from __future__ import annotations
+
+import logging
+
+from app.services.import_engine.extractors.base import BaseExtractor
+from app.services.import_engine.extractors.text_pdf_extractor import TextPdfExtractor
+from app.services.import_engine.models import (
+    DocumentType,
+    ExtractionResult,
+)
+
+logger = logging.getLogger(__name__)
+
+_PARTIAL_MSG = (
+    "Microsoft Forms extractor is partially implemented. "
+    "Results were produced using generic text extraction and may be inaccurate. "
+    "Review all questions carefully before confirming import."
+)
+
+
+class MicrosoftFormsExtractor(BaseExtractor):
+    extractor_name = "microsoft_forms"
+
+    def extract(self, filepath: str) -> ExtractionResult:
+        result = self._make_result(DocumentType.MICROSOFT_FORMS)
+        result.extractor_name = self.extractor_name
+        result.warnings.append(_PARTIAL_MSG)
+
+        # Best-effort: reuse generic text extraction
+        # Future: parse the Forms-specific layout (question title blocks,
+        #         choice bubbles, header/footer stripping, etc.)
+        fallback_result = TextPdfExtractor().extract(filepath)
+        result.questions = fallback_result.questions
+        result.total_pages = fallback_result.total_pages
+        result.errors.extend(fallback_result.errors)
+
+        logger.info(
+            "MicrosoftFormsExtractor: extracted %d questions (fallback mode)",
+            len(result.questions),
+        )
+        return result

@@ -6,6 +6,8 @@ import json
 import uuid
 from werkzeug.utils import secure_filename
 from app.services.import_parsers import get_parser
+# New modular import engine (runs in parallel; does not replace existing flow yet)
+from app.services.import_engine import ImportEngine
 from app.utils.auth import admin_required
 
 admin_questions_bp = Blueprint("admin_questions", __name__, url_prefix="/admin")
@@ -192,11 +194,45 @@ def upload_import(exam_id):
                 parser = get_parser(filename)
                 parsed_questions = parser.parse(filepath)
                 
-                # Save to JSON
+                # -------------------------------------------------------
+                # Run new ImportEngine in parallel (non-breaking)
+                # The engine result is stored alongside the legacy data so
+                # we can verify detection + extraction without touching any
+                # existing preview or confirm route.
+                # -------------------------------------------------------
+                try:
+                    engine_result = ImportEngine.process(
+                        filepath=filepath,
+                        filename=filename,
+                        mime_type=file.mimetype if hasattr(file, 'mimetype') else None,
+                    )
+                    engine_metadata = {
+                        "doc_type":            engine_result.doc_type.value,
+                        "detection_confidence": engine_result.detection_confidence,
+                        "extractor_name":       engine_result.extractor_name,
+                        "question_count":       engine_result.question_count,
+                        "valid_count":          len(engine_result.valid_questions),
+                        "warnings":             engine_result.warnings,
+                        "errors":               engine_result.errors,
+                        "detection_signals":    engine_result.detection_signals,
+                        "ocr_recommended":      engine_result.detection_signals.get("ocr_recommended", False),
+                        "ocr_available":        engine_result.detection_signals.get("ocr_available", False),
+                        "ocr_enabled":          engine_result.detection_signals.get("ocr_enabled", False),
+                        "ai_enabled":           engine_result.detection_signals.get("ai_enabled", False),
+                        "ai_provider":          engine_result.detection_signals.get("ai_provider", "gemini"),
+                        "engine_config":        ImportEngine.get_config_summary(),
+                    }
+                except Exception as engine_exc:
+                    engine_metadata = {"error": str(engine_exc)}
+                
+                # Save legacy questions + engine metadata to JSON
                 import_uuid = str(uuid.uuid4())
                 json_path = os.path.join(temp_dir, f"import_preview_{import_uuid}.json")
                 with open(json_path, 'w', encoding='utf-8') as f:
-                    json.dump(parsed_questions, f)
+                    json.dump({
+                        "questions":       parsed_questions,
+                        "engine_metadata": engine_metadata,
+                    }, f)
                     
                 # Clean up the original uploaded file
                 os.remove(filepath)
@@ -222,9 +258,18 @@ def preview_import(exam_id, import_id):
         return redirect(url_for('admin_questions.upload_import', exam_id=exam.id))
         
     with open(json_path, 'r', encoding='utf-8') as f:
-        parsed_questions = json.load(f)
+        data = json.load(f)
+        # Support both legacy (plain list) and new (dict with questions key) formats
+        parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
+        engine_metadata  = data.get("engine_metadata") if isinstance(data, dict) else None
         
-    return render_template("admin/questions/import_preview.html", exam=exam, questions=parsed_questions, import_id=import_id)
+    return render_template(
+        "admin/questions/import_preview.html",
+        exam=exam,
+        questions=parsed_questions,
+        import_id=import_id,
+        engine_metadata=engine_metadata,
+    )
 
 @admin_questions_bp.route("/exams/<int:exam_id>/questions/import/confirm", methods=["POST"])
 def confirm_import(exam_id):
@@ -243,7 +288,9 @@ def confirm_import(exam_id):
         return redirect(url_for('admin_questions.upload_import', exam_id=exam.id))
         
     with open(json_path, 'r', encoding='utf-8') as f:
-        parsed_questions = json.load(f)
+        data = json.load(f)
+        # Support both legacy (plain list) and new (dict with questions key) formats
+        parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
         
     # Get max display order
     max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()

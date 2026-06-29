@@ -78,5 +78,80 @@
             {% endif %}
         </div>
     </div>
+    {% if engine_metadata %}
+    <div class="card border-0 shadow-sm rounded-xl mb-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center" 
+             style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#enginePanel" aria-expanded="false">
+            <h6 class="mb-0 fw-bold text-dark">
+                <i class="bi bi-cpu text-primary me-2"></i>
+                Import Engine Detection Report
+                <span class="badge bg-primary-subtle text-primary ms-2 fw-medium" style="font-size:0.78rem;">
+                    {{ engine_metadata.doc_type | upper | replace("_"," ") }}
+                </span>
+                {% if engine_metadata.detection_confidence %}
+                <span class="badge {% if engine_metadata.detection_confidence >= 0.8 %}bg-success-subtle text-success{% elif engine_metadata.detection_confidence >= 0.5 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} ms-1 fw-medium" style="font-size:0.78rem;">
+                    {{ "%.0f"|format(engine_metadata.detection_confidence * 100) }}% confidence
+                </span>
+                {% endif %}
+            </h6>
+            <i class="bi bi-chevron-down text-muted"></i>
+        </div>
+        <div class="collapse" id="enginePanel">
+            <div class="card-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <div class="fw-bold text-dark fs-4">{{ engine_metadata.question_count or 0 }}</div>
+                            <div class="small text-muted">Questions Extracted</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-success bg-opacity-10 rounded-3 p-3 text-center">
+                            <div class="fw-bold text-success fs-4">{{ engine_metadata.valid_count or 0 }}</div>
+                            <div class="small text-muted">Valid Questions</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <div class="fw-bold text-dark small">{{ engine_metadata.extractor_name or "—" }}</div>
+                            <div class="small text-muted">Extractor Used</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3 text-center">
+                            <div class="fw-bold text-dark small">{{ engine_metadata.doc_type | replace("_"," ") | title }}</div>
+                            <div class="small text-muted">Detected Type</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if engine_metadata.warnings %}
+                <div class="alert alert-warning border-0 bg-warning bg-opacity-10 rounded-3 mb-3">
+                    <div class="fw-bold mb-1 small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Engine Warnings</div>
+                    {% for w in engine_metadata.warnings %}
+                    <div class="small text-dark">• {{ w }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if engine_metadata.errors %}
+                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 rounded-3 mb-3">
+                    <div class="fw-bold mb-1 small"><i class="bi bi-x-circle-fill me-1"></i>Engine Errors</div>
+                    {% for e in engine_metadata.errors %}
+                    <div class="small text-dark">• {{ e }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if engine_metadata.detection_signals %}
+                <details class="mt-2">
+                    <summary class="small text-muted fw-medium" style="cursor:pointer;">Detection Signals (debug)</summary>
+                    <pre class="bg-light rounded-3 p-3 mt-2 small text-muted" style="font-size:0.75rem; white-space:pre-wrap;">{{ engine_metadata.detection_signals | tojson(indent=2) }}</pre>
+                </details>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
