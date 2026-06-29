@@ -41,6 +41,8 @@ class WordExtractor(BaseExtractor):
 
         try:
             doc = docx.Document(filepath)
+            full_text = "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+            result.metadata["full_text"] = full_text
             result.questions = self._parse_paragraphs(doc.paragraphs)
         except Exception as exc:
             logger.exception("WordExtractor failed: %s", exc)

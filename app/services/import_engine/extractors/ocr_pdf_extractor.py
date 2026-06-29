@@ -118,6 +118,8 @@ class OcrPdfExtractor(BaseExtractor):
             result.warnings.append("OCR produced no usable text for this document.")
             return result
 
+        result.metadata["full_text"] = full_text
+
         # Reuse TextPdfExtractor's paragraph-level parser
         _text_extractor = TextPdfExtractor()
         questions: list[ExtractedQuestion] = _text_extractor._parse_text(full_text)

@@ -46,43 +46,72 @@ logger = logging.getLogger(__name__)
 # deterministically without free-form text processing.
 #
 GEMINI_RESPONSE_SCHEMA: dict[str, Any] = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "required": ["question_text", "options"],
-        "properties": {
-            "question_text": {
-                "type": "string",
-                "description": "Full text of the question"
+    "type": "object",
+    "properties": {
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "document_type": {
+                    "type": "string",
+                    "enum": ["Microsoft Forms", "Google Forms", "AIQM LMS", "Moodle", "Generic PDF", "Unknown"],
+                    "description": "The detected layout/source platform of the document."
+                },
+                "reasoning": {
+                    "type": "string",
+                    "description": "Reasoning for the detected document type."
+                }
             },
-            "options": {
-                "type": "array",
-                "items": {"type": "string"},
-                "minItems": 2,
-                "maxItems": 6,
-                "description": "All answer options in order"
-            },
-            "correct_option_index": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "0-based index of the correct answer"
-            },
-            "marks": {
-                "type": "number",
-                "description": "Marks awarded for this question"
-            },
-            "confidence": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-                "description": "Parser confidence in this extraction"
-            },
-            "source_page": {
-                "type": "integer",
-                "description": "Page number this question was found on"
+            "required": ["document_type", "reasoning"]
+        },
+        "questions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["question_text", "options", "confidence", "reason"],
+                "properties": {
+                    "question_text": {
+                        "type": "string",
+                        "description": "Full text of the question. Preserve wording and numbering exactly."
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 2,
+                        "description": "All answer options in their original order."
+                    },
+                    "correct_option_index": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "0-based index of the correct answer."
+                    },
+                    "marks": {
+                        "type": "number",
+                        "description": "Marks awarded for this question."
+                    },
+                    "images": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Descriptions of any embedded images detected in the question."
+                    },
+                    "confidence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Parser confidence in this extraction (e.g., 0.98)."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Reasoning for confidence and extraction (e.g., 'Selected checkbox detected.')."
+                    },
+                    "source_page": {
+                        "type": "integer",
+                        "description": "Page number this question was found on"
+                    }
+                }
             }
         }
-    }
+    },
+    "required": ["metadata", "questions"]
 }
 
 
@@ -96,11 +125,17 @@ You are an expert exam question extractor.
 Analyse the following document text and extract all multiple-choice questions.
 
 RULES:
-- Extract every question with its options and the correct answer.
-- If the correct answer is not explicitly marked, make your best inference.
-- Return ONLY a valid JSON array matching the schema — no prose, no markdown fences.
+- Preserve question wording exactly.
+- Preserve numbering.
+- Preserve option order.
+- Detect correct answers (if marked, e.g. bold, checkmark, highlight).
+- Detect marks (e.g. '[1 mark]').
+- Detect embedded images (note their presence).
+- Identify document type from layout/signatures.
+- Never invent missing content.
+- Return confidence per question and reason.
+- Return ONLY a valid JSON object matching the schema — no prose.
 - If a question has no clear options, skip it.
-- Preserve the original wording exactly.
 
 DOCUMENT TEXT:
 {text}
@@ -112,10 +147,17 @@ You are an expert exam question extractor.
 Analyse the following single page of text and extract any multiple-choice questions.
 
 RULES:
-- Extract every question with its options and the correct answer.
+- Preserve question wording exactly.
+- Preserve numbering.
+- Preserve option order.
+- Detect correct answers.
+- Detect marks.
+- Detect embedded images.
+- Identify document type.
+- Never invent missing content.
+- Return confidence per question and reason.
 - A question may continue from a previous page — include it if you can see it.
-- Return ONLY a valid JSON array matching the schema — no prose, no markdown fences.
-- Return an empty array [] if no questions are found on this page.
+- Return ONLY a valid JSON object matching the schema.
 
 PAGE {page_number} TEXT:
 {text}
@@ -124,12 +166,19 @@ PAGE {page_number} TEXT:
 _QUESTION_PROMPT = """\
 You are an expert exam question extractor.
 
-Parse the following text block as a single MCQ question and return ONE object.
+Parse the following text block as a single MCQ question and return ONE object (as the only item in the questions array).
 
 RULES:
-- Return a single JSON object (not an array).
-- If the correct answer is not marked, omit the correct_option_index field.
-- Preserve the original wording exactly.
+- Preserve question wording exactly.
+- Preserve numbering.
+- Preserve option order.
+- Detect correct answers.
+- Detect marks.
+- Detect embedded images.
+- Identify document type if possible, otherwise Unknown.
+- Never invent missing content.
+- Return confidence and reason.
+- Return ONLY a valid JSON object matching the schema.
 
 QUESTION BLOCK:
 {block}
@@ -257,36 +306,59 @@ class GeminiParser(BaseAIParser):
     ) -> AIParseResponse:
         """
         Make the actual call to the Gemini REST API.
-
-        STATUS: STUB
-        This method is intentionally NOT implemented yet.
-        It will be activated in Phase 3 when AI parsing is fully enabled.
-
-        To implement, replace the NotImplemented body with:
-            import urllib.request, json
-            url = (
-                f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{engine_config.gemini_model}:generateContent"
-                f"?key={engine_config.gemini_api_key}"
-            )
-            body = self._build_request_body(prompt, ...)
-            data = json.dumps(body).encode()
-            req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-            with urllib.request.urlopen(req, timeout=engine_config.gemini_timeout) as resp:
-                payload = json.loads(resp.read())
-            text = payload["candidates"][0]["content"]["parts"][0]["text"]
-            return AIParseResponse(raw_output=text, provider=self.provider_name, model=engine_config.gemini_model)
         """
-        logger.info(
-            "GeminiParser._call_api: STUB invoked "
-            "(API calls not yet activated — Phase 3)"
+        import urllib.request
+        import json
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{engine_config.gemini_model}:generateContent"
+            f"?key={engine_config.gemini_api_key}"
         )
-        return AIParseResponse(
-            raw_output="[]",
-            provider=self.provider_name,
-            model=engine_config.gemini_model,
-            error="API not yet activated (Phase 3 pending)",
+        
+        include_image = request.page_image if request else None
+        body = self._build_request_body(prompt, include_image=include_image)
+        data = json.dumps(body).encode("utf-8")
+        
+        req = urllib.request.Request(
+            url, 
+            data=data, 
+            headers={"Content-Type": "application/json"}
         )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=engine_config.gemini_timeout) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            err_msg = exc.read().decode("utf-8")
+            logger.error("Gemini API HTTPError: %s - %s", exc.code, err_msg)
+            return AIParseResponse(
+                error=f"API call failed: HTTP {exc.code} {err_msg}",
+                provider=self.provider_name,
+                model=engine_config.gemini_model
+            )
+        except Exception as exc:
+            logger.exception("Gemini API call failed")
+            return AIParseResponse(
+                error=f"API call failed: {exc}",
+                provider=self.provider_name,
+                model=engine_config.gemini_model
+            )
+
+        try:
+            text = payload["candidates"][0]["content"]["parts"][0]["text"]
+            return AIParseResponse(
+                raw_output=text,
+                provider=self.provider_name,
+                model=engine_config.gemini_model
+            )
+        except (KeyError, IndexError) as exc:
+            logger.error("Unexpected Gemini API response format: %s", payload)
+            return AIParseResponse(
+                error=f"Unexpected API response format: {exc}",
+                provider=self.provider_name,
+                model=engine_config.gemini_model
+            )
 
     # ------------------------------------------------------------------
     # Response parser / normaliser
@@ -304,7 +376,7 @@ class GeminiParser(BaseAIParser):
             result.warnings.append(f"AI parser: {response.error}")
 
         raw = (response.raw_output or "").strip()
-        if not raw or raw == "[]":
+        if not raw:
             return result
 
         try:
@@ -314,15 +386,31 @@ class GeminiParser(BaseAIParser):
             logger.warning("GeminiParser: JSON decode failed — %s", exc)
             return result
 
-        # Normalise single object → list
-        if isinstance(payload, dict):
-            payload = [payload]
-
-        if not isinstance(payload, list):
-            result.warnings.append("AI response was not a list or object.")
+        if not isinstance(payload, dict):
+            result.warnings.append("AI response was not a JSON object.")
             return result
 
-        for item in payload:
+        # Parse layout recognition metadata
+        metadata = payload.get("metadata", {})
+        doc_type_str = metadata.get("document_type", "Unknown")
+        reasoning = metadata.get("reasoning", "")
+        
+        # Try to map doc_type_str to DocumentType Enum
+        try:
+            doc_type_key = doc_type_str.upper().replace(" ", "_")
+            result.doc_type = DocumentType[doc_type_key]
+        except KeyError:
+            result.doc_type = DocumentType.UNKNOWN
+            
+        result.metadata["ai_document_type"] = doc_type_str
+        result.metadata["ai_reasoning"] = reasoning
+
+        questions_list = payload.get("questions", [])
+        if not isinstance(questions_list, list):
+            result.warnings.append("AI response 'questions' was not a list.")
+            return result
+
+        for item in questions_list:
             q = self._parse_question_item(item)
             if q:
                 result.questions.append(q)
@@ -368,7 +456,9 @@ class GeminiParser(BaseAIParser):
         except (TypeError, ValueError):
             pass
 
+        reason = item.get("reason", "")
         source_page = item.get("source_page")
+        images = item.get("images", [])
 
         return ExtractedQuestion(
             question_text=q_text,
@@ -377,7 +467,11 @@ class GeminiParser(BaseAIParser):
             marks=marks,
             confidence=confidence,
             source_page=source_page,
-            metadata={"ai_provider": "gemini"},
+            metadata={
+                "ai_provider": "gemini",
+                "ai_reason": reason,
+                "ai_images": images
+            },
         )
 
     # ------------------------------------------------------------------

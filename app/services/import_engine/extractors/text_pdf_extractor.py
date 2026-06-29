@@ -43,7 +43,7 @@ class TextPdfExtractor(BaseExtractor):
                     extracted = page.extract_text()
                     if extracted:
                         full_text += extracted + "\n"
-
+            result.metadata["full_text"] = full_text
             result.questions = self._parse_text(full_text)
 
         except Exception as exc:

@@ -141,6 +141,53 @@ class ImportEngine:
             result.warnings.append(ocr_msg)
 
         # ------------------------------------------------------------------
+        # Stage 3.5 — AI Enhancement (if enabled)
+        # ------------------------------------------------------------------
+        if engine_config.ai_enabled:
+            from app.services.import_engine.ai_parsers import get_ai_parser
+            ai_parser = get_ai_parser()
+            
+            # Text must have been extracted by the standard extractor
+            full_text = result.metadata.get("full_text")
+            
+            if full_text and ai_parser.is_configured():
+                logger.info("ImportEngine: dispatching to AI parser (%s)", ai_parser.provider_name)
+                from app.services.import_engine.ai_parsers.base_ai_parser import AIParseRequest
+                
+                ai_req = AIParseRequest(full_text=full_text)
+                try:
+                    ai_result = ai_parser.parse_document(ai_req)
+                    
+                    if ai_result.questions:
+                        # Overwrite standard questions with AI questions
+                        result.questions = ai_result.questions
+                        result.extractor_name = f"{result.extractor_name} + {ai_result.extractor_name}"
+                        
+                        # Merge metadata from AI
+                        for k, v in ai_result.metadata.items():
+                            result.metadata[k] = v
+                            
+                        # Update doc_type if AI found a more specific one
+                        if ai_result.doc_type != DocumentType.UNKNOWN:
+                            result.doc_type = ai_result.doc_type
+                            
+                        result.warnings.extend(ai_result.warnings)
+                        result.errors.extend(ai_result.errors)
+                        
+                        logger.info("ImportEngine: AI parsed %d questions", len(result.questions))
+                    else:
+                        result.warnings.append("AI parser returned no questions; falling back to standard extraction.")
+                        result.warnings.extend(ai_result.warnings)
+                        
+                except Exception as exc:
+                    logger.exception("ImportEngine: AI parsing failed")
+                    result.warnings.append(f"AI parsing failed: {exc}. Falling back to standard extraction.")
+            elif not ai_parser.is_configured():
+                result.warnings.append(f"AI is enabled but {ai_parser.provider_name} is not configured.")
+            elif not full_text:
+                result.warnings.append(f"AI is enabled but extractor {extractor.extractor_name} did not provide raw text.")
+
+        # ------------------------------------------------------------------
         # Stage 4 — Validation
         # ------------------------------------------------------------------
         if run_validation:

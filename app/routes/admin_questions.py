@@ -220,6 +220,8 @@ def upload_import(exam_id):
                         "ocr_enabled":          engine_result.detection_signals.get("ocr_enabled", False),
                         "ai_enabled":           engine_result.detection_signals.get("ai_enabled", False),
                         "ai_provider":          engine_result.detection_signals.get("ai_provider", "gemini"),
+                        "ai_document_type":     engine_result.metadata.get("ai_document_type"),
+                        "ai_reasoning":         engine_result.metadata.get("ai_reasoning"),
                         "engine_config":        ImportEngine.get_config_summary(),
                     }
                 except Exception as engine_exc:

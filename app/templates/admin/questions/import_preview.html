@@ -119,8 +119,13 @@
                     </div>
                     <div class="col-md-3">
                         <div class="bg-light rounded-3 p-3 text-center">
+                            {% if engine_metadata.ai_document_type %}
+                            <div class="fw-bold text-dark small" title="{{ engine_metadata.ai_reasoning or '' }}">{{ engine_metadata.ai_document_type }} (AI)</div>
+                            <div class="small text-muted">Detected Type</div>
+                            {% else %}
                             <div class="fw-bold text-dark small">{{ engine_metadata.doc_type | replace("_"," ") | title }}</div>
                             <div class="small text-muted">Detected Type</div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
