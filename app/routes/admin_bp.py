@@ -155,7 +155,7 @@ def compose_template(template_key):
                 body = body.replace("{exam_code}", exam.exam_code)
                 body = body.replace("{duration}", str(exam.duration_minutes))
                 body = body.replace("{question_count}", str(len(exam.questions)))
-                body = body.replace("{homepage_url}", "https://exams.aiqmanalytics.com")
+                body = body.replace("{homepage_url}", "https://exam.aiqmanalytics.com")
         
         elif template_key == "lms_access":
             candidate_name = request.form.get("candidate_name", "")
