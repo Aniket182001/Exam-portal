@@ -193,17 +193,18 @@ def get_ordered_questions(attempt):
                 ordered_qs.append(q_dict[qid])
         
         ordered_ids = set(attempt.question_order)
-        for q in sorted(questions, key=lambda x: x.display_order):
+        for q in sorted(questions, key=lambda x: x.display_order if x.display_order is not None else 0):
             if q.id not in ordered_ids:
                 ordered_qs.append(q)
                 
         return ordered_qs
     else:
-        return sorted(questions, key=lambda x: x.display_order)
+        return sorted(questions, key=lambda x: x.display_order if x.display_order is not None else 0)
 
 def get_remaining_seconds(attempt):
     now = datetime.now(timezone.utc)
-    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
+    started_at = attempt.started_at or now
+    started_at_utc = started_at.replace(tzinfo=timezone.utc) if started_at.tzinfo is None else started_at.astimezone(timezone.utc)
     end_time = started_at_utc + timedelta(minutes=attempt.exam.duration_minutes)
     remaining = int((end_time - now).total_seconds())
     return max(0, remaining)
@@ -283,7 +284,8 @@ def question_attempt(attempt_token, question_number):
     remaining_seconds = get_remaining_seconds(attempt)
     
     # Calculate absolute end timestamp for client-side single source of truth
-    started_at_utc = attempt.started_at.replace(tzinfo=timezone.utc)
+    started_at = attempt.started_at or datetime.now(timezone.utc)
+    started_at_utc = started_at.replace(tzinfo=timezone.utc) if started_at.tzinfo is None else started_at.astimezone(timezone.utc)
     end_time = started_at_utc + timedelta(minutes=exam.duration_minutes)
     end_timestamp = int(end_time.timestamp() * 1000)
     
