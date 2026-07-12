@@ -6,7 +6,11 @@ from app.routes import main_bp
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
+import logging
+
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 def create_app():
     app = Flask(__name__)

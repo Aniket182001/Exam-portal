@@ -5,6 +5,9 @@ from datetime import datetime, timezone, timedelta
 import uuid
 import random
 from sqlalchemy import func
+import logging
+
+logger = logging.getLogger(__name__)
 
 student_exams_bp = Blueprint("student_exams", __name__)
 
@@ -272,8 +275,11 @@ def calculate_result(attempt):
 
 @student_exams_bp.route("/attempt/<attempt_token>/question/<int:question_number>", methods=["GET", "POST"])
 def question_attempt(attempt_token, question_number):
+    logger.info("--- Enter question_attempt route ---")
+    logger.info(f"Attempt token: {attempt_token}, Question number: {question_number}")
     attempt = StudentAttempt.query.filter_by(attempt_token=attempt_token).first_or_404()
-    
+    logger.info(f"Loaded attempt ID: {attempt.id}")
+
     if attempt.status != "in_progress":
         flash("This exam attempt has already been submitted.", "info")
         return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))
@@ -303,6 +309,7 @@ def question_attempt(attempt_token, question_number):
         abort(404, description="Question not found.")
         
     current_question = questions[question_number - 1]
+    logger.info(f"Current question ID: {current_question.id}")
     
     if request.method == "POST":
         # Check if they clicked clear_response
@@ -325,6 +332,8 @@ def question_attempt(attempt_token, question_number):
             except ValueError:
                 abort(400, description="Invalid option structure.")
                 
+            logger.info(f"Saving answer: option_id={option_id}")
+            
             # Verify the option belongs to the current question
             valid_option = any(opt.id == option_id for opt in current_question.options)
             if not valid_option:
@@ -336,8 +345,10 @@ def question_attempt(attempt_token, question_number):
             ).first()
             
             if existing_answer:
+                logger.info(f"Updating existing answer ID: {existing_answer.id}")
                 existing_answer.selected_option_id = option_id
             else:
+                logger.info("Creating new answer")
                 new_answer = StudentAnswer(
                     attempt_id=attempt.id,
                     question_id=current_question.id,
@@ -345,16 +356,25 @@ def question_attempt(attempt_token, question_number):
                 )
                 db.session.add(new_answer)
                 
-            db.session.commit()
+            try:
+                logger.info("Committing database...")
+                db.session.commit()
+                logger.info("Database commit successful")
+            except Exception as e:
+                logger.error(f"Error during database commit: {str(e)}", exc_info=True)
+                raise
         
         # Navigation
         action = request.form.get("action")
         goto_question = request.form.get("goto_question")
         
+        logger.info(f"Navigation action: {action}, goto_question: {goto_question}")
+        
         if goto_question:
             try:
                 target_q = int(goto_question)
                 if 1 <= target_q <= total_questions:
+                    logger.info(f"Redirecting to goto_question: {target_q}")
                     return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=target_q))
                 else:
                     abort(400, description="Sidebar target question out of range.")
@@ -362,13 +382,17 @@ def question_attempt(attempt_token, question_number):
                 abort(400, description="Invalid sidebar target question.")
                 
         if action == "prev" and question_number > 1:
+            logger.info("Redirecting to previous question")
             return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number - 1))
         elif action == "next" and question_number < total_questions:
+            logger.info("Redirecting to next question")
             return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number + 1))
         elif action == "finish" and question_number == total_questions:
+            logger.info("Redirecting to review page")
             return redirect(f"/attempt/{attempt_token}/review")
         else:
             # Fallback if no action or out-of-bounds sequential navigation
+            logger.info("Fallback redirect to current question")
             return redirect(url_for('student_exams.question_attempt', attempt_token=attempt_token, question_number=question_number))
             
     # GET logic
