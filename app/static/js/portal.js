@@ -62,39 +62,53 @@ document.addEventListener('DOMContentLoaded', () => {
  * @param {string} type - "success", "danger", "warning", or "info"
  */
 window.showToast = function(message, type = "success") {
-    let toast = document.getElementById('aiqmGlobalToast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'aiqmGlobalToast';
-        toast.className = 'aiqm-toast apple-toast';
-        document.body.appendChild(toast);
+    let container = document.querySelector('.aiqm-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'aiqm-toast-container';
+        container.setAttribute('aria-live', 'polite');
+        container.setAttribute('aria-atomic', 'true');
+        document.body.appendChild(container);
     }
     
     // Set Icon based on type
-    let iconClass = "bi-check-circle-fill text-success";
-    if (type === "danger") iconClass = "bi-exclamation-triangle-fill text-danger";
-    if (type === "warning") iconClass = "bi-exclamation-circle-fill text-warning";
-    if (type === "info") iconClass = "bi-info-circle-fill text-info";
+    let iconClass = "bi-check";
+    if (type === "danger") iconClass = "bi-exclamation-lg";
+    if (type === "warning") iconClass = "bi-exclamation-triangle";
+    if (type === "info") iconClass = "bi-info-lg";
 
-    toast.innerHTML = `<i class="bi ${iconClass} fs-5"></i> <span class="toast-text">${message}</span>`;
+    const toast = document.createElement('div');
+    toast.className = `aiqm-toast aiqm-toast-${type}`;
+    toast.setAttribute('role', 'alert');
     
-    // Reset state for animations
-    toast.classList.remove('show');
+    toast.innerHTML = `
+        <div class="aiqm-toast-icon-circle">
+            <i class="bi ${iconClass}"></i>
+        </div>
+        <div class="aiqm-toast-content">
+            <span class="aiqm-toast-message">${message}</span>
+        </div>
+        <button type="button" class="aiqm-toast-close" aria-label="Close">
+            <i class="bi bi-x"></i>
+        </button>
+    `;
     
-    // Trigger reflow to restart animation
-    void toast.offsetWidth;
+    // Auto-dismiss after 5 seconds
+    const timeout = setTimeout(() => {
+        closeToast(toast);
+    }, 5000);
     
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
-    
-    if (window.aiqmToastTimeout) {
-        clearTimeout(window.aiqmToastTimeout);
+    // Setup close button
+    const closeBtn = toast.querySelector('.aiqm-toast-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            clearTimeout(timeout);
+            closeToast(toast);
+        });
     }
     
-    window.aiqmToastTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 2000); // 2 second auto-dismiss per requirement
+    // Prepend so newest is on top
+    container.prepend(toast);
 };
 
 // 3. Global Modal Focus Management (Phase 2.5)
@@ -128,3 +142,36 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+// 5. Global Toast Notifications (Server-rendered Flask Flash Messages)
+document.addEventListener('DOMContentLoaded', () => {
+    const flashToasts = document.querySelectorAll('.aiqm-toast');
+    flashToasts.forEach(toast => {
+        // Auto-dismiss after 5 seconds
+        const timeout = setTimeout(() => {
+            closeToast(toast);
+        }, 5000);
+        
+        // Setup close button
+        const closeBtn = toast.querySelector('.aiqm-toast-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                clearTimeout(timeout);
+                closeToast(toast);
+            });
+        }
+    });
+});
+
+window.closeToast = function(toastElement) {
+    if (!toastElement) return;
+    toastElement.classList.add('toast-hiding');
+    setTimeout(() => {
+        toastElement.remove();
+        // Remove container if empty
+        const container = document.querySelector('.aiqm-toast-container');
+        if (container && container.children.length === 0) {
+            // we leave it, it's invisible anyway, or remove it. Better leave it.
+        }
+    }, 300); // Wait for CSS transition
+};

@@ -1518,42 +1518,7 @@ a {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Toast Notifications ── */
-.aiqm-toast, .apple-toast {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    z-index: 1070;
-    max-width: 320px;
-    height: auto;
-    background: var(--aiqm-surface);
-    border: 1px solid var(--aiqm-border);
-    color: var(--aiqm-gray-900);
-    padding: 0.75rem 1.25rem;
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-sm);
-    font-weight: 600;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    pointer-events: none; /* Let clicks pass through if not interactive */
-    
-    transform: translateY(-20px) scale(0.95);
-    opacity: 0;
-    visibility: hidden;
-    transition: transform var(--dur-std) var(--ease-spring), opacity var(--dur-std) var(--ease-smooth), visibility var(--dur-std);
-}
 
-.aiqm-toast:hover, .apple-toast:hover {
-    pointer-events: auto; /* Pause dismiss or allow interaction on hover */
-}
-
-.aiqm-toast.show, .apple-toast.show {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-    visibility: visible;
-}
 
 /* ── Inline Validation ── */
 .form-control.is-invalid, .form-select.is-invalid {
@@ -2041,3 +2006,140 @@ button:disabled, .btn:disabled, .btn.disabled {
     }
 }
 
+/* ================================================================
+   MODERN FLOATING TOAST NOTIFICATIONS
+   ================================================================ */
+.aiqm-toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+@media (max-width: 768px) {
+    .aiqm-toast-container {
+        top: 16px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 400px;
+        padding: 0 16px;
+        align-items: center;
+    }
+}
+
+.aiqm-toast {
+    pointer-events: auto;
+    width: 360px;
+    max-width: 100%;
+    min-height: 52px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06), 0 2px 10px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center; /* Vertically centered */
+    gap: 14px;
+    opacity: 1; transform: translateY(0); animation: aiqmToastSlideDownFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: opacity 0.3s ease, transform 0.3s ease, margin-top 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aiqm-toast {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+.aiqm-toast.toast-hiding {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+@keyframes aiqmToastSlideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.aiqm-toast-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.aiqm-toast-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.aiqm-toast-message {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--aiqm-gray-900);
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.aiqm-toast-close {
+    background: transparent;
+    border: none;
+    color: var(--aiqm-gray-400);
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 4px;
+    margin: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aiqm-toast-close:hover {
+    color: var(--aiqm-gray-800);
+}
+
+/* Toast Color Variants */
+.aiqm-toast-success .aiqm-toast-icon-circle { 
+    background-color: var(--aiqm-success);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+.aiqm-toast-danger .aiqm-toast-icon-circle { 
+    background-color: var(--aiqm-danger);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.aiqm-toast-warning .aiqm-toast-icon-circle { 
+    background-color: #F59E0B; /* Amber icon per instructions */
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+.aiqm-toast-info .aiqm-toast-icon-circle { 
+    background-color: var(--aiqm-primary);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+.aiqm-toast-success .aiqm-toast-icon { color: var(--aiqm-success); }
+.aiqm-toast-danger .aiqm-toast-icon { color: var(--aiqm-danger); }
+.aiqm-toast-warning .aiqm-toast-icon { color: var(--aiqm-warning); }
+.aiqm-toast-info .aiqm-toast-icon { color: var(--aiqm-primary); }

@@ -78,15 +78,29 @@
     ============================================================ -->
     <main class="page-body">
 
-        <!-- Flash Messages -->
+        <!-- Floating Flash Messages (Toasts) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="container flash-container mt-3">
+                <div class="aiqm-toast-container" aria-live="polite" aria-atomic="true">
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <div class="aiqm-toast aiqm-toast-{{ category }}" role="alert">
+                            <div class="aiqm-toast-icon-circle">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check"></i>
+                                {% elif category == 'danger' %}
+                                    <i class="bi bi-exclamation-lg"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                {% else %}
+                                    <i class="bi bi-info-lg"></i>
+                                {% endif %}
+                            </div>
+                            <div class="aiqm-toast-content">
+                                <span class="aiqm-toast-message">{{ message }}</span>
+                            </div>
+                            <button type="button" class="aiqm-toast-close" aria-label="Close">
+                                <i class="bi bi-x"></i>
+                            </button>
                         </div>
                     {% endfor %}
                 </div>
