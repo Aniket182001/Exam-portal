@@ -195,13 +195,9 @@ a:hover {
 }
 
 .aiqm-navbar .navbar-brand .brand-title {
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 800;
     color: var(--aiqm-gray-900);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 220px;
 }
 
 .aiqm-navbar .navbar-brand .brand-sub {
@@ -530,66 +526,37 @@ a:hover {
    HOMEPAGE — HERO SECTION (Apple Inspired)
    ================================================================ */
 /* ================================================================
-   HERO SECTION — Stitch Variant 1 (Pixel-faithful)
-   Background: Medium slate-blue (#4A6580 → #6B8BAA), warm centre glow
+   HERO SECTION — Version 2 (Premium Signature)
    ================================================================ */
-
-/* ── Base hero shell ── */
 .hero-section {
-    /* Stitch gradient: medium blue-grey, lighter than previous */
-    background:
-        linear-gradient(160deg, #3D5A73 0%, #4E6F8A 40%, #5E809A 70%, #6B91AB 100%);
-    padding: 5rem 0 4.5rem;
+    background: #F9F8F6 radial-gradient(ellipse at center, rgba(170,185,165,0.08) 0%, transparent 70%);
+    padding: 11rem 0 9rem;
     position: relative;
     overflow: hidden;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
+    text-align: center;
 }
 
-/* ── Background radial glow layers ── */
-.hero-bg-glow {
+/* ── Phase 2: Signature SVG Line Layer ── */
+.hero-svg-v2 {
     position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-    filter: blur(90px);
+    inset: 0;
     z-index: 0;
+    pointer-events: none;
 }
-/* Central warm glow (matches Stitch cream/white bloom at centre) */
-.hero-bg-glow--center {
-    width: 700px;
-    height: 700px;
-    top: 50%;
-    left: 40%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(circle, rgba(160, 200, 240, 0.35) 0%, transparent 70%);
-    animation: glow-breathe-center 8s ease-in-out infinite alternate;
+.hero-svg-v2 svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
-/* Right bloom behind orb */
-.hero-bg-glow--right {
-    width: 500px;
-    height: 500px;
-    top: 50%;
-    right: -80px;
-    transform: translateY(-50%);
-    background: radial-gradient(circle, rgba(130, 175, 220, 0.30) 0%, transparent 70%);
-    animation: glow-breathe-right 10s ease-in-out 2s infinite alternate;
+.hero-svg-v2 line {
+    transform-origin: center;
+    transform: scaleX(0); /* Hidden initially for intro animation */
 }
-/* Top ambient highlight */
-.hero-bg-glow--top {
-    width: 400px;
-    height: 300px;
-    top: -60px;
-    left: 20%;
-    background: radial-gradient(ellipse, rgba(200, 225, 255, 0.18) 0%, transparent 70%);
-}
-@keyframes glow-breathe-center {
-    0%   { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
-    100% { opacity: 1;   transform: translate(-50%, -50%) scale(1.12); }
-}
-@keyframes glow-breathe-right {
-    0%   { opacity: 0.6; transform: translateY(-50%) scale(0.95); }
-    100% { opacity: 1;   transform: translateY(-50%) scale(1.1); }
+
+/* Optional Shimmer after intro */
+@keyframes svg-shimmer-v2 {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.95; }
 }
 
 /* ── Content Wrapper ── */
@@ -598,124 +565,38 @@ a:hover {
     z-index: 10;
 }
 
-/* ── Left text column ── */
-.hero-text-col {
-    padding-right: 3rem;
-}
-
-/* ── Typography ── */
+/* ── Typography (Phase 3 Targets) ── */
 .hero-title {
-    font-size: clamp(3rem, 5vw, 4.5rem);
-    font-weight: 800;
-    color: #FFFFFF;
-    line-height: 1.08;
-    margin-bottom: 1.5rem;
-    letter-spacing: -0.025em;
-
-    transform: translateY(20px);
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    color: #0A1628;
+    line-height: 1.05;
+    margin-bottom: 1.6rem;
+    letter-spacing: -0.02em;
+    
+    transform: translateY(18px);
     opacity: 0;
     will-change: transform, opacity;
-    transition: transform 0.7s cubic-bezier(0.16,1,0.3,1), opacity 0.7s ease;
 }
 
 .hero-subtitle {
-    font-size: 1.05rem;
-    color: rgba(255, 255, 255, 0.80);
-    max-width: 400px;
-    margin: 0 0 2.4rem 0;
-    line-height: 1.65;
-    font-weight: 400;
-
-    transform: translateY(20px);
+    font-size: 18px;
+    color: #666666;
+    max-width: 520px;
+    margin: 0 auto 2.8rem;
+    line-height: 1.6;
+    
+    transform: translateY(18px);
     opacity: 0;
     will-change: transform, opacity;
-    transition: transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s, opacity 0.7s ease 0.1s;
-}
-
-.hero-cta-wrap {
-    transform: translateY(10px);
-    opacity: 0;
-    will-change: transform, opacity;
-    transition: transform 0.6s ease 0.2s, opacity 0.6s ease 0.2s;
 }
 
 .hero-hint {
-    font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.55);
-    margin-top: 0.9rem;
-    margin-bottom: 0;
-    letter-spacing: 0.01em;
-}
-
-/* ── Right art column ── */
-.hero-art-col {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Bloom glow behind the orb */
-.hero-orb-glow {
-    position: absolute;
-    width: 420px;
-    height: 420px;
-    border-radius: 50%;
-    background: radial-gradient(circle,
-        rgba(120, 180, 255, 0.40) 0%,
-        rgba(90, 140, 210, 0.20) 40%,
-        transparent 70%
-    );
-    filter: blur(40px);
-    z-index: 0;
-    animation: orb-glow-pulse 6s ease-in-out infinite alternate;
-}
-@keyframes orb-glow-pulse {
-    0%   { transform: scale(0.9);  opacity: 0.7; }
-    100% { transform: scale(1.08); opacity: 1; }
-}
-
-/* The floating PNG orb image */
-.hero-orb-img {
-    position: relative;
-    z-index: 1;
-    max-width: 500px;
-    width: 100%;
-    object-fit: contain;
-    /* No background — PNG transparency handles blend */
-    filter: drop-shadow(0 20px 60px rgba(80, 140, 200, 0.50))
-            drop-shadow(0 4px 16px rgba(0, 0, 0, 0.15));
-    animation: orb-float 7s ease-in-out infinite;
-}
-@keyframes orb-float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    33%       { transform: translateY(-14px) rotate(1.5deg); }
-    66%       { transform: translateY(-7px)  rotate(-1deg); }
-}
-
-/* ── Entrance animations ── */
-.hero-image-anim {
-    /* Start hidden; JS adds intro-complete to reveal */
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 1rem;
     opacity: 0;
-    transform: translateY(24px) scale(0.97);
-    transition: transform 1s cubic-bezier(0.16,1,0.3,1) 0.15s,
-                opacity  1s ease 0.15s;
-}
-.hero-section.intro-complete .hero-image-anim {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-}
-.hero-section.intro-complete .hero-title,
-.hero-section.intro-complete .hero-subtitle {
-    transform: translateY(0);
-    opacity: 1;
-}
-.hero-section.intro-complete .hero-cta-wrap {
-    transform: translateY(0);
-    opacity: 1;
-}
-.hero-section.intro-complete .hero-hint {
-    opacity: 1;
+    will-change: opacity;
 }
 
 /* ── Global Button: btn-apple-primary ── */
@@ -728,7 +609,7 @@ a:hover {
     padding: 1rem 2.4rem;
     border-radius: var(--radius-pill);
     border: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+    transition: var(--transition-base);
     box-shadow: var(--shadow-btn-apple);
 }
 .btn-apple-primary:hover {
@@ -744,42 +625,33 @@ a:hover {
     transform: translateX(6px);
 }
 
-/* ── Stitch Hero CTA Button ── */
+/* ── Hero Version 2 CTA Button ── */
 .btn-v2-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background-color: transparent;
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding: 0.65rem 1.6rem;
+    background-color: #0A1628;
+    color: var(--aiqm-white) !important;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 1rem 2.4rem;
     border-radius: var(--radius-pill);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    letter-spacing: 0.01em;
-
-    /* Entrance state */
+    border: none;
+    
+    transform: scale(0.96);
     opacity: 0;
-    transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
-    box-shadow: none;
+    will-change: transform, opacity, background-color, box-shadow;
+    transition: var(--transition-hover);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 .btn-v2-primary:hover {
-    background-color: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.70);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    color: #fff !important;
+    transform: translateY(-1px) scale(1) !important;
+    background-color: #15243B !important;
+    box-shadow: 0 8px 24px rgba(10, 22, 40, 0.15);
 }
-.btn-v2-primary .hero-btn-arrow {
+.btn-v2-primary i {
     display: inline-block;
-    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-    font-size: 0.9rem;
+    transition: transform var(--dur-std) var(--ease-spring);
 }
-.btn-v2-primary:hover .hero-btn-arrow {
-    transform: translateX(5px);
-}
-.hero-section.intro-complete .btn-v2-primary {
-    opacity: 1;
+.btn-v2-primary:hover i {
+    transform: translateX(6px);
 }
 
 /* ── Phase 1: Logo Pulse Animation (Injected via JS) ── */
@@ -806,45 +678,42 @@ a:hover {
     z-index: -1;
 }
 @keyframes pulse-out-v2 {
-    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(2);   opacity: 0; }
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
 }
 
-/* ── Responsive ── */
-@media (max-width: 991.98px) {
-    .hero-section {
-        padding: 4rem 0 3rem;
-        min-height: auto;
-    }
-    .hero-text-col {
-        padding-right: 0;
-        text-align: center;
-        margin-bottom: 3rem;
-    }
-    .hero-subtitle {
-        max-width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .hero-art-col {
-        justify-content: center;
-    }
-    .hero-orb-img {
-        max-width: 320px;
-    }
+/* ── Intro Complete State ── */
+.hero-section.intro-complete .hero-title,
+.hero-section.intro-complete .hero-subtitle {
+    transform: translateY(0);
+    opacity: 1;
+}
+.hero-section.intro-complete .btn-v2-primary {
+    transform: scale(1);
+    opacity: 1;
+}
+.hero-section.intro-complete .hero-hint {
+    opacity: 1;
+}
+.hero-section.intro-complete .hero-svg-v2 line {
+    transform: scaleX(1);
+}
+.hero-section.intro-complete .hero-svg-v2 {
+    animation: svg-shimmer-v2 25s ease-in-out infinite alternate;
 }
 
-/* ── Reduced Motion ── */
+/* ── Reduced Motion Override ── */
 @media (prefers-reduced-motion: reduce) {
-    .v2-logo-intro, .v2-logo-intro::before {
-        animation: none !important; opacity: 1 !important; transform: none !important;
+    .v2-logo-intro, .v2-logo-intro::before { 
+        animation: none !important; opacity: 1 !important; transform: none !important; 
     }
-    .hero-title, .hero-subtitle, .hero-cta-wrap, .hero-hint, .hero-image-anim,
-    .btn-v2-primary {
-        opacity: 1 !important; transform: none !important; transition: none !important;
+    .hero-title, .hero-subtitle, .btn-v2-primary, .hero-hint { 
+        opacity: 1 !important; transform: none !important; transition: none !important; 
     }
-    .hero-orb-img { animation: none !important; }
-    .hero-bg-glow, .hero-orb-glow { animation: none !important; }
+    .hero-svg-v2 line { 
+        transform: scaleX(1) !important; transition: none !important; 
+    }
+    .hero-svg-v2 { animation: none !important; }
 }
 
 
