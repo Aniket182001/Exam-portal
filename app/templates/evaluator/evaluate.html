@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block page_title %}Evaluate Answer{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+    <div class="mb-4">
+        <a href="{{ url_for('evaluator.dashboard') }}" class="text-decoration-none">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom p-4">
+            <h5 class="mb-0 fw-bold">Evaluate Answer</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <strong>Student:</strong> {{ answer.attempt.student_name }} ({{ answer.attempt.student_email }})<br>
+                <strong>Exam:</strong> {{ answer.attempt.exam.title }}
+            </div>
+
+            <hr>
+
+            <div class="mb-4">
+                <h6>Question ({{ question.marks }} marks)</h6>
+                <div class="p-3 bg-light rounded text-dark">
+                    {{ question.question_text }}
+                </div>
+            </div>
+
+            {% if question.rubric_text %}
+            <div class="mb-4">
+                <h6>Rubric</h6>
+                <div class="p-3 bg-light rounded text-dark fst-italic">
+                    {{ question.rubric_text }}
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('evaluator.evaluate', answer_id=answer.id) }}">
+                {% if question.question_type == 'subjective' %}
+                    <div class="mb-4">
+                        <h6>Student's Answer</h6>
+                        <div class="p-3 bg-light rounded text-dark border">
+                            {{ answer.answer_text if answer.answer_text else '<span class="text-muted"><i class="bi bi-slash-circle me-1"></i>Not Attempted — 0 marks (auto)</span>'|safe }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Marks Awarded (Max {{ question.marks }})</label>
+                        <input type="number" step="0.5" min="0" max="{{ question.marks }}" class="form-control" name="marks_awarded" required>
+                    </div>
+
+                {% elif question.question_type == 'incident' %}
+                    {% set schema = question.response_schema|from_json %}
+                    {% set student_response = answer.answer_text|from_json %}
+                    
+                    <h6 class="mb-3">Incident Breakdown</h6>
+                    
+                    {% for field in schema %}
+                        <div class="card mb-3 border">
+                            <div class="card-body bg-light">
+                                <h6 class="card-title text-primary">{{ field.label }} (Max {{ field.max_marks }} marks)</h6>
+                                <div class="p-2 mb-3 bg-white border rounded">
+                                    {{ student_response.get(field.label, '') if student_response.get(field.label, '') else '<span class="text-muted"><i class="bi bi-slash-circle me-1"></i>Not Attempted — 0 marks (auto)</span>'|safe }}
+                                </div>
+                                <label class="form-label fw-bold small">Marks for {{ field.label }}</label>
+                                <input type="number" step="0.5" min="0" max="{{ field.max_marks }}" class="form-control incident-mark-input" name="mark_{{ field.label }}" required>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Total Marks Awarded: <span id="total-marks-display" class="text-primary">0</span> / {{ question.marks }}</label>
+                    </div>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const inputs = document.querySelectorAll('.incident-mark-input');
+                            const totalDisplay = document.getElementById('total-marks-display');
+                            
+                            function updateTotal() {
+                                let total = 0;
+                                inputs.forEach(input => {
+                                    total += parseFloat(input.value) || 0;
+                                });
+                                totalDisplay.textContent = total;
+                            }
+                            
+                            inputs.forEach(input => {
+                                input.addEventListener('input', updateTotal);
+                            });
+                        });
+                    </script>
+                {% endif %}
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Evaluator Comment (Optional)</label>
+                    <textarea class="form-control" name="comment" rows="3" placeholder="Feedback for the student..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Save Evaluation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

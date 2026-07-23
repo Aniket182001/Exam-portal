@@ -175,3 +175,204 @@ window.closeToast = function(toastElement) {
         }
     }, 300); // Wait for CSS transition
 };
+
+/* ================================================================
+   HERO CANVAS PARTICLE MOTION (Isolated Premium Background Motion)
+   ================================================================ */
+(function initHeroMotion() {
+    function setupHeroCanvas() {
+        const heroSection = document.getElementById('heroSection');
+        const canvas = document.getElementById('heroCanvas');
+        if (!heroSection || !canvas) return;
+
+        // Respect prefers-reduced-motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+
+        function resizeCanvas() {
+            width = heroSection.offsetWidth;
+            height = heroSection.offsetHeight;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        resizeCanvas();
+
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(resizeCanvas, 150);
+        }, { passive: true });
+
+        // Mouse Position tracking inside Hero Section
+        const mouse = {
+            x: width / 2,
+            y: height / 2,
+            active: false,
+            currentAlpha: 0
+        };
+
+        heroSection.addEventListener('mousemove', (e) => {
+            const rect = heroSection.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true;
+        }, { passive: true });
+
+        heroSection.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        }, { passive: true });
+
+        // Particles Configuration (26 particles: 22-28 range requirement)
+        const particleCount = 26;
+        const particles = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: (Math.random() - 0.5) * 0.45,
+                radius: Math.random() * 1.2 + 1.3,
+                baseAlpha: Math.random() * 0.25 + 0.25
+            });
+        }
+
+        let animationFrameId = null;
+        let isAnimating = false;
+        let isHeroVisible = true;
+
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Smooth fade for mouse interaction
+            const targetMouseAlpha = mouse.active ? 1 : 0;
+            mouse.currentAlpha += (targetMouseAlpha - mouse.currentAlpha) * 0.08;
+
+            for (let i = 0; i < particleCount; i++) {
+                const p = particles[i];
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Bounce off boundaries softly
+                if (p.x < 0) { p.x = 0; p.vx *= -1; }
+                if (p.x > width) { p.x = width; p.vx *= -1; }
+                if (p.y < 0) { p.y = 0; p.vy *= -1; }
+                if (p.y > height) { p.y = height; p.vy *= -1; }
+
+                // Check mouse proximity
+                let mouseDist = 999;
+                let mouseGlow = 0;
+                if (mouse.currentAlpha > 0.001) {
+                    const mdx = mouse.x - p.x;
+                    const mdy = mouse.y - p.y;
+                    mouseDist = Math.sqrt(mdx * mdx + mdy * mdy);
+                    if (mouseDist < 140) {
+                        mouseGlow = (1 - mouseDist / 140) * mouse.currentAlpha;
+                    }
+                }
+
+                // Draw Particle
+                const currentRadius = p.radius + mouseGlow * 1.2;
+                const currentAlpha = Math.min(0.85, p.baseAlpha + mouseGlow * 0.4);
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(249, 115, 22, ${currentAlpha})`;
+                ctx.fill();
+
+                // Mouse Connection Lines
+                if (mouseGlow > 0.01) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.strokeStyle = `rgba(234, 88, 12, ${0.35 * mouseGlow})`;
+                    ctx.lineWidth = 1.0;
+                    ctx.stroke();
+                }
+
+                // Inter-particle Connection Lines
+                for (let j = i + 1; j < particleCount; j++) {
+                    const p2 = particles[j];
+                    const dx = p2.x - p.x;
+                    const dy = p2.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 110) {
+                        const lineAlpha = (1 - dist / 110) * 0.14;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(249, 115, 22, ${lineAlpha})`;
+                        ctx.lineWidth = 0.75;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            if (isAnimating) {
+                animationFrameId = requestAnimationFrame(render);
+            }
+        }
+
+        function startAnimation() {
+            if (!isAnimating && isHeroVisible && !document.hidden) {
+                isAnimating = true;
+                animationFrameId = requestAnimationFrame(render);
+            }
+        }
+
+        function stopAnimation() {
+            if (isAnimating) {
+                isAnimating = false;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        }
+
+        // Pause when tab is hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+
+        // Pause when scrolled out of view using IntersectionObserver
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    isHeroVisible = entry.isIntersecting;
+                    if (isHeroVisible) {
+                        startAnimation();
+                    } else {
+                        stopAnimation();
+                    }
+                });
+            }, { threshold: 0 });
+            observer.observe(heroSection);
+        } else {
+            startAnimation();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupHeroCanvas);
+    } else {
+        setupHeroCanvas();
+    }
+})();

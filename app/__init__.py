@@ -26,6 +26,7 @@ def create_app():
     from app.routes.admin_backup import admin_backup_bp
     from app.routes.auth import auth_bp
     from app.routes.admin_bp import admin_bp
+    from app.routes.evaluator import evaluator_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -34,6 +35,7 @@ def create_app():
     app.register_blueprint(student_exams_bp)
     app.register_blueprint(admin_backup_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(evaluator_bp)
 
     @app.context_processor
     def inject_current_year():
@@ -52,6 +54,19 @@ def create_app():
             return dt.astimezone(tz).strftime(format)
         except Exception:
             return dt.strftime(format)
+
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        """Parse a JSON string into a Python dict/list for use in templates."""
+        import json as _json
+        if not value:
+            return {}
+        if isinstance(value, (dict, list)):
+            return value
+        try:
+            return _json.loads(value)
+        except (ValueError, TypeError):
+            return {}
 
     # Register CLI commands
     from app.cli import create_admin_command

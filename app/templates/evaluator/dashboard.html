@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block page_title %}Evaluator Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="admin-header mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Evaluator Dashboard</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clipboard-check text-primary me-2"></i>Evaluator Dashboard</h3>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            {% if answers %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Student</th>
+                            <th>Exam</th>
+                            <th>Question</th>
+                            <th class="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for answer in answers %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">{{ answer.attempt.student_name }}</div>
+                                <div class="text-muted small">{{ answer.attempt.student_email }}</div>
+                            </td>
+                            <td>{{ answer.attempt.exam.title }}</td>
+                            <td>
+                                <span class="badge bg-secondary mb-1">{{ answer.question.question_type|title }}</span>
+                                <div class="text-truncate" style="max-width: 300px;">{{ answer.question.question_text }}</div>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('evaluator.evaluate', answer_id=answer.id) }}" class="btn btn-sm btn-primary">Review</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-check-circle display-4 mb-3 text-success"></i>
+                <h5>All caught up!</h5>
+                <p>There are no pending evaluations.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

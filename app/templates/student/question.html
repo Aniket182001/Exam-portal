@@ -58,7 +58,10 @@
                         <!-- Question Text -->
                         <div class="fs-5 text-dark mb-5 fw-medium" style="white-space: pre-wrap; line-height: 1.8;">{{ question.question_text }}</div>
 
-                        <!-- Options List -->
+                        {% set q_type = question.question_type or 'mcq' %}
+
+                        {# ─── MCQ ──────────────────────────────────────────────────────── #}
+                        {% if q_type == 'mcq' %}
                         <h6 class="text-uppercase tracking-wider text-muted font-monospace small mb-3 letter-wide">Select the correct option</h6>
                         <div class="list-group option-group mb-4">
                             {% for option in question.options|sort(attribute='option_order') %}
@@ -85,6 +88,63 @@
                                 <i class="bi bi-eraser-fill me-1"></i> Clear Answer
                             </button>
                         </div>
+
+                        {# ─── Subjective ────────────────────────────────────────────────── #}
+                        {% elif q_type == 'subjective' %}
+                        {% if question.rubric_text %}
+                        <div class="alert alert-info border-info-subtle rounded-3 mb-4 p-3 d-flex gap-3">
+                            <i class="bi bi-lightbulb-fill text-info fs-5 flex-shrink-0"></i>
+                            <div class="small">
+                                <strong>Guidance:</strong> {{ question.rubric_text }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <h6 class="text-uppercase tracking-wider text-muted font-monospace small mb-3 letter-wide">Write your answer below</h6>
+                        <textarea class="form-control bg-white fs-6" 
+                                  id="subjective-answer"
+                                  name="answer_text" 
+                                  rows="8" 
+                                  placeholder="Type your answer here..."
+                                  style="resize: vertical; border-color: var(--aiqm-gray-200); line-height: 1.7;">{{ existing_answer_text or '' }}</textarea>
+                        <div class="form-text text-muted mt-2">
+                            <i class="bi bi-cloud-check me-1" id="subj-save-icon"></i>
+                            <span id="subj-save-status">Your answer is automatically saved when you navigate to the next question.</span>
+                        </div>
+
+                        {# ─── Incident ──────────────────────────────────────────────────── #}
+                        {% elif q_type == 'incident' %}
+                        {% if question.rubric_text %}
+                        <div class="alert alert-info border-info-subtle rounded-3 mb-4 p-3 d-flex gap-3">
+                            <i class="bi bi-lightbulb-fill text-info fs-5 flex-shrink-0"></i>
+                            <div class="small">
+                                <strong>Guidance:</strong> {{ question.rubric_text }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <h6 class="text-uppercase tracking-wider text-muted font-monospace small mb-4 letter-wide">Complete all sub-fields below</h6>
+                        <div class="d-flex flex-column gap-3" id="incident-fields">
+                            {% if question.response_schema %}
+                                {% for entry in question.response_schema %}
+                                <div class="p-3 bg-white border rounded-3 shadow-sm">
+                                    <label class="form-label fw-bold small text-secondary text-uppercase letter-wide mb-2">
+                                        {{ entry.label }}
+                                        <span class="text-muted fw-normal ms-1">(max {{ entry.max_marks }} mark{{ 's' if entry.max_marks != 1 }})</span>
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control incident-field" 
+                                           name="incident_field[]" 
+                                           value="{{ existing_incident_values.get(entry.label, '') }}"
+                                           placeholder="Your answer for: {{ entry.label }}">
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="form-text text-muted mt-3">
+                            <i class="bi bi-cloud-check me-1" id="incident-save-icon"></i>
+                            <span id="incident-save-status">Your answers are automatically saved when you navigate.</span>
+                        </div>
+
+                        {% endif %}
                     </div>
                     
                     <!-- Navigation Footer (Fallback if palette is disabled) -->
@@ -329,10 +389,6 @@
 
         // Premium Submission Handler
         async function executePremiumSubmission(form) {
-            // Disable all interactive controls
-            const allInputs = form.querySelectorAll('input, button');
-            allInputs.forEach(input => input.disabled = true);
-            
             const overlay = document.getElementById('submission-overlay');
             const subText = document.getElementById('submission-subtext');
             const subTitle = document.getElementById('submission-text');
@@ -341,9 +397,33 @@
             
             overlay.style.opacity = '1';
             overlay.style.pointerEvents = 'all';
-            
+
+            // First, await the silent autosave. 
+            // We pass throwOnError=true so it aborts the submission if the network is down.
+            try {
+                await performSilentAutosave(form, 0, 'mcq', true);
+            } catch (e) {
+                console.error("Final autosave before submission failed", e);
+                // Hide overlay and allow retry
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                
+                // Re-enable the submit button in the modal if it was disabled
+                const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+                if (confirmSubmitBtn) confirmSubmitBtn.disabled = false;
+                
+                alert("Could not save your last answer due to a network error. Please check your connection and try again.");
+                return; // BLOCK final submission
+            }
+
+            // Capture FormData BEFORE disabling inputs!
+            // If inputs are disabled first, FormData will be empty and the backend won't receive the answer.
             const formData = new FormData(form);
             formData.append("action", "finish");
+            
+            // Now safe to disable all interactive controls
+            const allInputs = form.querySelectorAll('input, button, textarea');
+            allInputs.forEach(input => input.disabled = true);
             
             try {
                 const response = await fetch(form.action, {
@@ -364,11 +444,21 @@
                         window.location.href = response.url || window.location.href; // Usually redirected to review
                     }, 700);
                 } else {
-                    fallbackNativeSubmit(form);
+                    throw new Error("Server returned " + response.status);
                 }
             } catch (err) {
-                console.error("Submission failed, falling back to native", err);
-                fallbackNativeSubmit(form);
+                console.error("Submission failed", err);
+                
+                // Show retry-able error to the student
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                
+                // Re-enable inputs
+                allInputs.forEach(input => input.disabled = false);
+                const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+                if (confirmSubmitBtn) confirmSubmitBtn.disabled = false;
+                
+                alert("Could not submit exam due to a network error. Please check your connection and try again.");
             }
         }
         
@@ -389,6 +479,7 @@
             const radios = document.querySelectorAll('input[name="option_id"]');
             const clearBtnContainer = document.getElementById("clear-btn-container");
 
+            // ── MCQ: autosave on radio change (unchanged) ───────────────────────
             radios.forEach(radio => {
                 radio.addEventListener("change", () => {
                     // Visual update
@@ -407,6 +498,79 @@
                     performSilentAutosave(form);
                 });
             });
+
+            // Debounce helper for typing autosave
+            function debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            }
+
+            // ── Subjective: autosave on blur and debounced typing ───────────────────────────
+            const subjTextarea = document.getElementById('subjective-answer');
+            if (subjTextarea) {
+                const debouncedSubjSave = debounce(() => {
+                    performSilentAutosave(form, 0, 'subj');
+                }, 1500);
+
+                subjTextarea.addEventListener('input', () => {
+                    const status = document.getElementById('subj-save-status');
+                    const icon = document.getElementById('subj-save-icon');
+                    if (icon) icon.className = 'bi bi-pencil-square me-1 text-secondary';
+                    if (status && status.textContent !== 'Saving...') status.textContent = 'Typing...';
+                    debouncedSubjSave();
+                });
+                
+                subjTextarea.addEventListener('blur', () => {
+                    if (subjTextarea.value.trim()) {
+                        performSilentAutosave(form, 0, 'subj');
+                    }
+                });
+                // Mark palette green if pre-populated
+                if (subjTextarea.value.trim()) {
+                    const currentQBtn = document.querySelector('.palette-btn.current-q');
+                    if (currentQBtn) {
+                        currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
+                        currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
+                    }
+                }
+            }
+
+            // ── Incident: autosave on blur and debounced typing of any sub-field ────────────
+            const incidentFields = document.querySelectorAll('.incident-field');
+            if (incidentFields.length > 0) {
+                const debouncedIncidentSave = debounce(() => {
+                    performSilentAutosave(form, 0, 'incident');
+                }, 1500);
+
+                incidentFields.forEach(field => {
+                    field.addEventListener('input', () => {
+                        const status = document.getElementById('incident-save-status');
+                        const icon = document.getElementById('incident-save-icon');
+                        if (icon) icon.className = 'bi bi-pencil-square me-1 text-secondary';
+                        if (status && status.textContent !== 'Saving...') status.textContent = 'Typing...';
+                        debouncedIncidentSave();
+                    });
+                    
+                    field.addEventListener('blur', () => {
+                        const anyFilled = Array.from(incidentFields).some(f => f.value.trim());
+                        if (anyFilled) {
+                            performSilentAutosave(form, 0, 'incident');
+                        }
+                    });
+                });
+                // Mark palette green if pre-populated
+                const anyPreFilled = Array.from(incidentFields).some(f => f.value.trim());
+                if (anyPreFilled) {
+                    const currentQBtn = document.querySelector('.palette-btn.current-q');
+                    if (currentQBtn) {
+                        currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
+                        currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
+                    }
+                }
+            }
 
             // Initialize Keyboard Listeners
             document.removeEventListener('keydown', handleKeyboardNav);
@@ -475,8 +639,9 @@
         }
 
         function handleKeyboardNav(e) {
-            // Don't interfere if user is typing in an input
+            // Don't interfere if user is typing in an input or textarea
             if (e.target.tagName === 'INPUT' && e.target.type !== 'radio') return;
+            if (e.target.tagName === 'TEXTAREA') return;
             
             const form = document.getElementById('exam-form');
             if (!form) return;
@@ -497,42 +662,101 @@
             }
         }
 
-        async function performSilentAutosave(form, retryCount = 0) {
+        let activeAutosaveController = null;
+        async function performSilentAutosave(form, retryCount = 0, saveType = 'mcq', throwOnError = false) {
             if (!navigator.onLine) {
-                setTimeout(() => performSilentAutosave(form, retryCount + 1), 3000);
+                if (throwOnError) throw new Error("Offline");
+                setTimeout(() => performSilentAutosave(form, retryCount + 1, saveType), 3000);
                 return;
             }
-            
+
+            if (activeAutosaveController) {
+                activeAutosaveController.abort();
+            }
+            activeAutosaveController = new AbortController();
+            const signal = activeAutosaveController.signal;
+
             isSaving = true;
+
+            // Update save indicator for text-based types
+            if (saveType === 'subj') {
+                const icon = document.getElementById('subj-save-icon');
+                const status = document.getElementById('subj-save-status');
+                if (icon) icon.className = 'bi bi-cloud-upload me-1 text-primary';
+                if (status) status.textContent = 'Saving...';
+            } else if (saveType === 'incident') {
+                const icon = document.getElementById('incident-save-icon');
+                const status = document.getElementById('incident-save-status');
+                if (icon) icon.className = 'bi bi-cloud-upload me-1 text-primary';
+                if (status) status.textContent = 'Saving...';
+            }
             
             const formData = new FormData(form);
             try {
-                // Submit form without action button data (backend will save and redirect)
-                // We use manual redirect to prevent fetching the whole page on autosave
+                // Backend now returns JSON {"status": "saved"} when it sees X-Requested-With: XMLHttpRequest
                 const response = await fetch(form.action, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    redirect: 'manual'
+                    signal: signal
                 });
                 
-                // If redirect manual is used, status 0 or 302 means success for a redirect
-                if (response.ok || response.type === 'opaqueredirect' || response.status === 0 || response.status === 302) {
-                    // Update palette visually if not already green
-                    const currentQBtn = document.querySelector('.palette-btn.current-q');
-                    if (currentQBtn && !currentQBtn.classList.contains('btn-success')) {
-                        currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
-                        currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'saved') {
+                        // Update palette visually if not already green
+                        const currentQBtn = document.querySelector('.palette-btn.current-q');
+                        if (currentQBtn && !currentQBtn.classList.contains('btn-success')) {
+                            currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
+                            currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
+                        }
+                        // Update save indicator for text types
+                        if (saveType === 'subj') {
+                            const icon = document.getElementById('subj-save-icon');
+                            const status = document.getElementById('subj-save-status');
+                            if (icon) icon.className = 'bi bi-cloud-check-fill me-1 text-success';
+                            if (status) status.textContent = 'Saved.';
+                        } else if (saveType === 'incident') {
+                            const icon = document.getElementById('incident-save-icon');
+                            const status = document.getElementById('incident-save-status');
+                            if (icon) icon.className = 'bi bi-cloud-check-fill me-1 text-success';
+                            if (status) status.textContent = 'Saved.';
+                        }
                     }
                 } else {
                     throw new Error('Save failed');
                 }
             } catch (err) {
+                if (err.name === 'AbortError') {
+                    // Aborted by a newer save request, so skip error handling
+                    console.log("Autosave aborted by newer request.");
+                    return;
+                }
+                
+                if (throwOnError) {
+                    throw err; // Re-throw to caller to block submission
+                }
+                
                 console.error("Autosave failed", err);
+                // Update error indicator
+                if (saveType === 'subj') {
+                    const icon = document.getElementById('subj-save-icon');
+                    const status = document.getElementById('subj-save-status');
+                    if (icon) icon.className = 'bi bi-cloud-slash me-1 text-danger';
+                    if (status) status.textContent = 'Could not save — will retry.';
+                } else if (saveType === 'incident') {
+                    const icon = document.getElementById('incident-save-icon');
+                    const status = document.getElementById('incident-save-status');
+                    if (icon) icon.className = 'bi bi-cloud-slash me-1 text-danger';
+                    if (status) status.textContent = 'Could not save — will retry.';
+                }
                 // Retry after 3 seconds
-                setTimeout(() => performSilentAutosave(form, retryCount + 1), 3000);
+                setTimeout(() => performSilentAutosave(form, retryCount + 1, saveType), 3000);
             } finally {
-                isSaving = false;
+                if (activeAutosaveController && activeAutosaveController.signal === signal) {
+                    isSaving = false;
+                    activeAutosaveController = null;
+                }
             }
         }
         

@@ -11,8 +11,57 @@
             <div class="card border-0 shadow-lg rounded-xl mb-4 overflow-hidden position-relative">
                 <!-- Background Pattern overlay based on result -->
                 <div class="position-absolute top-0 start-0 w-100 h-100" style="opacity: 0.05; pointer-events: none; background-image: radial-gradient(circle at 1px 1px, black 1px, transparent 0); background-size: 20px 20px;"></div>
-                
-                {% if attempt.result_status == 'Pass' %}
+
+                {% if attempt.evaluation_status == 'pending' %}
+                <!-- ── Pending Evaluation Header ── -->
+                <div class="bg-warning text-dark text-center py-5 position-relative">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-white text-warning rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-hourglass-split" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h1 class="display-4 fw-bold mb-2">Awaiting Evaluation</h1>
+                    <p class="lead mb-0 opacity-75">Your submission has been received.</p>
+                </div>
+
+                <!-- Student & Exam Details -->
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <div class="text-center border-bottom pb-4 mb-4">
+                        <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide">Exam Result</span>
+                        <h3 class="fw-bold text-dark mb-3">{{ exam.title }}</h3>
+
+                        <div class="d-inline-flex align-items-center bg-light border rounded-pill px-4 py-2">
+                            <i class="bi bi-person-circle text-primary me-2 fs-5"></i>
+                            <div class="text-start">
+                                <span class="d-block fw-bold text-dark lh-sm">{{ attempt.student_name }}</span>
+                                <span class="small text-muted lh-sm">{{ attempt.student_email }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending evaluation message -->
+                    <div class="alert border-0 rounded-xl p-4 mb-4 d-flex align-items-start gap-3" style="background: linear-gradient(135deg, #fff8e1 0%, #fff3cd 100%); border-left: 4px solid #ffc107 !important;">
+                        <i class="bi bi-clock-history text-warning fs-4 flex-shrink-0 mt-1"></i>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Manual Evaluation Pending</h5>
+                            <p class="mb-0 text-secondary">Your subjective / incident answers are pending manual evaluation by an evaluator. Your final result and score will be released once the evaluation is complete. You will be notified when it is ready.</p>
+                        </div>
+                    </div>
+
+                    {% if attempt.total_marks_obtained is not none and attempt.total_marks_obtained > 0 %}
+                    <!-- MCQ partial score (if any MCQs were in the exam) -->
+                    <div class="bg-light rounded-xl p-4 border text-center mb-4">
+                        <span class="text-muted small text-uppercase font-monospace letter-wide d-block mb-1">MCQ Score (Partial)</span>
+                        <div class="display-6 fw-bold text-dark">{{ "%.2f"|format(attempt.total_marks_obtained)|replace('.00', '') }}</div>
+                        <span class="text-muted small">Additional marks pending evaluator review</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Submission Info -->
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <span class="text-muted small"><i class="bi bi-clock-history me-1"></i> Submitted: <strong>{{ attempt.submitted_at|format_datetime_tz(exam.timezone, '%B %d, %Y at %I:%M %p %Z') if attempt.submitted_at else 'N/A' }}</strong></span>
+                    </div>
+                </div>
+
+                {% elif attempt.result_status == 'Pass' %}
                 <!-- Pass Header -->
                 <div class="bg-success text-white text-center py-5 position-relative">
                     <div class="d-inline-flex align-items-center justify-content-center bg-white text-success rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px;">
@@ -32,12 +81,13 @@
                 </div>
                 {% endif %}
 
+                {% if attempt.evaluation_status != 'pending' %}
                 <!-- Student & Exam Details -->
                 <div class="card-body p-4 p-md-5 bg-white">
                     <div class="text-center border-bottom pb-4 mb-4">
                         <span class="text-uppercase tracking-wider text-muted font-monospace small letter-wide">Exam Result</span>
                         <h3 class="fw-bold text-dark mb-3">{{ exam.title }}</h3>
-                        
+
                         <div class="d-inline-flex align-items-center bg-light border rounded-pill px-4 py-2">
                             <i class="bi bi-person-circle text-primary me-2 fs-5"></i>
                             <div class="text-start">
@@ -71,7 +121,7 @@
 
                     <!-- Detailed Breakdown -->
                     <h5 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Performance Breakdown</h5>
-                    
+
                     <div class="row g-3 mb-4">
                         <!-- Correct -->
                         <div class="col-md-4">
@@ -122,6 +172,7 @@
                         <span class="text-muted small"><i class="bi bi-clock-history me-1"></i> Submitted automatically on: <strong>{{ attempt.submitted_at|format_datetime_tz(exam.timezone, '%B %d, %Y at %I:%M %p %Z') if attempt.submitted_at else 'N/A' }}</strong></span>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Footer Actions -->
                 <div class="card-footer bg-light-subtle border-top p-4 d-flex flex-column flex-sm-row justify-content-center gap-3">

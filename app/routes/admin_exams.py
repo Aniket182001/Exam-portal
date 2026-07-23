@@ -248,21 +248,19 @@ def delete_exam(exam_id):
         
     exam = Exam.query.get_or_404(exam_id)
     
-    # 1. Delete StudentAnswers and Attempts
-    attempts = StudentAttempt.query.filter_by(exam_id=exam.id).all()
-    attempt_ids = [a.id for a in attempts]
-    if attempt_ids:
-        StudentAnswer.query.filter(StudentAnswer.attempt_id.in_(attempt_ids)).delete(synchronize_session=False)
-        StudentAttempt.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+    # Check if exam has student attempts/answers
+    if StudentAttempt.query.filter_by(exam_id=exam.id).first():
+        flash("This exam has existing student attempts and cannot be deleted.", "danger")
+        return redirect(url_for('admin_exams.list_exams'))
 
-    # 2. Delete QuestionOptions and Questions
+    # 1. Delete QuestionOptions and Questions
     questions = Question.query.filter_by(exam_id=exam.id).all()
     question_ids = [q.id for q in questions]
     if question_ids:
         QuestionOption.query.filter(QuestionOption.question_id.in_(question_ids)).delete(synchronize_session=False)
         Question.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
 
-    # 3. Delete Exam
+    # 2. Delete Exam
     db.session.delete(exam)
     db.session.commit()
     

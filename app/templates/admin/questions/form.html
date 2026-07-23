@@ -28,19 +28,51 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <form method="POST" id="questionForm" class="needs-validation">
-                
-                <!-- Question Details Card -->
+
+                <!-- ─── Question Type Selector ─── -->
+                <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-ui-radios text-primary me-2"></i>Question Type</h5>
+                    </div>
+                    <div class="card-body p-4 bg-light bg-opacity-50">
+                        <div class="d-flex gap-3 flex-wrap" id="typeSelector">
+                            {% set cur_type = question.question_type if question else 'mcq' %}
+                            <label class="type-pill {% if cur_type == 'mcq' %}active{% endif %}" id="pill-mcq">
+                                <input type="radio" name="question_type" value="mcq" {% if cur_type == 'mcq' %}checked{% endif %} class="d-none">
+                                <i class="bi bi-check2-square me-1"></i> MCQ
+                            </label>
+                            <label class="type-pill {% if cur_type == 'subjective' %}active{% endif %}" id="pill-subjective">
+                                <input type="radio" name="question_type" value="subjective" {% if cur_type == 'subjective' %}checked{% endif %} class="d-none">
+                                <i class="bi bi-pencil-square me-1"></i> Subjective
+                            </label>
+                            <label class="type-pill {% if cur_type == 'incident' %}active{% endif %}" id="pill-incident">
+                                <input type="radio" name="question_type" value="incident" {% if cur_type == 'incident' %}checked{% endif %} class="d-none">
+                                <i class="bi bi-diagram-3 me-1"></i> Incident
+                            </label>
+                        </div>
+                        <div class="mt-2 text-muted small" id="typeHint">
+                            <span id="hint-mcq" class="{% if cur_type != 'mcq' %}d-none{% endif %}"><i class="bi bi-info-circle me-1"></i>Standard multiple-choice question with a single correct answer.</span>
+                            <span id="hint-subjective" class="{% if cur_type != 'subjective' %}d-none{% endif %}"><i class="bi bi-info-circle me-1"></i>Open-ended written answer. Will be graded manually by an evaluator.</span>
+                            <span id="hint-incident" class="{% if cur_type != 'incident' %}d-none{% endif %}"><i class="bi bi-info-circle me-1"></i>Structured scenario with multiple sub-fields. Total marks = sum of sub-field marks.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─── Question Details Card (always visible) ─── -->
                 <div class="card border-0 shadow-sm rounded-xl mb-4 overflow-hidden">
                     <div class="card-header bg-white border-bottom py-3">
                         <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-question-circle-fill text-primary me-2"></i>Question Details</h5>
                     </div>
                     <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
                         <div class="mb-4">
-                            <label for="question_text" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Question Text <span class="text-danger">*</span></label>
+                            <label for="question_text" class="form-label fw-bold text-secondary small text-uppercase letter-wide">
+                                <span id="qtextLabel">Question Text</span> <span class="text-danger">*</span>
+                            </label>
                             <textarea class="form-control form-control-lg bg-white" id="question_text" name="question_text" rows="4" placeholder="Type the question content here..." required>{{ question.question_text if question else '' }}</textarea>
                         </div>
 
-                        <div class="row g-4">
+                        <!-- Marks: shown for MCQ and Subjective, hidden for Incident (auto-calculated) -->
+                        <div class="row g-4" id="marksRow">
                             <div class="col-md-4">
                                 <label for="marks" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Marks Weight <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -49,31 +81,56 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Rubric: shown for Subjective and Incident -->
+                        <div class="mt-4 d-none" id="rubricSection">
+                            <label for="rubric_text" class="form-label fw-bold text-secondary small text-uppercase letter-wide">Evaluator Rubric / Marking Guide <span class="text-muted fw-normal">(optional)</span></label>
+                            <textarea class="form-control bg-white" id="rubric_text" name="rubric_text" rows="3" placeholder="Describe what a full-mark answer looks like...">{{ question.rubric_text if question and question.rubric_text else '' }}</textarea>
+                            <div class="form-text text-muted">Visible only to evaluators during manual grading.</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Dynamic Options Card -->
-                <div class="card border-0 shadow-sm rounded-xl mb-5 overflow-hidden">
+                <!-- ─── MCQ Options Card ─── -->
+                <div class="card border-0 shadow-sm rounded-xl mb-5 overflow-hidden" id="mcqPanel">
                     <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-list-check text-primary me-2"></i>Answer Options</h5>
                         <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm hover-scale" id="addOptionBtn">
                             <i class="bi bi-plus-circle me-1"></i> Add Option
                         </button>
                     </div>
-                    
                     <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
-                        
                         <div class="alert alert-info border-info-subtle shadow-sm rounded-lg d-flex align-items-center mb-4 p-3">
                             <i class="bi bi-info-circle-fill text-info fs-4 me-3"></i>
                             <div class="small">
                                 Provide <strong>2 to 6 options</strong>. Select the radio button on the left to indicate which option is the <strong>correct answer</strong>.
                             </div>
                         </div>
-
                         <div id="optionsContainer" class="d-flex flex-column gap-3">
                             <!-- Options will be dynamically inserted here via JS -->
                         </div>
-                        
+                    </div>
+                </div>
+
+                <!-- ─── Incident Sub-fields Card ─── -->
+                <div class="card border-0 shadow-sm rounded-xl mb-5 overflow-hidden d-none" id="incidentPanel">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-diagram-3 text-warning me-2"></i>Incident Sub-fields</h5>
+                            <p class="text-muted small mb-0 mt-1">Define each response field and its maximum marks. Total question marks = sum of all sub-field marks.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold shadow-sm hover-scale" id="addSubFieldBtn">
+                            <i class="bi bi-plus-circle me-1"></i> Add Sub-field
+                        </button>
+                    </div>
+                    <div class="card-body p-4 p-md-5 bg-light bg-opacity-50">
+                        <div id="subFieldsContainer" class="d-flex flex-column gap-3">
+                            <!-- Sub-fields injected here -->
+                        </div>
+                        <div class="mt-3 p-3 bg-white border rounded-3 d-flex align-items-center gap-3">
+                            <i class="bi bi-calculator text-warning fs-5"></i>
+                            <span class="text-muted small">Total marks for this question: <strong id="incidentTotalMarks" class="text-dark fs-6">0</strong></span>
+                        </div>
                     </div>
                 </div>
 
@@ -97,68 +154,174 @@
         transform: translateY(-2px);
         box-shadow: var(--shadow-md) !important;
     }
-    
+
+    /* Type Pills */
+    .type-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        border: 2px solid var(--aiqm-gray-200, #e0e0e0);
+        background: #fff;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    .type-pill:hover {
+        border-color: var(--aiqm-primary, #0d6efd);
+        color: var(--aiqm-primary, #0d6efd);
+    }
+    .type-pill.active {
+        background: var(--aiqm-primary, #0d6efd);
+        border-color: var(--aiqm-primary, #0d6efd);
+        color: #fff;
+    }
+
     /* Option Row Styling */
     .option-row .input-group-text {
-        background-color: var(--aiqm-white);
-        border-color: var(--aiqm-gray-200);
+        background-color: var(--aiqm-white, #fff);
+        border-color: var(--aiqm-gray-200, #e0e0e0);
         cursor: pointer;
         transition: all 0.2s ease;
     }
     .option-row .form-control {
-        border-color: var(--aiqm-gray-200);
+        border-color: var(--aiqm-gray-200, #e0e0e0);
     }
     .option-row:focus-within .input-group-text,
     .option-row:focus-within .form-control {
-        border-color: var(--aiqm-primary);
+        border-color: var(--aiqm-primary, #0d6efd);
     }
-    
-    /* Radio Button Highlight */
     .option-row .form-check-input {
         cursor: pointer;
         width: 1.25em;
         height: 1.25em;
     }
     .option-row .form-check-input:checked {
-        background-color: var(--aiqm-success);
-        border-color: var(--aiqm-success);
+        background-color: var(--aiqm-success, #198754);
+        border-color: var(--aiqm-success, #198754);
     }
-    .option-row .form-check-input:checked + .input-group-text {
-        background-color: rgba(25, 135, 84, 0.1);
-        border-color: var(--aiqm-success);
+
+    /* Sub-field row */
+    .subfield-row {
+        background: #fff;
+        border: 1px solid var(--aiqm-gray-200, #e0e0e0);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        transition: box-shadow 0.2s;
+    }
+    .subfield-row:focus-within {
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        border-color: #ffc107;
     }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const optionsContainer = document.getElementById('optionsContainer');
-    const addOptionBtn = document.getElementById('addOptionBtn');
-    const form = document.getElementById('questionForm');
-    
-    // Initial data passed from server (if editing or validation failure)
-    let initialOptions = [];
+document.addEventListener('DOMContentLoaded', function () {
+    // ── Element refs ──────────────────────────────────────────────────────────
+    const optionsContainer  = document.getElementById('optionsContainer');
+    const subFieldsContainer = document.getElementById('subFieldsContainer');
+    const addOptionBtn      = document.getElementById('addOptionBtn');
+    const addSubFieldBtn    = document.getElementById('addSubFieldBtn');
+    const mcqPanel          = document.getElementById('mcqPanel');
+    const incidentPanel     = document.getElementById('incidentPanel');
+    const marksRow          = document.getElementById('marksRow');
+    const rubricSection     = document.getElementById('rubricSection');
+    const marksInput        = document.getElementById('marks');
+    const incidentTotal     = document.getElementById('incidentTotalMarks');
+    const form              = document.getElementById('questionForm');
+    const typePills         = document.querySelectorAll('.type-pill');
+    const typeRadios        = document.querySelectorAll('input[name="question_type"]');
+
+    // ── Initial option data (MCQ) ─────────────────────────────────────────────
+    let initialOptions    = [];
     let initialCorrectIdx = -1;
-    
-    {% if question %}
-        {% for opt in question.options %}
+    {% if question and question.question_type == 'mcq' %}
+        {% for opt in question.options|sort(attribute='option_order') %}
             initialOptions.push({{ opt.option_text|tojson }});
             {% if opt.id == question.correct_option_id %}
                 initialCorrectIdx = {{ loop.index0 }};
             {% endif %}
         {% endfor %}
-    {% else %}
-        // Default 2 options for new questions
-        initialOptions = ["", ""];
+    {% elif not question %}
+        initialOptions    = ['', ''];
         initialCorrectIdx = 0;
     {% endif %}
 
+    // ── Initial incident sub-field data ───────────────────────────────────────
+    let initialSchema = [];
+    {% if question and question.question_type == 'incident' and question.response_schema %}
+        initialSchema = {{ question.response_schema | tojson }};
+    {% elif not question or (question and question.question_type == 'incident' and not question.response_schema) %}
+        {% if not question or question.question_type == 'incident' %}
+            initialSchema = [
+                {label: '', max_marks: 1},
+                {label: '', max_marks: 1}
+            ];
+        {% endif %}
+    {% endif %}
+
+    // ── Type switching ─────────────────────────────────────────────────────────
+    function getActiveType() {
+        const checked = document.querySelector('input[name="question_type"]:checked');
+        return checked ? checked.value : 'mcq';
+    }
+
+    function switchType(type) {
+        // Pills
+        typePills.forEach(p => p.classList.remove('active'));
+        document.getElementById('pill-' + type).classList.add('active');
+
+        // Hints
+        document.querySelectorAll('[id^="hint-"]').forEach(h => h.classList.add('d-none'));
+        document.getElementById('hint-' + type).classList.remove('d-none');
+
+        // Panels
+        if (type === 'mcq') {
+            mcqPanel.classList.remove('d-none');
+            incidentPanel.classList.add('d-none');
+            marksRow.classList.remove('d-none');
+            rubricSection.classList.add('d-none');
+            marksInput.required = true;
+            document.querySelectorAll('input[name="option_text[]"], input[name="correct_option_index"]').forEach(el => el.required = true);
+            document.querySelectorAll('input[name="sub_label[]"], input[name="sub_marks[]"]').forEach(el => el.required = false);
+        } else if (type === 'subjective') {
+            mcqPanel.classList.add('d-none');
+            incidentPanel.classList.add('d-none');
+            marksRow.classList.remove('d-none');
+            rubricSection.classList.remove('d-none');
+            marksInput.required = true;
+            document.querySelectorAll('input[name="option_text[]"], input[name="correct_option_index"]').forEach(el => el.required = false);
+            document.querySelectorAll('input[name="sub_label[]"], input[name="sub_marks[]"]').forEach(el => el.required = false);
+        } else if (type === 'incident') {
+            mcqPanel.classList.add('d-none');
+            incidentPanel.classList.remove('d-none');
+            marksRow.classList.add('d-none');
+            rubricSection.classList.remove('d-none');
+            marksInput.required = false;
+            document.querySelectorAll('input[name="option_text[]"], input[name="correct_option_index"]').forEach(el => el.required = false);
+            document.querySelectorAll('input[name="sub_label[]"], input[name="sub_marks[]"]').forEach(el => el.required = true);
+        }
+    }
+
+    // Pill click → update radio + switch
+    typePills.forEach(pill => {
+        pill.addEventListener('click', function () {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            switchType(radio.value);
+        });
+    });
+
+    // ── MCQ Options logic ──────────────────────────────────────────────────────
     let optionCount = 0;
 
     function renderOption(text, isCorrect) {
         const idx = optionCount;
         const wrapper = document.createElement('div');
         wrapper.className = 'input-group input-group-lg shadow-sm rounded-lg option-row';
-        
         wrapper.innerHTML = `
             <div class="input-group-text ps-3 pe-4" title="Mark as correct answer">
                 <input class="form-check-input mt-0" type="radio" name="correct_option_index" value="${idx}" ${isCorrect ? 'checked' : ''} aria-label="Correct answer" required>
@@ -168,87 +331,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="bi bi-trash3-fill"></i>
             </button>
         `;
-        
-        // Add click listener to the text div to trigger radio
         const radioDiv = wrapper.querySelector('.input-group-text');
         const radioBtn = wrapper.querySelector('input[type="radio"]');
-        radioDiv.addEventListener('click', function(e) {
-            if(e.target !== radioBtn) {
+        radioDiv.addEventListener('click', function (e) {
+            if (e.target !== radioBtn) {
                 radioBtn.checked = true;
                 highlightSelectedRadio();
             }
         });
-        
         radioBtn.addEventListener('change', highlightSelectedRadio);
-        
         optionsContainer.appendChild(wrapper);
         optionCount++;
         updateButtons();
         highlightSelectedRadio();
     }
-    
+
     function highlightSelectedRadio() {
         document.querySelectorAll('.option-row').forEach(row => {
             const radio = row.querySelector('input[type="radio"]');
             const addon = row.querySelector('.input-group-text');
             const input = row.querySelector('.form-control');
-            if(radio.checked) {
-                addon.style.backgroundColor = "rgba(25, 135, 84, 0.1)";
-                addon.style.borderColor = "var(--aiqm-success)";
-                input.style.borderColor = "var(--aiqm-success)";
-                row.style.boxShadow = "0 0 0 0.25rem rgba(25, 135, 84, 0.25)";
+            if (radio.checked) {
+                addon.style.backgroundColor = 'rgba(25, 135, 84, 0.1)';
+                addon.style.borderColor = 'var(--aiqm-success, #198754)';
+                input.style.borderColor  = 'var(--aiqm-success, #198754)';
+                row.style.boxShadow = '0 0 0 0.25rem rgba(25, 135, 84, 0.25)';
             } else {
-                addon.style.backgroundColor = "var(--aiqm-white)";
-                addon.style.borderColor = "var(--aiqm-gray-200)";
-                input.style.borderColor = "var(--aiqm-gray-200)";
-                row.style.boxShadow = "var(--shadow-sm)";
+                addon.style.backgroundColor = 'var(--aiqm-white, #fff)';
+                addon.style.borderColor = 'var(--aiqm-gray-200, #e0e0e0)';
+                input.style.borderColor  = 'var(--aiqm-gray-200, #e0e0e0)';
+                row.style.boxShadow = 'var(--shadow-sm, none)';
             }
         });
     }
 
     function updateButtons() {
         const rows = document.querySelectorAll('.option-row');
-        // Enable/disable add button
         addOptionBtn.disabled = rows.length >= 6;
-        if(rows.length >= 6) {
-            addOptionBtn.classList.replace('btn-success', 'btn-secondary');
-        } else {
-            addOptionBtn.classList.replace('btn-secondary', 'btn-success');
-        }
-        
-        // Enable/disable remove buttons
-        const removeBtns = document.querySelectorAll('.remove-btn');
-        removeBtns.forEach(btn => {
-            btn.disabled = rows.length <= 2;
-        });
-        
-        // Re-index radio buttons to ensure they correspond to their array position
+        addOptionBtn.classList.toggle('btn-success',    rows.length < 6);
+        addOptionBtn.classList.toggle('btn-secondary',  rows.length >= 6);
         rows.forEach((row, index) => {
             const radio = row.querySelector('input[type="radio"]');
             radio.value = index;
+            const removeBtn = row.querySelector('.remove-btn');
+            removeBtn.disabled = rows.length <= 2;
         });
     }
 
-    // Initialize options
     initialOptions.forEach((text, idx) => renderOption(text, idx === initialCorrectIdx));
 
-    addOptionBtn.addEventListener('click', function() {
-        const rows = document.querySelectorAll('.option-row');
-        if (rows.length < 6) {
-            renderOption('', false);
-        }
+    addOptionBtn.addEventListener('click', function () {
+        if (document.querySelectorAll('.option-row').length < 6) renderOption('', false);
     });
 
-    optionsContainer.addEventListener('click', function(e) {
+    optionsContainer.addEventListener('click', function (e) {
         const removeBtn = e.target.closest('.remove-btn');
         if (removeBtn) {
             const rows = document.querySelectorAll('.option-row');
             if (rows.length > 2) {
                 removeBtn.closest('.option-row').remove();
                 updateButtons();
-                // Ensure at least one radio is checked if the checked one was deleted
                 const checked = document.querySelector('input[name="correct_option_index"]:checked');
-                if(!checked && document.querySelectorAll('.option-row').length > 0) {
+                if (!checked && document.querySelectorAll('.option-row').length > 0) {
                     document.querySelector('input[name="correct_option_index"]').checked = true;
                     highlightSelectedRadio();
                 }
@@ -256,25 +400,97 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    form.addEventListener('submit', function(e) {
-        const rows = document.querySelectorAll('.option-row');
-        if (rows.length < 2 || rows.length > 6) {
-            e.preventDefault();
-            if (typeof window.showToast === 'function') {
-                window.showToast('Please provide between 2 and 6 options.', 'warning');
+    // ── Incident Sub-fields logic ─────────────────────────────────────────────
+    function recalcIncidentTotal() {
+        let total = 0;
+        document.querySelectorAll('.sub-marks-input').forEach(inp => {
+            const v = parseFloat(inp.value);
+            if (!isNaN(v) && v > 0) total += v;
+        });
+        incidentTotal.textContent = total % 1 === 0 ? total : total.toFixed(1);
+    }
+
+    function renderSubField(label, maxMarks) {
+        const row = document.createElement('div');
+        row.className = 'subfield-row d-flex align-items-center gap-3';
+        row.innerHTML = `
+            <div class="flex-grow-1">
+                <input type="text" class="form-control" name="sub_label[]" value="${label}" placeholder="Sub-field label (e.g. Whether NC or not)" required>
+            </div>
+            <div style="width: 140px; flex-shrink: 0;">
+                <div class="input-group">
+                    <span class="input-group-text bg-white text-muted small">Max Marks</span>
+                    <input type="number" step="0.5" min="0.5" class="form-control fw-bold text-center sub-marks-input" name="sub_marks[]" value="${maxMarks}" required>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-sub-btn" title="Remove sub-field">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        `;
+        row.querySelector('.sub-marks-input').addEventListener('input', recalcIncidentTotal);
+        row.querySelector('.remove-sub-btn').addEventListener('click', function () {
+            const rows = subFieldsContainer.querySelectorAll('.subfield-row');
+            if (rows.length > 2) {
+                row.remove();
+                recalcIncidentTotal();
+                updateSubRemoveBtns();
             }
-            return false;
+        });
+        subFieldsContainer.appendChild(row);
+        recalcIncidentTotal();
+        updateSubRemoveBtns();
+    }
+
+    function updateSubRemoveBtns() {
+        const rows = subFieldsContainer.querySelectorAll('.subfield-row');
+        rows.forEach(r => {
+            r.querySelector('.remove-sub-btn').disabled = rows.length <= 2;
+        });
+    }
+
+    addSubFieldBtn.addEventListener('click', function () {
+        renderSubField('', 1);
+    });
+
+    // Initialise incident schema if editing an incident question or brand new
+    if (initialSchema.length > 0) {
+        initialSchema.forEach(sf => renderSubField(sf.label || '', sf.max_marks || 1));
+    }
+
+    // ── Form submit validation ────────────────────────────────────────────────
+    form.addEventListener('submit', function (e) {
+        const type = getActiveType();
+
+        if (type === 'mcq') {
+            const rows = document.querySelectorAll('.option-row');
+            if (rows.length < 2 || rows.length > 6) {
+                e.preventDefault();
+                if (typeof window.showToast === 'function')
+                    window.showToast('Please provide between 2 and 6 options.', 'warning');
+                return false;
+            }
+            const checked = document.querySelector('input[name="correct_option_index"]:checked');
+            if (!checked) {
+                e.preventDefault();
+                if (typeof window.showToast === 'function')
+                    window.showToast('Please select the correct answer using the radio buttons.', 'warning');
+                return false;
+            }
         }
-        
-        const checked = document.querySelector('input[name="correct_option_index"]:checked');
-        if (!checked) {
-            e.preventDefault();
-            if (typeof window.showToast === 'function') {
-                window.showToast('Please select the correct answer using the radio buttons.', 'warning');
+
+        if (type === 'incident') {
+            const subFields = subFieldsContainer.querySelectorAll('.subfield-row');
+            if (subFields.length < 2) {
+                e.preventDefault();
+                if (typeof window.showToast === 'function')
+                    window.showToast('Incident questions need at least 2 sub-fields.', 'warning');
+                return false;
             }
-            return false;
         }
     });
+
+    // ── Apply initial type ────────────────────────────────────────────────────
+    switchType(getActiveType());
 });
 </script>
 {% endblock %}

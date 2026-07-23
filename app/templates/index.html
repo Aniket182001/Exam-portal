@@ -126,21 +126,8 @@
 ============================================================= -->
 <section class="hero-section" id="heroSection">
     
-    <!-- Signature SVG Line Layer -->
-    <div class="hero-svg-v2" aria-hidden="true">
-        <svg width="100%" height="100%" viewBox="0 0 1440 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-            <!-- Center Line (Orange) -->
-            <line x1="0" y1="300" x2="1440" y2="300" stroke="#F5A623" stroke-width="1.5" opacity="0.15" />
-            <!-- Staggered Navy Lines -->
-            <line x1="0" y1="120" x2="1440" y2="120" stroke="#0A1628" stroke-width="0.5" opacity="0.04" />
-            <line x1="0" y1="180" x2="1440" y2="180" stroke="#0A1628" stroke-width="1" opacity="0.03" />
-            <line x1="0" y1="240" x2="1440" y2="240" stroke="#0A1628" stroke-width="0.5" opacity="0.05" />
-            <line x1="0" y1="380" x2="1440" y2="380" stroke="#0A1628" stroke-width="1" opacity="0.03" />
-            <line x1="0" y1="450" x2="1440" y2="450" stroke="#0A1628" stroke-width="0.5" opacity="0.06" />
-            <line x1="0" y1="510" x2="1440" y2="510" stroke="#0A1628" stroke-width="1" opacity="0.04" />
-            <line x1="0" y1="570" x2="1440" y2="570" stroke="#0A1628" stroke-width="0.5" opacity="0.03" />
-        </svg>
-    </div>
+    <!-- Dynamic Particle Canvas -->
+    <canvas id="heroCanvas" class="hero-canvas" aria-hidden="true"></canvas>
 
     <!-- Clean Content Container -->
     <div class="container hero-content-wrap">
@@ -321,22 +308,7 @@
         var logo = document.querySelector('.brand-logo');
         if (logo) logo.classList.add('v2-logo-intro');
 
-        // PHASE 2: SVG Lines (400ms - 1000ms)
-        setTimeout(function() {
-            var lines = heroEl.querySelectorAll('.hero-svg-v2 line');
-            if (lines.length > 0) {
-                // Center line immediately
-                lines[0].style.transition = 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1)';
-                lines[0].style.transform = 'scaleX(1)';
-                // Remaining lines staggered
-                for (var i = 1; i < lines.length; i++) {
-                    lines[i].style.transition = 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1) ' + (i * 60) + 'ms';
-                    lines[i].style.transform = 'scaleX(1)';
-                }
-            }
-        }, 400);
-
-        // PHASE 3: Typography & CTA (1000ms - 1800ms)
+        // PHASE 2: Typography & CTA (400ms - 1200ms)
         setTimeout(function() {
             var title = heroEl.querySelector('.hero-title');
             var subtitle = heroEl.querySelector('.hero-subtitle');

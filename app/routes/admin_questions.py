@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from app.extensions import db
-from app.models import Exam, Question, QuestionOption
+from app.models import Exam, Question, QuestionOption, StudentAnswer
 import os
 import json
 import uuid
@@ -95,67 +95,133 @@ def create_question(exam_id):
     exam = Exam.query.get_or_404(exam_id)
     if request.method == "POST":
         question_text = request.form.get("question_text")
-        marks = float(request.form.get("marks", 1.0))
-        
-        option_texts = request.form.getlist("option_text[]")
-        correct_index = request.form.get("correct_option_index")
-        
-        # Validation
+        question_type = request.form.get("question_type", "mcq")
+        rubric_text = request.form.get("rubric_text", "").strip() or None
+
+        # Validation: question text always required
         if not question_text or not question_text.strip():
             flash("Question text is required.", "danger")
             return render_template("admin/questions/form.html", action="Create", exam=exam)
-            
-        valid_options = [opt for opt in option_texts if opt.strip()]
-        if len(valid_options) < 2 or len(valid_options) > 6:
-            flash("A question must have between 2 and 6 valid options.", "danger")
-            return render_template("admin/questions/form.html", action="Create", exam=exam)
-            
-        if correct_index is None or not correct_index.isdigit() or int(correct_index) >= len(option_texts):
-            flash("Please select a valid correct answer.", "danger")
-            return render_template("admin/questions/form.html", action="Create", exam=exam)
-            
-        correct_idx_int = int(correct_index)
-        if not option_texts[correct_idx_int].strip():
-            flash("The selected correct answer cannot be an empty option.", "danger")
-            return render_template("admin/questions/form.html", action="Create", exam=exam)
 
-        # Get max display order
-        max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()
-        next_display_order = (max_order_question.display_order + 1) if max_order_question else 1
+        if question_type == "incident":
+            # --- Incident: build response_schema from sub-fields ---
+            sub_labels = request.form.getlist("sub_label[]")
+            sub_marks = request.form.getlist("sub_marks[]")
 
-        # Create question
-        new_question = Question(
-            exam_id=exam.id,
-            question_text=question_text.strip(),
-            marks=marks,
-            display_order=next_display_order
-        )
-        db.session.add(new_question)
-        db.session.flush() # get id
-        
-        # Create options
-        created_options = []
-        for i, opt_text in enumerate(option_texts):
-            if opt_text.strip():
-                opt = QuestionOption(
-                    question_id=new_question.id,
-                    option_text=opt_text.strip(),
-                    option_order=i + 1
-                )
-                db.session.add(opt)
-                created_options.append((i, opt))
-                
-        db.session.flush() # get option ids
-        
-        # Set correct option id
-        for original_idx, opt in created_options:
-            if original_idx == correct_idx_int:
-                new_question.correct_option_id = opt.id
-                break
-                
-        db.session.commit()
-        flash("Question created successfully.", "success")
-        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+            schema = []
+            for lbl, mkstr in zip(sub_labels, sub_marks):
+                lbl = lbl.strip()
+                try:
+                    mk = float(mkstr)
+                except (ValueError, TypeError):
+                    mk = 0
+                if lbl and mk > 0:
+                    schema.append({"label": lbl, "max_marks": mk})
+
+            if len(schema) < 2:
+                flash("Incident questions must have at least 2 sub-fields with a non-empty label and marks > 0.", "danger")
+                return render_template("admin/questions/form.html", action="Create", exam=exam)
+
+            total_marks = sum(s["max_marks"] for s in schema)
+
+            max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()
+            next_display_order = (max_order_question.display_order + 1) if max_order_question else 1
+
+            new_question = Question(
+                exam_id=exam.id,
+                question_text=question_text.strip(),
+                question_type="incident",
+                marks=total_marks,
+                display_order=next_display_order,
+                response_schema=schema,
+                rubric_text=rubric_text,
+            )
+            db.session.add(new_question)
+            db.session.commit()
+            flash("Incident question created successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+        elif question_type == "subjective":
+            # --- Subjective: marks from form, no options ---
+            try:
+                marks = float(request.form.get("marks", 1.0))
+            except (ValueError, TypeError):
+                marks = 1.0
+
+            max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()
+            next_display_order = (max_order_question.display_order + 1) if max_order_question else 1
+
+            new_question = Question(
+                exam_id=exam.id,
+                question_text=question_text.strip(),
+                question_type="subjective",
+                marks=marks,
+                display_order=next_display_order,
+                rubric_text=rubric_text,
+            )
+            db.session.add(new_question)
+            db.session.commit()
+            flash("Subjective question created successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+        else:
+            # --- MCQ: existing flow unchanged ---
+            try:
+                marks = float(request.form.get("marks", 1.0))
+            except (ValueError, TypeError):
+                marks = 1.0
+
+            option_texts = request.form.getlist("option_text[]")
+            correct_index = request.form.get("correct_option_index")
+
+            valid_options = [opt for opt in option_texts if opt.strip()]
+            if len(valid_options) < 2 or len(valid_options) > 6:
+                flash("A question must have between 2 and 6 valid options.", "danger")
+                return render_template("admin/questions/form.html", action="Create", exam=exam)
+
+            if correct_index is None or not correct_index.isdigit() or int(correct_index) >= len(option_texts):
+                flash("Please select a valid correct answer.", "danger")
+                return render_template("admin/questions/form.html", action="Create", exam=exam)
+
+            correct_idx_int = int(correct_index)
+            if not option_texts[correct_idx_int].strip():
+                flash("The selected correct answer cannot be an empty option.", "danger")
+                return render_template("admin/questions/form.html", action="Create", exam=exam)
+
+            max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()
+            next_display_order = (max_order_question.display_order + 1) if max_order_question else 1
+
+            new_question = Question(
+                exam_id=exam.id,
+                question_text=question_text.strip(),
+                question_type="mcq",
+                marks=marks,
+                display_order=next_display_order,
+            )
+            db.session.add(new_question)
+            db.session.flush()
+
+            created_options = []
+            for i, opt_text in enumerate(option_texts):
+                if opt_text.strip():
+                    opt = QuestionOption(
+                        question_id=new_question.id,
+                        option_text=opt_text.strip(),
+                        option_order=i + 1
+                    )
+                    db.session.add(opt)
+                    created_options.append((i, opt))
+
+            db.session.flush()
+
+            for original_idx, opt in created_options:
+                if original_idx == correct_idx_int:
+                    new_question.correct_option_id = opt.id
+                    break
+
+            db.session.commit()
+            flash("Question created successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
 
     return render_template("admin/questions/form.html", action="Create", exam=exam)
 
@@ -163,67 +229,120 @@ def create_question(exam_id):
 def edit_question(question_id):
     question = Question.query.get_or_404(question_id)
     exam = question.exam
-    
+
     if request.method == "POST":
         question_text = request.form.get("question_text")
-        marks = float(request.form.get("marks", 1.0))
-        
-        option_texts = request.form.getlist("option_text[]")
-        correct_index = request.form.get("correct_option_index")
-        
-        # Validation
+        # On edit, the question_type selector is present; preserve original type as fallback
+        question_type = request.form.get("question_type", question.question_type or "mcq")
+        rubric_text = request.form.get("rubric_text", "").strip() or None
+
         if not question_text or not question_text.strip():
             flash("Question text is required.", "danger")
             return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
-            
-        valid_options = [opt for opt in option_texts if opt.strip()]
-        if len(valid_options) < 2 or len(valid_options) > 6:
-            flash("A question must have between 2 and 6 valid options.", "danger")
-            return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
-            
-        if correct_index is None or not correct_index.isdigit() or int(correct_index) >= len(option_texts):
-            flash("Please select a valid correct answer.", "danger")
-            return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
-            
-        correct_idx_int = int(correct_index)
-        if not option_texts[correct_idx_int].strip():
-            flash("The selected correct answer cannot be an empty option.", "danger")
-            return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
 
-        # Update question details
-        question.question_text = question_text.strip()
-        question.marks = marks
-        
-        # Delete existing options
-        QuestionOption.query.filter_by(question_id=question.id).delete()
-        
-        # Reset correct option temporarily to avoid constraint issues if deleting
-        question.correct_option_id = None
-        db.session.flush()
+        if question_type == "incident":
+            sub_labels = request.form.getlist("sub_label[]")
+            sub_marks = request.form.getlist("sub_marks[]")
 
-        # Create new options
-        created_options = []
-        for i, opt_text in enumerate(option_texts):
-            if opt_text.strip():
-                opt = QuestionOption(
-                    question_id=question.id,
-                    option_text=opt_text.strip(),
-                    option_order=i + 1
-                )
-                db.session.add(opt)
-                created_options.append((i, opt))
-                
-        db.session.flush()
-        
-        # Set correct option id
-        for original_idx, opt in created_options:
-            if original_idx == correct_idx_int:
-                question.correct_option_id = opt.id
-                break
+            schema = []
+            for lbl, mkstr in zip(sub_labels, sub_marks):
+                lbl = lbl.strip()
+                try:
+                    mk = float(mkstr)
+                except (ValueError, TypeError):
+                    mk = 0
+                if lbl and mk > 0:
+                    schema.append({"label": lbl, "max_marks": mk})
 
-        db.session.commit()
-        flash("Question updated successfully.", "success")
-        return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+            if len(schema) < 2:
+                flash("Incident questions must have at least 2 sub-fields with a non-empty label and marks > 0.", "danger")
+                return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
+
+            question.question_text = question_text.strip()
+            question.question_type = "incident"
+            question.marks = sum(s["max_marks"] for s in schema)
+            question.response_schema = schema
+            question.rubric_text = rubric_text
+            # Clear MCQ fields if type changed
+            question.correct_option_id = None
+            QuestionOption.query.filter_by(question_id=question.id).delete()
+            db.session.commit()
+            flash("Question updated successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+        elif question_type == "subjective":
+            try:
+                marks = float(request.form.get("marks", 1.0))
+            except (ValueError, TypeError):
+                marks = 1.0
+
+            question.question_text = question_text.strip()
+            question.question_type = "subjective"
+            question.marks = marks
+            question.rubric_text = rubric_text
+            question.response_schema = None
+            # Clear MCQ fields if type changed
+            question.correct_option_id = None
+            QuestionOption.query.filter_by(question_id=question.id).delete()
+            db.session.commit()
+            flash("Question updated successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+        else:
+            # MCQ: existing flow unchanged
+            try:
+                marks = float(request.form.get("marks", 1.0))
+            except (ValueError, TypeError):
+                marks = 1.0
+
+            option_texts = request.form.getlist("option_text[]")
+            correct_index = request.form.get("correct_option_index")
+
+            valid_options = [opt for opt in option_texts if opt.strip()]
+            if len(valid_options) < 2 or len(valid_options) > 6:
+                flash("A question must have between 2 and 6 valid options.", "danger")
+                return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
+
+            if correct_index is None or not correct_index.isdigit() or int(correct_index) >= len(option_texts):
+                flash("Please select a valid correct answer.", "danger")
+                return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
+
+            correct_idx_int = int(correct_index)
+            if not option_texts[correct_idx_int].strip():
+                flash("The selected correct answer cannot be an empty option.", "danger")
+                return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
+
+            question.question_text = question_text.strip()
+            question.question_type = "mcq"
+            question.marks = marks
+            question.response_schema = None
+            question.rubric_text = rubric_text
+
+            QuestionOption.query.filter_by(question_id=question.id).delete()
+            question.correct_option_id = None
+            db.session.flush()
+
+            created_options = []
+            for i, opt_text in enumerate(option_texts):
+                if opt_text.strip():
+                    opt = QuestionOption(
+                        question_id=question.id,
+                        option_text=opt_text.strip(),
+                        option_order=i + 1
+                    )
+                    db.session.add(opt)
+                    created_options.append((i, opt))
+
+            db.session.flush()
+
+            for original_idx, opt in created_options:
+                if original_idx == correct_idx_int:
+                    question.correct_option_id = opt.id
+                    break
+
+            db.session.commit()
+            flash("Question updated successfully.", "success")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
 
     return render_template("admin/questions/form.html", action="Edit", exam=exam, question=question)
 
@@ -231,6 +350,11 @@ def edit_question(question_id):
 def delete_question(question_id):
     question = Question.query.get_or_404(question_id)
     exam_id = question.exam_id
+    
+    if StudentAnswer.query.filter_by(question_id=question_id).first():
+        flash("This question has existing student responses and cannot be deleted.", "danger")
+        return redirect(url_for('admin_questions.list_questions', exam_id=exam_id))
+
     db.session.delete(question)
     db.session.commit()
     flash("Question deleted successfully.", "success")
@@ -246,6 +370,11 @@ def delete_selected_questions(exam_id):
         return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
         
     try:
+        # Check if any selected questions have student answers
+        if StudentAnswer.query.filter(StudentAnswer.question_id.in_(question_ids)).first():
+            flash("One or more selected questions have existing student responses and cannot be deleted.", "danger")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
         # Cascade delete is typically handled by SQLAlchemy relationships, 
         # but to be safe and use bulk delete we can delete options first if needed.
         # Since models use cascade="all, delete-orphan", we can query and delete the questions.
@@ -295,12 +424,16 @@ def duplicate_selected_questions(exam_id):
                 exam_id=exam.id,
                 question_text=q.question_text,
                 marks=q.marks,
-                display_order=0 # Will be updated below
+                display_order=0, # Will be updated below
+                # Phase 1 fields: copy across on duplicate
+                question_type=q.question_type or "mcq",
+                response_schema=q.response_schema,
+                rubric_text=q.rubric_text,
             )
             db.session.add(new_q)
             db.session.flush() # Flush to get the new question ID
-            
-            # Map old option ID to new option ID for correct_option_id
+
+            # Map old option ID to new option ID for correct_option_id (MCQ only)
             option_id_map = {}
             for opt in q.options:
                 new_opt = QuestionOption(
@@ -311,10 +444,10 @@ def duplicate_selected_questions(exam_id):
                 db.session.add(new_opt)
                 db.session.flush() # Flush to get new option ID
                 option_id_map[opt.id] = new_opt.id
-                
+
             if q.correct_option_id in option_id_map:
                 new_q.correct_option_id = option_id_map[q.correct_option_id]
-                
+
             new_questions.append(new_q)
             
         # Insert duplicated questions immediately after the last selected question

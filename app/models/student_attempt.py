@@ -33,6 +33,17 @@ class StudentAttempt(db.Model):
     # Question Shuffle
     question_order = db.Column(db.JSON, nullable=True)
 
+    # Phase 1: Evaluation workflow status for attempts with subjective/incident questions
+    # 'not_required' = MCQ-only exam, no manual grading needed
+    # 'pending'      = one or more answers awaiting evaluator review
+    # 'completed'    = all answers have been evaluated
+    evaluation_status = db.Column(
+        db.String(20),
+        nullable=False,
+        server_default='not_required',
+        default='not_required',
+    )
+
     # Relationships
     answers = db.relationship('StudentAnswer', backref='attempt', lazy=True, cascade="all, delete-orphan")
 
