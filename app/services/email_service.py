@@ -14,6 +14,7 @@ from email.message import EmailMessage
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from flask import current_app
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -22,37 +23,32 @@ _notified_attempt_ids = set()
 _notified_lock = threading.Lock()
 
 
-DEFAULT_NOTIFICATION_RECIPIENTS = (
-    "aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com"
-)
-
-
 def get_mail_config():
     """
     Retrieves email configuration from Flask current_app if inside app context,
-    or falls back to environment variables.
+    or falls back to Config and environment variables.
     """
     if current_app:
         cfg = current_app.config
         return {
-            "server": cfg.get("MAIL_SERVER", "smtp-relay.brevo.com"),
-            "port": int(cfg.get("MAIL_PORT", 587)),
-            "use_tls": bool(cfg.get("MAIL_USE_TLS", True)),
-            "use_ssl": bool(cfg.get("MAIL_USE_SSL", False)),
-            "username": cfg.get("MAIL_USERNAME"),
-            "password": cfg.get("MAIL_PASSWORD"),  # Brevo SMTP key
-            "sender": cfg.get("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com"),
-            "recipients_raw": cfg.get("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", DEFAULT_NOTIFICATION_RECIPIENTS),
+            "server": cfg.get("MAIL_SERVER", Config.MAIL_SERVER),
+            "port": int(cfg.get("MAIL_PORT", Config.MAIL_PORT)),
+            "use_tls": bool(cfg.get("MAIL_USE_TLS", Config.MAIL_USE_TLS)),
+            "use_ssl": bool(cfg.get("MAIL_USE_SSL", Config.MAIL_USE_SSL)),
+            "username": cfg.get("MAIL_USERNAME", Config.MAIL_USERNAME),
+            "password": cfg.get("MAIL_PASSWORD", Config.MAIL_PASSWORD),  # Brevo SMTP key
+            "sender": cfg.get("MAIL_DEFAULT_SENDER", Config.MAIL_DEFAULT_SENDER),
+            "recipients_raw": cfg.get("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", Config.EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS),
         }
     return {
-        "server": os.getenv("MAIL_SERVER", "smtp-relay.brevo.com"),
-        "port": int(os.getenv("MAIL_PORT", 587)),
-        "use_tls": os.getenv("MAIL_USE_TLS", "true").lower() in ["true", "1", "yes"],
-        "use_ssl": os.getenv("MAIL_USE_SSL", "false").lower() in ["true", "1", "yes"],
-        "username": os.getenv("MAIL_USERNAME"),
-        "password": os.getenv("MAIL_PASSWORD"),
-        "sender": os.getenv("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com"),
-        "recipients_raw": os.getenv("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", DEFAULT_NOTIFICATION_RECIPIENTS),
+        "server": os.getenv("MAIL_SERVER", Config.MAIL_SERVER),
+        "port": int(os.getenv("MAIL_PORT", Config.MAIL_PORT)),
+        "use_tls": os.getenv("MAIL_USE_TLS", str(Config.MAIL_USE_TLS)).lower() in ["true", "1", "yes"],
+        "use_ssl": os.getenv("MAIL_USE_SSL", str(Config.MAIL_USE_SSL)).lower() in ["true", "1", "yes"],
+        "username": os.getenv("MAIL_USERNAME", Config.MAIL_USERNAME),
+        "password": os.getenv("MAIL_PASSWORD", Config.MAIL_PASSWORD),
+        "sender": os.getenv("MAIL_DEFAULT_SENDER", Config.MAIL_DEFAULT_SENDER),
+        "recipients_raw": os.getenv("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", Config.EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS),
     }
 
 

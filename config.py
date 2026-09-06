@@ -25,6 +25,7 @@ class Config:
     MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "false").lower() in ["true", "1", "yes"]
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")  # Brevo SMTP key
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com")
     DEFAULT_SUBMISSION_NOTIFICATION_RECIPIENTS = (
         "aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com"
     )

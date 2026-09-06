@@ -32,14 +32,19 @@ def test_parse_recipients():
 
 
 def test_default_submission_notification_recipients():
-    from app.services.email_service import DEFAULT_NOTIFICATION_RECIPIENTS
-    recipients = parse_recipients(DEFAULT_NOTIFICATION_RECIPIENTS)
+    from config import Config
+    from app.services.email_service import get_mail_config
+    recipients = parse_recipients(Config.DEFAULT_SUBMISSION_NOTIFICATION_RECIPIENTS)
     assert recipients == [
         "aniket@aiqmindia.com",
         "dskode@aiqmindia.com",
         "edu@aiqmindia.com",
         "ravi.k@aiqmindia.com",
     ]
+
+    # Verify get_mail_config falls back to Config single source of truth
+    cfg = get_mail_config()
+    assert parse_recipients(cfg["recipients_raw"]) == recipients
 
 
 def test_build_submission_notification_content():
