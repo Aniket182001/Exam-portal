@@ -7,6 +7,7 @@ import random
 import json
 from sqlalchemy import func
 import logging
+from app.services.email_service import trigger_submission_notification
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,13 @@ def handle_attempt_timeout(attempt):
         attempt.submitted_at = now
         calculate_result(attempt)
         db.session.commit()
+
+        # Trigger fail-safe admin email notification
+        try:
+            trigger_submission_notification(attempt, submission_type="Auto-submitted on Timeout")
+        except Exception as e:
+            logger.error("Failed to trigger timeout submission notification: %s", e, exc_info=True)
+
         flash("Your time has expired. Your exam has been automatically submitted.", "warning")
     else:
         attempt.status = "expired"
@@ -651,6 +659,12 @@ def submit_attempt(attempt_token):
     calculate_result(attempt)
 
     db.session.commit()
+
+    # Trigger fail-safe admin email notification
+    try:
+        trigger_submission_notification(attempt, submission_type="Manual Submission")
+    except Exception as e:
+        logger.error("Failed to trigger submission notification: %s", e, exc_info=True)
 
     flash("Your exam has been successfully submitted.", "success")
     return redirect(url_for('student_exams.view_result', attempt_token=attempt_token))

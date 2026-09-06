@@ -106,10 +106,6 @@
                                   rows="8" 
                                   placeholder="Type your answer here..."
                                   style="resize: vertical; border-color: var(--aiqm-gray-200); line-height: 1.7;">{{ existing_answer_text or '' }}</textarea>
-                        <div class="form-text text-muted mt-2">
-                            <i class="bi bi-cloud-check me-1" id="subj-save-icon"></i>
-                            <span id="subj-save-status">Your answer is automatically saved when you navigate to the next question.</span>
-                        </div>
 
                         {# ─── Incident ──────────────────────────────────────────────────── #}
                         {% elif q_type == 'incident' %}
@@ -138,10 +134,6 @@
                                 </div>
                                 {% endfor %}
                             {% endif %}
-                        </div>
-                        <div class="form-text text-muted mt-3">
-                            <i class="bi bi-cloud-check me-1" id="incident-save-icon"></i>
-                            <span id="incident-save-status">Your answers are automatically saved when you navigate.</span>
                         </div>
 
                         {% endif %}
@@ -401,7 +393,8 @@
             // First, await the silent autosave. 
             // We pass throwOnError=true so it aborts the submission if the network is down.
             try {
-                await performSilentAutosave(form, 0, 'mcq', true);
+                const currentSaveType = document.getElementById('subjective-answer') ? 'subj' : (document.querySelectorAll('.incident-field').length > 0 ? 'incident' : 'mcq');
+                await performSilentAutosave(form, 0, currentSaveType, true);
             } catch (e) {
                 console.error("Final autosave before submission failed", e);
                 // Hide overlay and allow retry
@@ -425,8 +418,9 @@
             const allInputs = form.querySelectorAll('input, button, textarea');
             allInputs.forEach(input => input.disabled = true);
             
+            const actionUrl = form.getAttribute('action') || window.location.href;
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(actionUrl, {
                     method: 'POST',
                     body: formData,
                     redirect: 'follow'
@@ -516,10 +510,6 @@
                 }, 1500);
 
                 subjTextarea.addEventListener('input', () => {
-                    const status = document.getElementById('subj-save-status');
-                    const icon = document.getElementById('subj-save-icon');
-                    if (icon) icon.className = 'bi bi-pencil-square me-1 text-secondary';
-                    if (status && status.textContent !== 'Saving...') status.textContent = 'Typing...';
                     debouncedSubjSave();
                 });
                 
@@ -547,10 +537,6 @@
 
                 incidentFields.forEach(field => {
                     field.addEventListener('input', () => {
-                        const status = document.getElementById('incident-save-status');
-                        const icon = document.getElementById('incident-save-icon');
-                        if (icon) icon.className = 'bi bi-pencil-square me-1 text-secondary';
-                        if (status && status.textContent !== 'Saving...') status.textContent = 'Typing...';
                         debouncedIncidentSave();
                     });
                     
@@ -678,23 +664,11 @@
 
             isSaving = true;
 
-            // Update save indicator for text-based types
-            if (saveType === 'subj') {
-                const icon = document.getElementById('subj-save-icon');
-                const status = document.getElementById('subj-save-status');
-                if (icon) icon.className = 'bi bi-cloud-upload me-1 text-primary';
-                if (status) status.textContent = 'Saving...';
-            } else if (saveType === 'incident') {
-                const icon = document.getElementById('incident-save-icon');
-                const status = document.getElementById('incident-save-status');
-                if (icon) icon.className = 'bi bi-cloud-upload me-1 text-primary';
-                if (status) status.textContent = 'Saving...';
-            }
-            
             const formData = new FormData(form);
+            const actionUrl = form.getAttribute('action') || window.location.href;
             try {
-                // Backend now returns JSON {"status": "saved"} when it sees X-Requested-With: XMLHttpRequest
-                const response = await fetch(form.action, {
+                // Backend returns JSON {"status": "saved"} when it sees X-Requested-With: XMLHttpRequest
+                const response = await fetch(actionUrl, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -709,18 +683,6 @@
                         if (currentQBtn && !currentQBtn.classList.contains('btn-success')) {
                             currentQBtn.classList.remove('palette-unanswered', 'btn-primary');
                             currentQBtn.classList.add('btn-success', 'text-white', 'border-success');
-                        }
-                        // Update save indicator for text types
-                        if (saveType === 'subj') {
-                            const icon = document.getElementById('subj-save-icon');
-                            const status = document.getElementById('subj-save-status');
-                            if (icon) icon.className = 'bi bi-cloud-check-fill me-1 text-success';
-                            if (status) status.textContent = 'Saved.';
-                        } else if (saveType === 'incident') {
-                            const icon = document.getElementById('incident-save-icon');
-                            const status = document.getElementById('incident-save-status');
-                            if (icon) icon.className = 'bi bi-cloud-check-fill me-1 text-success';
-                            if (status) status.textContent = 'Saved.';
                         }
                     }
                 } else {
@@ -738,20 +700,10 @@
                 }
                 
                 console.error("Autosave failed", err);
-                // Update error indicator
-                if (saveType === 'subj') {
-                    const icon = document.getElementById('subj-save-icon');
-                    const status = document.getElementById('subj-save-status');
-                    if (icon) icon.className = 'bi bi-cloud-slash me-1 text-danger';
-                    if (status) status.textContent = 'Could not save — will retry.';
-                } else if (saveType === 'incident') {
-                    const icon = document.getElementById('incident-save-icon');
-                    const status = document.getElementById('incident-save-status');
-                    if (icon) icon.className = 'bi bi-cloud-slash me-1 text-danger';
-                    if (status) status.textContent = 'Could not save — will retry.';
+                // Retry after 3 seconds (up to 3 retries)
+                if (retryCount < 3) {
+                    setTimeout(() => performSilentAutosave(form, retryCount + 1, saveType), 3000);
                 }
-                // Retry after 3 seconds
-                setTimeout(() => performSilentAutosave(form, retryCount + 1, saveType), 3000);
             } finally {
                 if (activeAutosaveController && activeAutosaveController.signal === signal) {
                     isSaving = false;

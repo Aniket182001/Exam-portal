@@ -69,7 +69,8 @@ def create_app():
             return {}
 
     # Register CLI commands
-    from app.cli import create_admin_command
+    from app.cli import create_admin_command, test_admin_notification_command
     app.cli.add_command(create_admin_command)
+    app.cli.add_command(test_admin_notification_command)
 
     return app

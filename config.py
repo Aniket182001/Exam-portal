@@ -17,3 +17,13 @@ class Config:
         SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(BASE_DIR, "instance", "exam_portal.db")
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Brevo SMTP Mail Settings
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp-relay.brevo.com")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() in ["true", "1", "yes"]
+    MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "false").lower() in ["true", "1", "yes"]
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")  # Brevo SMTP key
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com")
+    EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS = os.getenv("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", "")
