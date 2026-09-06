@@ -31,6 +31,17 @@ def test_parse_recipients():
     assert parse_recipients("notanemail,   ,") == []
 
 
+def test_default_submission_notification_recipients():
+    from app.services.email_service import DEFAULT_NOTIFICATION_RECIPIENTS
+    recipients = parse_recipients(DEFAULT_NOTIFICATION_RECIPIENTS)
+    assert recipients == [
+        "aniket@aiqmindia.com",
+        "dskode@aiqmindia.com",
+        "edu@aiqmindia.com",
+        "ravi.k@aiqmindia.com",
+    ]
+
+
 def test_build_submission_notification_content():
     attempt_data_pass = {
         "attempt_id": 42,

@@ -34,6 +34,15 @@ Edit the `.env` file with your specific credentials:
 ```env
 SECRET_KEY=your_secure_random_secret_key
 DATABASE_URL=postgresql://username:password@host:5432/database_name
+
+# Brevo SMTP Configuration
+MAIL_SERVER=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USE_TLS=true
+MAIL_USERNAME=your_brevo_smtp_username
+MAIL_PASSWORD=your_brevo_smtp_key
+MAIL_DEFAULT_SENDER=aniket@aiqmindia.com
+EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS=aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com
 ```
 *Note: If the `DATABASE_URL` is omitted, the application will gracefully fallback to a local SQLite database (`instance/exam_portal.db`).*
 

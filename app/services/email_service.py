@@ -22,6 +22,11 @@ _notified_attempt_ids = set()
 _notified_lock = threading.Lock()
 
 
+DEFAULT_NOTIFICATION_RECIPIENTS = (
+    "aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com"
+)
+
+
 def get_mail_config():
     """
     Retrieves email configuration from Flask current_app if inside app context,
@@ -37,7 +42,7 @@ def get_mail_config():
             "username": cfg.get("MAIL_USERNAME"),
             "password": cfg.get("MAIL_PASSWORD"),  # Brevo SMTP key
             "sender": cfg.get("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com"),
-            "recipients_raw": cfg.get("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", ""),
+            "recipients_raw": cfg.get("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", DEFAULT_NOTIFICATION_RECIPIENTS),
         }
     return {
         "server": os.getenv("MAIL_SERVER", "smtp-relay.brevo.com"),
@@ -47,7 +52,7 @@ def get_mail_config():
         "username": os.getenv("MAIL_USERNAME"),
         "password": os.getenv("MAIL_PASSWORD"),
         "sender": os.getenv("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com"),
-        "recipients_raw": os.getenv("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", ""),
+        "recipients_raw": os.getenv("EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS", DEFAULT_NOTIFICATION_RECIPIENTS),
     }
 
 
