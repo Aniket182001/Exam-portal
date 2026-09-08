@@ -10,6 +10,7 @@ class StudentAttempt(db.Model):
     # Student details
     student_name = db.Column(db.String(100), nullable=False)
     student_email = db.Column(db.String(120), nullable=False)
+    company_name = db.Column(db.String(150), nullable=True)
 
     # Recovery
     attempt_token = db.Column(db.String(100), unique=True, nullable=False)

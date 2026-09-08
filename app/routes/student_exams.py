@@ -58,6 +58,7 @@ def entry(exam_code):
     if request.method == "POST":
         student_name = request.form.get("student_name")
         student_email = request.form.get("student_email")
+        company_name_raw = request.form.get("company_name", "")
         
         if not student_name or not student_email:
             flash("Name and email are required to enter the exam.", "danger")
@@ -65,6 +66,13 @@ def entry(exam_code):
             
         student_name = student_name.strip()
         student_email = student_email.strip()
+
+        # Normalize company: trim, collapse internal whitespace, max 150 chars
+        company_name = None
+        if company_name_raw:
+            cleaned_company = " ".join(company_name_raw.strip().split())
+            if cleaned_company:
+                company_name = cleaned_company[:150]
 
         if exam.require_candidate_registration:
             registration = CandidateRegistration.query.filter_by(
@@ -79,6 +87,7 @@ def entry(exam_code):
         # Store securely in session for the next steps
         session['student_name'] = student_name
         session['student_email'] = student_email.strip()
+        session['company_name'] = company_name
         
         return redirect(url_for('student_exams.instructions', exam_code=exam_code))
 
@@ -114,6 +123,7 @@ def start_exam(exam_code):
     
     student_name = session.get('student_name')
     student_email = session.get('student_email')
+    company_name = session.get('company_name')
     
     if not student_name or not student_email:
         flash("Please enter your details first.", "warning")
@@ -173,6 +183,7 @@ def start_exam(exam_code):
         exam_id=exam.id,
         student_name=student_name,
         student_email=student_email,
+        company_name=company_name,
         attempt_token=attempt_token,
         status="in_progress",
         started_at=now,
@@ -185,6 +196,7 @@ def start_exam(exam_code):
     # Optionally clear the session if no longer needed, but keeping it might be useful
     session.pop('student_name', None)
     session.pop('student_email', None)
+    session.pop('company_name', None)
     
     return redirect(f"/attempt/{attempt_token}/question/1")
 

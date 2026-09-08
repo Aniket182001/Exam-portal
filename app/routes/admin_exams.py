@@ -306,6 +306,7 @@ def get_filtered_attempts(exam_id):
     search = request.args.get('search', '').strip()
     from_date_str = request.args.get('from_date')
     to_date_str = request.args.get('to_date')
+    company = request.args.get('company', '').strip()
     
     if search:
         query = query.filter(
@@ -315,6 +316,9 @@ def get_filtered_attempts(exam_id):
             )
         )
         
+    if company:
+        query = query.filter(StudentAttempt.company_name == company)
+
     if from_date_str:
         try:
             from_date = datetime.strptime(from_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
@@ -350,7 +354,19 @@ def view_attempts(exam_id):
     for att in attempts:
         att.attempt_number = attempt_num_map.get(att.id, 1)
         
-    return render_template("admin/exams/attempts.html", exam=exam, attempts=attempts)
+    # Distinct company names for this exam's attempts
+    company_rows = db.session.query(StudentAttempt.company_name)\
+        .filter(
+            StudentAttempt.exam_id == exam_id,
+            StudentAttempt.company_name.isnot(None),
+            StudentAttempt.company_name != ''
+        )\
+        .distinct()\
+        .order_by(StudentAttempt.company_name.asc())\
+        .all()
+    companies = [r[0] for r in company_rows if r[0]]
+
+    return render_template("admin/exams/attempts.html", exam=exam, attempts=attempts, companies=companies)
 
 @admin_exams_bp.route("/<int:exam_id>/export-results")
 def export_results(exam_id):
@@ -362,7 +378,7 @@ def export_results(exam_id):
     ws.title = "Results"
     
     headers = [
-        "Student Name", "Student Email", "Attempt Status", 
+        "Student Name", "Student Email", "Company / Organization", "Attempt Status",
         "Marks Obtained", "Percentage Score", "Correct Answers", 
         "Wrong Answers", "Unanswered Questions", "Pass/Fail Status", "Submitted At"
     ]
@@ -372,6 +388,7 @@ def export_results(exam_id):
         row = [
             attempt.student_name,
             attempt.student_email,
+            attempt.company_name or "-",
             attempt.status.title(),
             attempt.total_marks_obtained if attempt.total_marks_obtained is not None else "-",
             f"{attempt.percentage_score:.1f}%" if attempt.percentage_score is not None else "-",
@@ -409,7 +426,7 @@ def export_selected_results(exam_id):
     ws.title = "Results"
     
     headers = [
-        "Student Name", "Student Email", "Attempt Status", 
+        "Student Name", "Student Email", "Company / Organization", "Attempt Status",
         "Marks Obtained", "Percentage Score", "Correct Answers", 
         "Wrong Answers", "Unanswered Questions", "Pass/Fail Status", "Submitted At"
     ]
@@ -419,6 +436,7 @@ def export_selected_results(exam_id):
         row = [
             attempt.student_name,
             attempt.student_email,
+            attempt.company_name or "-",
             attempt.status.title(),
             attempt.total_marks_obtained if attempt.total_marks_obtained is not None else "-",
             f"{attempt.percentage_score:.1f}%" if attempt.percentage_score is not None else "-",
