@@ -37,14 +37,34 @@ def normalize_company_key(name: str | None) -> str:
     return " ".join(text.split())
 
 
-def resolve_canonical_company(raw_name: str | None) -> str | None:
+def build_company_lookup_cache() -> dict[str, str]:
+    """
+    Preloads all canonical company groups and aliases into a normalized lookup dictionary:
+    normalized_key -> canonical_name.
+    Used for bulk resolution without repeated database queries.
+    """
+    cache: dict[str, str] = {}
+    for group in CompanyGroup.query.all():
+        cache[group.normalized_name] = group.canonical_name
+
+    for alias in CompanyAlias.query.options(db.joinedload(CompanyAlias.company_group)).all():
+        if alias.company_group:
+            cache[alias.normalized_alias] = alias.company_group.canonical_name
+
+    return cache
+
+
+def resolve_canonical_company(
+    raw_name: str | None,
+    cache: dict[str, str] | None = None
+) -> str | None:
     """
     Resolves a raw company string to its canonical company name:
     1. If raw_name is blank or None, returns None.
     2. Cleans raw_name for clean display.
     3. Normalizes to a lookup key.
-    4. Checks for an exact match against CompanyGroup.normalized_name.
-    5. Checks for an exact match against CompanyAlias.normalized_alias.
+    4. Checks for an exact match against CompanyGroup.normalized_name (or cache).
+    5. Checks for an exact match against CompanyAlias.normalized_alias (or cache).
     6. If no match is found, safely returns the cleaned raw_name as its own group.
     """
     cleaned = clean_company_display_name(raw_name)
@@ -54,6 +74,10 @@ def resolve_canonical_company(raw_name: str | None) -> str | None:
     key = normalize_company_key(cleaned)
     if not key:
         return cleaned
+
+    # Use preloaded cache if supplied
+    if cache is not None:
+        return cache.get(key, cleaned)
 
     # 1. Match canonical company
     group = CompanyGroup.query.filter_by(normalized_name=key).first()
@@ -69,7 +93,10 @@ def resolve_canonical_company(raw_name: str | None) -> str | None:
     return cleaned
 
 
-def group_attempts_by_company(attempts: list) -> dict[str, list]:
+def group_attempts_by_company(
+    attempts: list,
+    cache: dict[str, str] | None = None
+) -> dict[str, list]:
     """
     Groups a sequence of StudentAttempt instances by resolved company name.
     Attempts with no company are grouped under 'Independent / No Company'.
@@ -79,7 +106,7 @@ def group_attempts_by_company(attempts: list) -> dict[str, list]:
     groups: dict[str, list] = {}
 
     for attempt in attempts:
-        canonical = resolve_canonical_company(attempt.company_name)
+        canonical = resolve_canonical_company(attempt.company_name, cache=cache)
         bucket = canonical if canonical else NO_COMPANY_LABEL
 
         if bucket not in groups:
