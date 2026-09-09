@@ -8,8 +8,6 @@ import io
 import openpyxl
 from werkzeug.utils import secure_filename
 from app.services.import_parsers import get_parser
-# New modular import engine (runs in parallel; does not replace existing flow yet)
-from app.services.import_engine import ImportEngine
 from app.utils.auth import admin_required
 
 admin_questions_bp = Blueprint("admin_questions", __name__, url_prefix="/admin")
@@ -492,47 +490,12 @@ def upload_import(exam_id):
                 parser = get_parser(filename)
                 parsed_questions = parser.parse(filepath)
                 
-                # -------------------------------------------------------
-                # Run new ImportEngine in parallel (non-breaking)
-                # The engine result is stored alongside the legacy data so
-                # we can verify detection + extraction without touching any
-                # existing preview or confirm route.
-                # -------------------------------------------------------
-                try:
-                    engine_result = ImportEngine.process(
-                        filepath=filepath,
-                        filename=filename,
-                        mime_type=file.mimetype if hasattr(file, 'mimetype') else None,
-                    )
-                    engine_metadata = {
-                        "doc_type":            engine_result.doc_type.value,
-                        "detection_confidence": engine_result.detection_confidence,
-                        "extractor_name":       engine_result.extractor_name,
-                        "question_count":       engine_result.question_count,
-                        "valid_count":          len(engine_result.valid_questions),
-                        "warnings":             engine_result.warnings,
-                        "errors":               engine_result.errors,
-                        "detection_signals":    engine_result.detection_signals,
-                        "ocr_recommended":      engine_result.detection_signals.get("ocr_recommended", False),
-                        "ocr_available":        engine_result.detection_signals.get("ocr_available", False),
-                        "ocr_enabled":          engine_result.detection_signals.get("ocr_enabled", False),
-                        "ai_enabled":           engine_result.detection_signals.get("ai_enabled", False),
-                        "ai_provider":          engine_result.detection_signals.get("ai_provider", "gemini"),
-                        "ai_document_type":     engine_result.metadata.get("ai_document_type"),
-                        "ai_reasoning":         engine_result.metadata.get("ai_reasoning"),
-                        "engine_config":        ImportEngine.get_config_summary(),
-                    }
-                except Exception as engine_exc:
-                    engine_metadata = {"error": str(engine_exc)}
-                
-                # Save legacy questions + engine metadata to JSON
+                # Save parsed questions to JSON
                 import_uuid = str(uuid.uuid4())
                 json_path = os.path.join(temp_dir, f"import_preview_{import_uuid}.json")
                 with open(json_path, 'w', encoding='utf-8') as f:
                     json.dump({
-                        "questions":       parsed_questions,
-                        "engine_questions": engine_result.to_dict_list() if 'engine_result' in locals() else [],
-                        "engine_metadata": engine_metadata,
+                        "questions": parsed_questions,
                     }, f)
                     
                 # Clean up the original uploaded file
@@ -560,18 +523,13 @@ def preview_import(exam_id, import_id):
         
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-        # Support both legacy (plain list) and new (dict with questions key) formats
         parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
-        engine_questions = data.get("engine_questions", []) if isinstance(data, dict) else []
-        engine_metadata  = data.get("engine_metadata") if isinstance(data, dict) else None
         
     return render_template(
         "admin/questions/import_preview.html",
         exam=exam,
         questions=parsed_questions,
-        engine_questions=engine_questions,
         import_id=import_id,
-        engine_metadata=engine_metadata,
     )
 
 @admin_questions_bp.route("/exams/<int:exam_id>/questions/import/confirm", methods=["POST"])
@@ -593,74 +551,7 @@ def confirm_import(exam_id):
     with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
         
-    # Check if frontend submitted AI workspace edits
-    edits_json = request.form.get("edits_json")
-    if edits_json:
-        try:
-            from app.services.import_engine.models import ExtractedQuestion, ExtractionResult
-            from app.services.import_engine.validator import ValidatorLayer
-            
-            edits = json.loads(edits_json)
-            engine_questions = data.get("engine_questions", [])
-            objects_to_validate = []
-            
-            for eq in engine_questions:
-                q_id = eq.get("id")
-                
-                # Check if edited or skipped
-                if q_id in edits:
-                    edit = edits[q_id]
-                    if edit.get("status") == "skipped":
-                        continue
-                        
-                    eq["question"] = edit.get("question_text", eq.get("question", ""))
-                    eq["options"] = edit.get("options", eq.get("options", []))
-                    
-                    correct_idx = edit.get("correct_option_index")
-                    if correct_idx is not None and str(correct_idx).strip():
-                        eq["correct_option_index"] = int(correct_idx)
-                    else:
-                        eq["correct_option_index"] = None
-                        
-                    marks = edit.get("marks")
-                    if marks is not None and str(marks).strip():
-                        eq["marks"] = float(marks)
-
-                # Reconstruct ExtractedQuestion for validation
-                obj = ExtractedQuestion(
-                    question_text=eq.get("question", ""),
-                    options=eq.get("options", []),
-                    correct_option_index=eq.get("correct_option_index"),
-                    marks=eq.get("marks", 1.0)
-                )
-                objects_to_validate.append(obj)
-                
-            # Re-run validation
-            result = ExtractionResult(questions=objects_to_validate)
-            ValidatorLayer().validate(result)
-            
-            parsed_questions = []
-            invalid_count = 0
-            for obj in result.questions:
-                if obj.is_valid:
-                    parsed_questions.append({
-                        "question": obj.question_text,
-                        "options": obj.options,
-                        "correct_option_index": obj.correct_option_index or 0,
-                        "marks": obj.marks
-                    })
-                else:
-                    invalid_count += 1
-            
-            if invalid_count > 0:
-                flash(f"{invalid_count} questions were excluded from import due to lingering validation errors.", "warning")
-                
-        except Exception as e:
-            flash(f"Failed to process AI review edits: {str(e)}", "danger")
-            return redirect(url_for('admin_questions.upload_import', exam_id=exam.id))
-    else:
-        # Support both legacy (plain list) and new (dict with questions key) formats
-        parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
+    parsed_questions = data.get("questions", data) if isinstance(data, dict) else data
         
     # Get max display order
     max_order_question = Question.query.filter_by(exam_id=exam.id).order_by(Question.display_order.desc()).first()
