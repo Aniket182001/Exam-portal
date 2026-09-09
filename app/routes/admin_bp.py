@@ -209,3 +209,71 @@ def view_candidate_answers(attempt_id):
         questions=questions,
         student_answers=student_answers
     )
+
+
+# ---------------------------------------------------------------------------
+# Company Group & Alias Management
+# ---------------------------------------------------------------------------
+import re
+from flask import flash, redirect, url_for
+from app.services import company_service
+
+
+@admin_bp.route("/companies", methods=["GET", "POST"])
+def list_companies():
+    if request.method == "POST":
+        canonical_name = request.form.get("canonical_name", "").strip()
+        raw_aliases = request.form.get("aliases", "")
+        aliases = [a.strip() for a in re.split(r"[,;\n]+", raw_aliases) if a.strip()]
+
+        group, error = company_service.create_company_group(canonical_name, aliases)
+        if error:
+            flash(error, "danger")
+        else:
+            flash(f"Company group '{group.canonical_name}' created successfully.", "success")
+        return redirect(url_for("admin_bp.list_companies"))
+
+    groups = company_service.list_company_groups()
+    return render_template("admin/companies/list.html", groups=groups)
+
+
+@admin_bp.route("/companies/<int:group_id>/edit", methods=["POST"])
+def edit_company(group_id):
+    new_name = request.form.get("canonical_name", "").strip()
+    group, error = company_service.update_company_group(group_id, new_name)
+    if error:
+        flash(error, "danger")
+    else:
+        flash(f"Company group updated to '{group.canonical_name}'.", "success")
+    return redirect(url_for("admin_bp.list_companies"))
+
+
+@admin_bp.route("/companies/<int:group_id>/delete", methods=["POST"])
+def delete_company(group_id):
+    group = company_service.get_company_group(group_id)
+    name = group.canonical_name if group else "Company"
+    if company_service.delete_company_group(group_id):
+        flash(f"Company group '{name}' and its aliases were deleted.", "success")
+    else:
+        flash("Could not delete company group.", "danger")
+    return redirect(url_for("admin_bp.list_companies"))
+
+
+@admin_bp.route("/companies/<int:group_id>/aliases", methods=["POST"])
+def add_alias(group_id):
+    alias_name = request.form.get("alias_name", "").strip()
+    alias, error = company_service.add_alias_to_group(group_id, alias_name)
+    if error:
+        flash(error, "danger")
+    else:
+        flash(f"Alias '{alias.alias_name}' added.", "success")
+    return redirect(url_for("admin_bp.list_companies"))
+
+
+@admin_bp.route("/companies/aliases/<int:alias_id>/delete", methods=["POST"])
+def delete_alias(alias_id):
+    if company_service.delete_alias(alias_id):
+        flash("Alias removed.", "success")
+    else:
+        flash("Could not remove alias.", "danger")
+    return redirect(url_for("admin_bp.list_companies"))

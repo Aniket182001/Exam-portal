@@ -6,6 +6,7 @@ from .student_attempt import StudentAttempt
 from .student_answer import StudentAnswer
 from .candidate_registration import CandidateRegistration
 from .evaluation import Evaluation
+from .company_group import CompanyGroup, CompanyAlias
 
 __all__ = [
     'User',
@@ -16,4 +17,6 @@ __all__ = [
     'StudentAnswer',
     'CandidateRegistration',
     'Evaluation',
+    'CompanyGroup',
+    'CompanyAlias',
 ]
