@@ -39,7 +39,7 @@ def test_default_submission_notification_recipients():
         "aniket@aiqmindia.com",
         "dskode@aiqmindia.com",
         "edu@aiqmindia.com",
-        "ravi.k@aiqmindia.com",
+        "ravi@aiqmindia.com",
     ]
 
     # Verify get_mail_config falls back to Config single source of truth

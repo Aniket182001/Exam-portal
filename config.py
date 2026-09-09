@@ -27,7 +27,7 @@ class Config:
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")  # Brevo SMTP key
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "aniket@aiqmindia.com")
     DEFAULT_SUBMISSION_NOTIFICATION_RECIPIENTS = (
-        "aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com"
+        "aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi@aiqmindia.com"
     )
     EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS = os.getenv(
         "EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS",

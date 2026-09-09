@@ -42,7 +42,7 @@ MAIL_USE_TLS=true
 MAIL_USERNAME=your_brevo_smtp_username
 MAIL_PASSWORD=your_brevo_smtp_key
 MAIL_DEFAULT_SENDER=aniket@aiqmindia.com
-EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS=aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi.k@aiqmindia.com
+EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS=aniket@aiqmindia.com,dskode@aiqmindia.com,edu@aiqmindia.com,ravi@aiqmindia.com
 ```
 *Note: If the `DATABASE_URL` is omitted, the application will gracefully fallback to a local SQLite database (`instance/exam_portal.db`).*
 

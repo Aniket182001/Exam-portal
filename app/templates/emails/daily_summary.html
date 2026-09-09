@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ subject }}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f5f7;
+      margin: 0;
+      padding: 24px 12px;
+      color: #0f172a;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+    .header {
+      background: #0f172a;
+      padding: 28px 32px;
+      color: #ffffff;
+      border-bottom: 3px solid #f97316;
+    }
+    .header-sub {
+      margin: 0 0 6px 0;
+      font-size: 12px;
+      color: #94a3b8;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .header-title {
+      margin: 0 0 6px 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+    .header-date {
+      margin: 0;
+      font-size: 14px;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+    .content {
+      padding: 28px 32px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+    .kpi-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 8px;
+      margin: 0 -8px 24px -8px;
+    }
+    .kpi-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 14px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .kpi-card.passed {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .kpi-card.failed {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+    .kpi-card.pending {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+    .kpi-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .kpi-card.passed .kpi-val { color: #15803d; }
+    .kpi-card.failed .kpi-val { color: #b91c1c; }
+    .kpi-card.pending .kpi-val { color: #b45309; }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 4px;
+    }
+    .company-block {
+      margin-bottom: 28px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .company-header {
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .company-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .company-meta {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      background: #ffffff;
+      color: #64748b;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    .data-table tr:nth-child(even) td {
+      background-color: #fafbfc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: capitalize;
+      letter-spacing: 0.02em;
+    }
+    .badge-pass {
+      background-color: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .badge-fail {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .badge-eval {
+      background-color: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .badge-attempt {
+      background-color: #f1f5f9;
+      color: #475569;
+      font-family: monospace;
+      font-weight: 600;
+      border: 1px solid #e2e8f0;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .empty-state {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 36px 20px;
+      text-align: center;
+      margin: 8px 0;
+    }
+    .empty-state h3 {
+      margin: 0 0 6px 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .empty-state p {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .footer {
+      background: #f8fafc;
+      padding: 18px 32px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-sub">Asian Institute of Quality Management (AIQM)</div>
+    <div class="header-title">Daily Examination Summary</div>
+    <div class="header-date">{{ report_date_display }}</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Overall Summary -->
+    <div class="section-title">Overall Summary</div>
+    <table class="kpi-table" role="presentation">
+      <tr>
+        <td class="kpi-card" style="width: 20%;">
+          <div class="kpi-val">{{ report.total_submissions }}</div>
+          <div class="kpi-label">Submissions</div>
+        </td>
+        <td class="kpi-card passed" style="width: 20%;">
+          <div class="kpi-val">{{ report.total_passed }}</div>
+          <div class="kpi-label">Passed</div>
+        </td>
+        <td class="kpi-card failed" style="width: 20%;">
+          <div class="kpi-val">{{ report.total_failed }}</div>
+          <div class="kpi-label">Failed</div>
+        </td>
+        <td class="kpi-card pending" style="width: 20%;">
+          <div class="kpi-val">{{ report.total_unevaluated }}</div>
+          <div class="kpi-label">Under Eval</div>
+        </td>
+        <td class="kpi-card" style="width: 20%;">
+          <div class="kpi-val">{{ report.total_companies }}</div>
+          <div class="kpi-label">Companies</div>
+        </td>
+      </tr>
+    </table>
+
+    {% if report.total_submissions == 0 %}
+      <!-- Empty State -->
+      <div class="empty-state">
+        <h3>No examinations were submitted on this date.</h3>
+        <p>There are no qualifying submitted examination attempts recorded for {{ report_date_display }}.</p>
+      </div>
+    {% else %}
+      <!-- Company Sections -->
+      <div class="section-title" style="margin-top: 24px;">Company-Wise Submissions</div>
+
+      {% for group in report.company_groups %}
+        <div class="company-block">
+          <div class="company-header">
+            <div class="company-name">{{ group.company_name }}</div>
+            <div class="company-meta">
+              {{ group.total_submissions }} submission{% if group.total_submissions != 1 %}s{% endif %} ·
+              {{ group.total_passed }} passed ·
+              {{ group.total_failed }} failed{% if group.total_unevaluated > 0 %} ·
+              {{ group.total_unevaluated }} under evaluation{% endif %}
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 24%;">Candidate</th>
+                <th style="width: 26%;">Exam</th>
+                <th style="width: 10%; text-align: center;">Attempt</th>
+                <th style="width: 14%; text-align: right;">Score</th>
+                <th style="width: 10%; text-align: right;">%</th>
+                <th style="width: 16%; text-align: center;">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in group.attempts %}
+                <tr>
+                  <td>
+                    <strong style="color: #0f172a;">{{ item.candidate_name }}</strong>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">{{ item.submitted_at_str }}</div>
+                  </td>
+                  <td>
+                    <span>{{ item.exam_title }}</span>
+                    {% if item.exam_code %}
+                      <div style="font-family: monospace; font-size: 11px; color: #64748b; margin-top: 1px;">{{ item.exam_code }}</div>
+                    {% endif %}
+                  </td>
+                  <td style="text-align: center;">
+                    <span class="badge-attempt">#{{ item.attempt_number }}</span>
+                  </td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 500;">
+                    {{ format_score(item.score, item.max_marks) }}
+                  </td>
+                  <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">
+                    {{ format_percentage(item.percentage) }}
+                  </td>
+                  <td style="text-align: center;">
+                    {% if item.result_status == 'Pass' %}
+                      <span class="badge badge-pass">Pass</span>
+                    {% elif item.result_status == 'Fail' %}
+                      <span class="badge badge-fail">Fail</span>
+                    {% else %}
+                      <span class="badge badge-eval">{{ item.result_status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    This is an automated administrative report for AIQM Administrators · Confidential<br>
+    AIQM Examination Portal · Secure Examination & Evaluation Management
+  </div>
+</div>
+</body>
+</html>
