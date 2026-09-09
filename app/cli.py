@@ -130,3 +130,50 @@ def test_admin_notification_command(recipient):
         click.echo(f"Check the inbox for: {', '.join(recipients)}")
     else:
         click.secho("\n[Failure] Could not send test notification. See log messages above for details.", fg="red", bold=True)
+
+
+@click.command('daily-summary')
+@click.option('--date', 'target_date_str', default=None, help='Historical date in YYYY-MM-DD format')
+@with_appcontext
+def daily_summary_command(target_date_str):
+    """Generates and emails the Daily Examination Summary."""
+    import logging
+    from datetime import datetime, timezone, timedelta
+    from app.services.daily_summary_service import generate_daily_exam_summary, to_exam_local_datetime
+    from app.services.daily_summary_email_delivery_service import send_daily_exam_summary_email
+
+    logger = logging.getLogger("cli.daily_summary")
+
+    if target_date_str:
+        try:
+            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            raise click.ClickException(f"Invalid date format: '{target_date_str}'. Expected YYYY-MM-DD.")
+    else:
+        # Default to previous calendar date in application's default timezone
+        now_utc = datetime.now(timezone.utc)
+        now_local = to_exam_local_datetime(now_utc, None)
+        target_date = (now_local - timedelta(days=1)).date()
+
+    click.echo(f"Generating Daily Examination Summary for: {target_date.isoformat()}")
+
+    try:
+        report = generate_daily_exam_summary(target_date)
+        result = send_daily_exam_summary_email(report, skip_if_empty=True)
+
+        if result.status == "sent":
+            click.secho("Success: Daily summary sent.", fg="green")
+        elif result.status == "skipped_empty":
+            click.secho("Success: Skipped sending due to empty report.", fg="yellow")
+        elif result.status == "failed":
+            raise click.ClickException(f"Delivery failed: {result.message}")
+        elif result.status == "no_recipients":
+            raise click.ClickException("Delivery failed: No recipients configured.")
+        else:
+            raise click.ClickException(f"Unknown delivery status: {result.status}")
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error during daily summary generation/delivery")
+        raise click.ClickException(f"Unexpected error: {str(e)}")
