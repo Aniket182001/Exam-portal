@@ -235,9 +235,6 @@
     <div id="submission-spinner" class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem; border-width: 0.25rem;" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
-    <div id="submission-icon" class="text-success mb-3" style="display: none; font-size: 4rem; animation: aiqm-fade-in-exam 0.3s ease-out forwards;">
-        <i class="bi bi-check-circle-fill"></i>
-    </div>
     <h3 id="submission-text" class="fw-bold text-dark mb-2">Submitting your responses...</h3>
     <p id="submission-subtext" class="text-muted fs-5">Please do not close this window.</p>
 </div>
@@ -379,91 +376,19 @@
     document.addEventListener("DOMContentLoaded", () => {
         let isSaving = false;
 
-        // Premium Submission Handler
-        async function executePremiumSubmission(form) {
-            const overlay = document.getElementById('submission-overlay');
-            const subText = document.getElementById('submission-subtext');
-            const subTitle = document.getElementById('submission-text');
-            const icon = document.getElementById('submission-icon');
-            const spinner = document.getElementById('submission-spinner');
-            
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'all';
-
-            // First, await the silent autosave. 
-            // We pass throwOnError=true so it aborts the submission if the network is down.
-            try {
-                const currentSaveType = document.getElementById('subjective-answer') ? 'subj' : (document.querySelectorAll('.incident-field').length > 0 ? 'incident' : 'mcq');
-                await performSilentAutosave(form, 0, currentSaveType, true);
-            } catch (e) {
-                console.error("Final autosave before submission failed", e);
-                // Hide overlay and allow retry
-                overlay.style.opacity = '0';
-                overlay.style.pointerEvents = 'none';
-                
-                // Re-enable the submit button in the modal if it was disabled
-                const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-                if (confirmSubmitBtn) confirmSubmitBtn.disabled = false;
-                
-                alert("Could not save your last answer due to a network error. Please check your connection and try again.");
-                return; // BLOCK final submission
+        // Transition directly to the review / summary page
+        function proceedToReview(form) {
+            let actionInput = form.querySelector('input[name="action"][type="hidden"]');
+            if (!actionInput) {
+                actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                form.appendChild(actionInput);
             }
+            actionInput.value = 'finish';
+            HTMLFormElement.prototype.submit.call(form);
+        }
 
-            // Capture FormData BEFORE disabling inputs!
-            // If inputs are disabled first, FormData will be empty and the backend won't receive the answer.
-            const formData = new FormData(form);
-            formData.append("action", "finish");
-            
-            // Now safe to disable all interactive controls
-            const allInputs = form.querySelectorAll('input, button, textarea');
-            allInputs.forEach(input => input.disabled = true);
-            
-            const actionUrl = form.getAttribute('action') || window.location.href;
-            try {
-                const response = await fetch(actionUrl, {
-                    method: 'POST',
-                    body: formData,
-                    redirect: 'follow'
-                });
-                
-                if (response.ok || response.type === 'opaqueredirect' || response.status === 0 || response.status === 302) {
-                    // Success state
-                    spinner.style.display = 'none';
-                    icon.style.display = 'block';
-                    subTitle.textContent = "Examination Submitted";
-                    subTitle.className = "fw-bold text-success mb-2";
-                    subText.textContent = "";
-                    
-                    setTimeout(() => {
-                        window.location.href = response.url || window.location.href; // Usually redirected to review
-                    }, 700);
-                } else {
-                    throw new Error("Server returned " + response.status);
-                }
-            } catch (err) {
-                console.error("Submission failed", err);
-                
-                // Show retry-able error to the student
-                overlay.style.opacity = '0';
-                overlay.style.pointerEvents = 'none';
-                
-                // Re-enable inputs
-                allInputs.forEach(input => input.disabled = false);
-                const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-                if (confirmSubmitBtn) confirmSubmitBtn.disabled = false;
-                
-                alert("Could not submit exam due to a network error. Please check your connection and try again.");
-            }
-        }
-        
-        function fallbackNativeSubmit(form) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'action';
-            input.value = 'finish';
-            form.appendChild(input);
-            form.submit();
-        }
 
         // Initialize exam event listeners for the current DOM
         function initExamEvents() {
@@ -578,7 +503,7 @@
                     
                     // Fallback if palette is not enabled
                     if (totalCount === 0) {
-                        executePremiumSubmission(form);
+                        proceedToReview(form);
                         return;
                     }
                     
@@ -610,7 +535,7 @@
                     const modal = bootstrap.Modal.getInstance(modalEl);
                     if (modal) modal.hide();
                     
-                    executePremiumSubmission(form);
+                    proceedToReview(form);
                 });
             }
             

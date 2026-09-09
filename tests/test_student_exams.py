@@ -553,3 +553,123 @@ def test_failed_final_autosave_blocks_submit_mock(app):
         att = StudentAttempt.query.filter_by(attempt_token=attempt_token).first()
         assert att.status == "in_progress"
 
+
+def test_finish_exam_navigates_to_review_all_answered(app):
+    """
+    Test finish flow when all questions are answered:
+    1. Answering last question with action='finish' redirects directly to review.
+    2. Attempt remains in_progress.
+    3. Review page shows all questions answered and 0 unanswered.
+    4. Submitting on review page actually finalizes attempt and redirects to result.
+    5. Result page shows post-submission confirmation.
+    """
+    with app.app_context():
+        exam = _make_exam(title="FINISHALL")
+        q1, opt1_a, opt1_b = _make_mcq(exam, text="Q1")
+        q2, opt2_a, opt2_b = _make_mcq(exam, text="Q2")
+        db.session.commit()
+        attempt = _make_attempt(exam)
+        db.session.commit()
+        token = attempt.attempt_token
+        attempt_id = attempt.id
+        q1_opt_id = opt1_a.id
+        q2_opt_id = opt2_a.id
+
+    client = app.test_client()
+
+    # Verify template does not contain premature 'Examination Submitted'
+    q_resp = client.get(f"/attempt/{token}/question/2")
+    assert q_resp.status_code == 200
+    assert "Examination Submitted" not in q_resp.get_data(as_text=True)
+
+    # Answer Q1
+    client.post(f"/attempt/{token}/question/1", data={"option_id": q1_opt_id, "action": "next"})
+
+    # Answer Q2 and finish
+    finish_resp = client.post(
+        f"/attempt/{token}/question/2",
+        data={"option_id": q2_opt_id, "action": "finish"},
+        follow_redirects=False
+    )
+    assert finish_resp.status_code == 302
+    assert finish_resp.headers["Location"].endswith(f"/attempt/{token}/review")
+
+    # Attempt must still be in_progress
+    with app.app_context():
+        att = db.session.get(StudentAttempt, attempt_id)
+        assert att.status == "in_progress"
+
+    # Review page shows 2 answered, 0 unanswered
+    review_resp = client.get(f"/attempt/{token}/review")
+    assert review_resp.status_code == 200
+    review_html = review_resp.get_data(as_text=True)
+    assert "Final Submission" in review_html
+
+    # Submit from review page
+    submit_resp = client.post(f"/attempt/{token}/submit", follow_redirects=False)
+    assert submit_resp.status_code == 302
+    assert submit_resp.headers["Location"].endswith(f"/attempt/{token}/result")
+
+    # Post-submission confirmation appears on result page
+    result_resp = client.get(f"/attempt/{token}/result")
+    assert result_resp.status_code == 200
+
+    with app.app_context():
+        att = db.session.get(StudentAttempt, attempt_id)
+        assert att.status == "submitted"
+        assert att.submitted_at is not None
+
+
+def test_finish_exam_navigates_to_review_some_unanswered(app):
+    """
+    Test finish flow when some questions are unanswered:
+    1. Answering Q1 then clicking finish on Q2 without answering Q2 redirects directly to review.
+    2. Attempt remains in_progress.
+    3. Review page shows 1 answered and 1 unanswered.
+    4. Submitting on review page actually finalizes attempt.
+    """
+    with app.app_context():
+        exam = _make_exam(title="FINISHPARTIAL")
+        q1, opt1_a, opt1_b = _make_mcq(exam, text="Q1")
+        q2, opt2_a, opt2_b = _make_mcq(exam, text="Q2")
+        db.session.commit()
+        attempt = _make_attempt(exam)
+        db.session.commit()
+        token = attempt.attempt_token
+        attempt_id = attempt.id
+        q1_opt_id = opt1_a.id
+
+    client = app.test_client()
+
+    # Answer Q1
+    client.post(f"/attempt/{token}/question/1", data={"option_id": q1_opt_id, "action": "next"})
+
+    # Finish on Q2 without answering Q2
+    finish_resp = client.post(
+        f"/attempt/{token}/question/2",
+        data={"action": "finish"},
+        follow_redirects=False
+    )
+    assert finish_resp.status_code == 302
+    assert finish_resp.headers["Location"].endswith(f"/attempt/{token}/review")
+
+    # Attempt must still be in_progress
+    with app.app_context():
+        att = db.session.get(StudentAttempt, attempt_id)
+        assert att.status == "in_progress"
+
+    # Review page shows 1 answered, 1 unanswered
+    review_resp = client.get(f"/attempt/{token}/review")
+    assert review_resp.status_code == 200
+
+    # Submit from review page
+    submit_resp = client.post(f"/attempt/{token}/submit", follow_redirects=False)
+    assert submit_resp.status_code == 302
+    assert submit_resp.headers["Location"].endswith(f"/attempt/{token}/result")
+
+    with app.app_context():
+        att = db.session.get(StudentAttempt, attempt_id)
+        assert att.status == "submitted"
+        assert att.submitted_at is not None
+        assert att.unanswered_count == 1
+        assert att.correct_count == 1
