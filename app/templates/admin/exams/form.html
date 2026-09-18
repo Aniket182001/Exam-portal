@@ -273,7 +273,7 @@
                 <div class="d-flex flex-column flex-sm-row justify-content-end gap-3 mb-5">
                     <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-light border btn-lg rounded-pill px-5 fw-medium">Cancel</a>
                     <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold hover-scale">
-                        <i class="bi bi-save-fill me-2"></i> {{ action }} Exam
+                        <i class="bi bi-save-fill me-2"></i> {% if action == 'Edit' %}Save Exam{% else %}Create Exam{% endif %}
                     </button>
                 </div>
             </form>

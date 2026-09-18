@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from app.extensions import db
-from app.models import Exam, Question, QuestionOption, StudentAnswer
+from app.models import Exam, Question, QuestionOption, StudentAnswer, Evaluation
 import os
 import json
 import uuid
@@ -349,13 +349,27 @@ def delete_question(question_id):
     question = Question.query.get_or_404(question_id)
     exam_id = question.exam_id
     
-    if StudentAnswer.query.filter_by(question_id=question_id).first():
-        flash("This question has existing student responses and cannot be deleted.", "danger")
-        return redirect(url_for('admin_questions.list_questions', exam_id=exam_id))
+    try:
+        # Step 1: Find student answers associated with this question
+        answers = StudentAnswer.query.filter_by(question_id=question.id).all()
+        answer_ids = [ans.id for ans in answers]
+        if answer_ids:
+            Evaluation.query.filter(Evaluation.student_answer_id.in_(answer_ids)).delete(synchronize_session=False)
+            StudentAnswer.query.filter(StudentAnswer.id.in_(answer_ids)).delete(synchronize_session=False)
 
-    db.session.delete(question)
-    db.session.commit()
-    flash("Question deleted successfully.", "success")
+        # Step 2: Delete question options
+        QuestionOption.query.filter_by(question_id=question.id).delete(synchronize_session=False)
+
+        # Step 3: Delete the question itself
+        db.session.delete(question)
+        db.session.commit()
+        flash("Question deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Failed to delete question {question_id}: {e}")
+        flash("An error occurred while deleting the question. Please check the logs.", "danger")
+
     return redirect(url_for('admin_questions.list_questions', exam_id=exam_id))
 
 @admin_questions_bp.route("/exams/<int:exam_id>/questions/delete_selected", methods=["POST"])
@@ -368,21 +382,41 @@ def delete_selected_questions(exam_id):
         return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
         
     try:
-        # Check if any selected questions have student answers
-        if StudentAnswer.query.filter(StudentAnswer.question_id.in_(question_ids)).first():
-            flash("One or more selected questions have existing student responses and cannot be deleted.", "danger")
+        # Parse submitted IDs
+        q_ids = [int(qid) for qid in question_ids if qid.isdigit()]
+        if not q_ids:
+            flash("Please select at least one valid question to delete.", "warning")
             return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
 
-        # Cascade delete is typically handled by SQLAlchemy relationships, 
-        # but to be safe and use bulk delete we can delete options first if needed.
-        # Since models use cascade="all, delete-orphan", we can query and delete the questions.
+        # Security check: Ensure every submitted question ID belongs to the specified exam_id
+        valid_questions = Question.query.filter(
+            Question.exam_id == exam.id,
+            Question.id.in_(q_ids)
+        ).all()
+        valid_q_ids = [q.id for q in valid_questions]
+
+        if len(valid_q_ids) != len(set(q_ids)):
+            flash("One or more selected questions do not belong to this exam.", "danger")
+            return redirect(url_for('admin_questions.list_questions', exam_id=exam.id))
+
+        # Step 1: Find and delete student answers and evaluations associated with these questions
+        answers = StudentAnswer.query.filter(StudentAnswer.question_id.in_(valid_q_ids)).all()
+        answer_ids = [ans.id for ans in answers]
+        if answer_ids:
+            Evaluation.query.filter(Evaluation.student_answer_id.in_(answer_ids)).delete(synchronize_session=False)
+            StudentAnswer.query.filter(StudentAnswer.id.in_(answer_ids)).delete(synchronize_session=False)
+
+        # Step 2: Delete question options
+        QuestionOption.query.filter(QuestionOption.question_id.in_(valid_q_ids)).delete(synchronize_session=False)
+
+        # Step 3: Delete questions
         Question.query.filter(
             Question.exam_id == exam.id,
-            Question.id.in_(question_ids)
+            Question.id.in_(valid_q_ids)
         ).delete(synchronize_session=False)
         
         db.session.commit()
-        flash(f"Successfully deleted {len(question_ids)} selected questions.", "success")
+        flash(f"Successfully deleted {len(valid_q_ids)} selected questions.", "success")
     except Exception as e:
         db.session.rollback()
         import logging

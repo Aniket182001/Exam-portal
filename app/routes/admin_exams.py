@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, session
 from app.extensions import db
-from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer, CandidateRegistration
+from app.models import Exam, StudentAttempt, Question, QuestionOption, StudentAnswer, CandidateRegistration, Evaluation
+from sqlalchemy import func, case
 from datetime import datetime, timezone, timedelta
 import io
 import openpyxl
@@ -20,10 +21,29 @@ def require_admin():
 @admin_exams_bp.route("/")
 def list_exams():
     search = request.args.get('search', '').strip()
-    query = Exam.query
+
+    # Subquery to find the latest student activity timestamp per exam
+    latest_sub = (
+        db.session.query(
+            StudentAttempt.exam_id.label("attempt_exam_id"),
+            func.max(
+                func.coalesce(StudentAttempt.submitted_at, StudentAttempt.started_at)
+            ).label("latest_activity")
+        )
+        .group_by(StudentAttempt.exam_id)
+        .subquery()
+    )
+
+    query = Exam.query.outerjoin(latest_sub, Exam.id == latest_sub.c.attempt_exam_id)
     if search:
         query = query.filter(db.or_(Exam.title.ilike(f"%{search}%"), Exam.exam_code.ilike(f"%{search}%")))
-    exams = query.order_by(Exam.created_at.desc()).all()
+
+    exams = query.order_by(
+        case((latest_sub.c.latest_activity.isnot(None), 0), else_=1),
+        latest_sub.c.latest_activity.desc(),
+        Exam.created_at.desc(),
+        Exam.id.desc()
+    ).all()
     return render_template("admin/exams/list.html", exams=exams, search=search)
 
 @admin_exams_bp.route("/create", methods=["GET", "POST"])
@@ -248,23 +268,46 @@ def delete_exam(exam_id):
         
     exam = Exam.query.get_or_404(exam_id)
     
-    # Check if exam has student attempts/answers
-    if StudentAttempt.query.filter_by(exam_id=exam.id).first():
-        flash("This exam has existing student attempts and cannot be deleted.", "danger")
-        return redirect(url_for('admin_exams.list_exams'))
+    try:
+        # Step 1: Delete all attempts, answers, and evaluations for this exam
+        attempts = StudentAttempt.query.filter_by(exam_id=exam.id).all()
+        attempt_ids = [a.id for a in attempts]
+        if attempt_ids:
+            answers = StudentAnswer.query.filter(StudentAnswer.attempt_id.in_(attempt_ids)).all()
+            answer_ids = [ans.id for ans in answers]
+            if answer_ids:
+                Evaluation.query.filter(Evaluation.student_answer_id.in_(answer_ids)).delete(synchronize_session=False)
+                StudentAnswer.query.filter(StudentAnswer.id.in_(answer_ids)).delete(synchronize_session=False)
+            StudentAttempt.query.filter(StudentAttempt.id.in_(attempt_ids)).delete(synchronize_session=False)
 
-    # 1. Delete QuestionOptions and Questions
-    questions = Question.query.filter_by(exam_id=exam.id).all()
-    question_ids = [q.id for q in questions]
-    if question_ids:
-        QuestionOption.query.filter(QuestionOption.question_id.in_(question_ids)).delete(synchronize_session=False)
-        Question.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+        # Step 2: Delete candidate registrations
+        CandidateRegistration.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
 
-    # 2. Delete Exam
-    db.session.delete(exam)
-    db.session.commit()
-    
-    flash("Exam deleted successfully.", "success")
+        # Step 3: Delete QuestionOptions and Questions
+        questions = Question.query.filter_by(exam_id=exam.id).all()
+        question_ids = [q.id for q in questions]
+        if question_ids:
+            # Also clean up any lingering student answers/evaluations for these question IDs if any existed
+            lingering_answers = StudentAnswer.query.filter(StudentAnswer.question_id.in_(question_ids)).all()
+            lingering_ans_ids = [ans.id for ans in lingering_answers]
+            if lingering_ans_ids:
+                Evaluation.query.filter(Evaluation.student_answer_id.in_(lingering_ans_ids)).delete(synchronize_session=False)
+                StudentAnswer.query.filter(StudentAnswer.id.in_(lingering_ans_ids)).delete(synchronize_session=False)
+
+            QuestionOption.query.filter(QuestionOption.question_id.in_(question_ids)).delete(synchronize_session=False)
+            Question.query.filter_by(exam_id=exam.id).delete(synchronize_session=False)
+
+        # Step 4: Delete Exam
+        db.session.delete(exam)
+        db.session.commit()
+
+        flash("Exam deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        import logging
+        logging.error(f"Failed to delete exam {exam_id}: {e}")
+        flash("An error occurred while deleting the exam. Please check the logs.", "danger")
+
     return redirect(url_for('admin_exams.list_exams'))
 
 @admin_exams_bp.route("/<int:exam_id>/clear-all-attempts", methods=["POST"])
