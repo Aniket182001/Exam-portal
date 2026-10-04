@@ -5,6 +5,21 @@
 {% block content %}
 <div class="container py-4">
     
+    <!-- Admin Switcher (Exam Admin vs LMS Admin) -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-inline-flex bg-white p-1 rounded-pill border shadow-sm">
+            <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-sm rounded-pill px-3 py-1 fw-bold btn-primary text-white shadow-sm">
+                <i class="bi bi-speedometer2 me-1"></i> Exam Admin
+            </a>
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm rounded-pill px-3 py-1 fw-bold text-muted hover-scale">
+                <i class="bi bi-mortarboard-fill me-1"></i> LMS Admin
+            </a>
+        </div>
+        <div class="small text-muted">
+            <i class="bi bi-info-circle me-1"></i> Mode: Exam Administration
+        </div>
+    </div>
+
     <!-- Page Header -->
     <div class="admin-header">
         <div>

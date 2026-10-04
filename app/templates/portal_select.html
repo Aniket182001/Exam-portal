@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block page_title %}Portal Selection{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center text-center mb-5">
+        <div class="col-lg-8">
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold mb-3 small text-uppercase letter-wide">
+                Unified Learning Platform
+            </span>
+            <h1 class="display-5 fw-bold text-dark mb-2" style="letter-spacing: -0.03em;">AIQM Portal</h1>
+            <p class="text-muted fs-5 mb-0">Where would you like to go?</p>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center max-w-900 mx-auto" style="max-width: 920px;">
+        <!-- Exam Portal Card -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm rounded-xl p-4 p-lg-5 transition-all hover-scale d-flex flex-column justify-content-between" style="border-radius: 24px; background: #FFFFFF;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; background-color: #FFF7ED; color: #EA580C;">
+                            <i class="bi bi-file-earmark-check-fill fs-3"></i>
+                        </div>
+                        <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small font-monospace">EXAMS</span>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-2" style="letter-spacing: -0.02em;">Exam Portal</h3>
+                    <p class="text-muted mb-4" style="font-size: 1.05rem; line-height: 1.6;">
+                        Take exams, view attempts and results.
+                    </p>
+                </div>
+
+                <div class="pt-3 border-top">
+                    {% if current_user and current_user.role == 'admin' %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('admin_exams.list_exams') }}" class="btn btn-primary rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                                <i class="bi bi-speedometer2 me-2"></i> Exam Administration
+                            </a>
+                            <a href="{{ url_for('main.home') }}" class="btn btn-light border rounded-pill py-2 text-muted fw-medium small">
+                                <i class="bi bi-person-workspace me-1"></i> Student Exam View
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="d-grid">
+                            <a href="{{ url_for('main.home') }}" class="btn btn-primary rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                                Enter Exam Portal <i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- LMS Card -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm rounded-xl p-4 p-lg-5 transition-all hover-scale d-flex flex-column justify-content-between" style="border-radius: 24px; background: #FFFFFF;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; background-color: #EFF6FF; color: #2563EB;">
+                            <i class="bi bi-mortarboard-fill fs-3"></i>
+                        </div>
+                        <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small font-monospace">LMS</span>
+                    </div>
+                    <h3 class="fw-bold text-dark mb-2" style="letter-spacing: -0.02em;">LMS</h3>
+                    <p class="text-muted mb-4" style="font-size: 1.05rem; line-height: 1.6;">
+                        Access your courses, lectures and learning materials.
+                    </p>
+                </div>
+
+                <div class="pt-3 border-top">
+                    {% if current_user and current_user.role == 'admin' %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-apple-primary text-white rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                                <i class="bi bi-gear-wide-connected me-2"></i> LMS Administration
+                            </a>
+                            <a href="{{ url_for('lms.dashboard') }}" class="btn btn-light border rounded-pill py-2 text-muted fw-medium small">
+                                <i class="bi bi-book me-1"></i> Student LMS View
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="d-grid">
+                            <a href="{{ url_for('lms.dashboard') }}" class="btn btn-apple-primary text-white rounded-pill py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                                Access Courses <i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

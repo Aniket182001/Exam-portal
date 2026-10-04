@@ -27,6 +27,8 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.admin_bp import admin_bp
     from app.routes.evaluator import evaluator_bp
+    from app.routes.lms import lms_bp
+    from app.routes.admin_lms import admin_lms_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -36,11 +38,24 @@ def create_app():
     app.register_blueprint(admin_backup_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(evaluator_bp)
+    app.register_blueprint(lms_bp)
+    app.register_blueprint(admin_lms_bp)
+
+    from flask import session, g
+
+    @app.before_request
+    def load_current_user():
+        user_id = session.get("user_id")
+        if user_id:
+            g.current_user = db.session.get(models.User, user_id)
+        else:
+            g.current_user = None
 
     @app.context_processor
-    def inject_current_year():
+    def inject_context():
         return {
-            "current_year": datetime.now(UTC).year
+            "current_year": datetime.now(UTC).year,
+            "current_user": getattr(g, "current_user", None)
         }
 
     @app.template_filter('format_datetime_tz')

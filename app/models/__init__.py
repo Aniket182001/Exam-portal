@@ -7,6 +7,7 @@ from .student_answer import StudentAnswer
 from .candidate_registration import CandidateRegistration
 from .evaluation import Evaluation
 from .company_group import CompanyGroup, CompanyAlias
+from .course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress
 
 __all__ = [
     'User',
@@ -19,4 +20,9 @@ __all__ = [
     'Evaluation',
     'CompanyGroup',
     'CompanyAlias',
+    'Course',
+    'CourseSection',
+    'Lesson',
+    'CourseEnrollment',
+    'LessonProgress',
 ]

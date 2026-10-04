@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ lesson.title }} — {{ course.title }} — AIQM LMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+
+    <!-- Top Breadcrumb & Return Navigation -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 border-bottom pb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('lms.dashboard') }}" class="text-decoration-none">LMS</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="text-decoration-none">{{ course.title }}</a></li>
+                <li class="breadcrumb-item active text-truncate" style="max-width: 260px;" aria-current="page">{{ lesson.title }}</li>
+            </ol>
+        </nav>
+        <div>
+            <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold d-inline-flex align-items-center transition-all hover-scale shadow-sm">
+                <i class="bi bi-arrow-left me-2"></i> Course Overview
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Column: Player, Meta & Controls -->
+        <div class="col-lg-8 col-xl-8">
+
+            <!-- Lesson Header Badge & Title -->
+            <div class="mb-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-1 rounded-pill small fw-medium">
+                        {{ section.title }}
+                    </span>
+                    {% if nav_info.current_index %}
+                    <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small font-monospace">
+                        Lesson {{ nav_info.current_index }} of {{ nav_info.total_lessons }}
+                    </span>
+                    {% endif %}
+                    {% if lesson.video_provider %}
+                    <span class="badge bg-secondary-subtle text-secondary border px-2 py-1 rounded-pill small text-uppercase font-monospace">
+                        {{ lesson.video_provider }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h3 class="fw-bold text-dark mb-1">{{ lesson.title }}</h3>
+            </div>
+
+            <!-- Video Player Container -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-dark">
+                <div class="ratio ratio-16x9">
+                    {% if embed_info.status == 'success' %}
+                        {% if embed_info.type == 'iframe' %}
+                            <iframe
+                                src="{{ embed_info.embed_url }}"
+                                title="{{ lesson.title }}"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowfullscreen
+                                class="w-100 h-100">
+                            </iframe>
+                        {% elif embed_info.type == 'html5_video' %}
+                            <video
+                                src="{{ embed_info.embed_url }}"
+                                controls
+                                controlsList="nodownload"
+                                class="w-100 h-100"
+                                style="object-fit: contain; background: #000;">
+                                Your browser does not support the video tag.
+                            </video>
+                        {% endif %}
+                    {% elif embed_info.status == 'empty' %}
+                        <!-- Empty Video Placeholder -->
+                        <div class="d-flex flex-column align-items-center justify-content-center text-center p-4" style="background: #111827; color: #9CA3AF;">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; background: rgba(255,255,255,0.08);">
+                                <i class="bi bi-camera-video-off fs-1 text-secondary"></i>
+                            </div>
+                            <h5 class="fw-semibold text-white mb-1">No Video Attached</h5>
+                            <p class="small text-secondary mb-0" style="max-width: 380px;">
+                                {{ embed_info.error_message or "This lesson does not contain a video presentation." }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <!-- Error State -->
+                        <div class="d-flex flex-column align-items-center justify-content-center text-center p-4" style="background: #1F2937; color: #F87171;">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 72px; height: 72px; background: rgba(239, 68, 68, 0.15);">
+                                <i class="bi bi-exclamation-octagon fs-1 text-danger"></i>
+                            </div>
+                            <h5 class="fw-semibold text-white mb-1">Video Unavailable</h5>
+                            <p class="small text-secondary mb-0" style="max-width: 420px;">
+                                {{ embed_info.error_message or "We couldn't load this lesson video. Please try again later." }}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Provider Notice (e.g., Google Drive sharing guidance) -->
+            {% if embed_info.warning %}
+            <div class="alert alert-warning border-0 shadow-sm rounded-3 py-2 px-3 small d-flex align-items-start mb-4">
+                <i class="bi bi-info-circle-fill fs-5 text-warning me-2 mt-0"></i>
+                <div class="text-dark">
+                    <strong>Notice:</strong> {{ embed_info.warning }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Course Completion Celebration Callout -->
+            {% if progress and progress.is_completed %}
+            <div class="alert alert-success border-0 shadow-sm rounded-4 p-3 mb-4 d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                    <i class="bi bi-trophy-fill fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 text-success">Course Completed!</h6>
+                    <p class="small text-muted mb-0">Congratulations, you have completed all published lessons in this course.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Lesson Navigation Bar (Previous / Mark Complete / Next) -->
+            <div class="card border-0 shadow-sm rounded-4 p-3 mb-4" style="background: #FFFFFF;">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        {% if nav_info.prev_lesson %}
+                        <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=nav_info.prev_lesson.id) }}" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center transition-all hover-scale shadow-sm">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            <span class="d-none d-sm-inline">Previous:&nbsp;</span>
+                            <span class="text-truncate" style="max-width: 200px;">{{ nav_info.prev_lesson.title }}</span>
+                        </a>
+                        {% else %}
+                        <button class="btn btn-light text-muted border rounded-pill px-3 py-2 fw-medium" disabled>
+                            <i class="bi bi-arrow-left me-2"></i> Previous Lesson
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        {% if enrollment %}
+                            {% if is_completed %}
+                            <span class="btn btn-success rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center" style="pointer-events: none; opacity: 0.95;">
+                                <i class="bi bi-check-circle-fill me-1"></i> Completed
+                            </span>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('lms.complete_lesson', slug=course.slug, lesson_id=lesson.id) }}" class="m-0">
+                                <button type="submit" class="btn btn-outline-success rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center hover-scale shadow-sm">
+                                    <i class="bi bi-check2-circle me-1"></i> Mark as Complete
+                                </button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                        <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="btn btn-light border rounded-pill px-3 py-2 small fw-bold text-muted hover-scale">
+                            <i class="bi bi-grid-3x3-gap me-1"></i> Syllabus
+                        </a>
+                    </div>
+
+                    <div>
+                        {% if nav_info.next_lesson %}
+                        <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=nav_info.next_lesson.id) }}" class="btn btn-primary rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center transition-all hover-scale shadow-sm">
+                            <span class="d-none d-sm-inline">Next:&nbsp;</span>
+                            <span class="text-truncate" style="max-width: 200px;">{{ nav_info.next_lesson.title }}</span>
+                            <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                        {% else %}
+                        <button class="btn btn-light text-muted border rounded-pill px-3 py-2 fw-medium" disabled>
+                            Next Lesson <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lesson Notes / Description -->
+            {% if lesson.description %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: #FFFFFF;">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-file-text text-primary me-2"></i>Lesson Notes
+                </h5>
+                <div class="text-secondary" style="line-height: 1.7; white-space: pre-line;">
+                    {{ lesson.description }}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Sidebar Column: Course Curriculum Navigator -->
+        <div class="col-lg-4 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 sticky-top" style="background: #FFFFFF; top: 85px;">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-collection-play-fill text-primary me-2"></i>Course Content
+                        </h6>
+                        <span class="small text-muted">{{ total_lessons }} lessons total</span>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill small font-monospace">
+                        Curriculum
+                    </span>
+                </div>
+
+                {% if progress %}
+                <div class="mb-3 p-2 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-semibold text-dark">Course Progress</span>
+                        <span class="small fw-bold font-monospace text-primary">{{ progress.progress_percent }}%</span>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 999px;">
+                        <div class="progress-bar {% if progress.is_completed %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ progress.progress_percent }}%;" aria-valuenow="{{ progress.progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="text-muted small mt-1 font-monospace" style="font-size: 0.72rem;">
+                        {{ progress.completed_lessons }} of {{ progress.total_lessons }} completed
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="accordion accordion-flush" id="lessonNavAccordion" style="max-height: 70vh; overflow-y: auto;">
+                    {% for sec_item in curriculum_sections %}
+                    {% set sec = sec_item.section %}
+                    {% set sec_lessons = sec_item.lessons %}
+                    {% set is_current_sec = (sec.id == section.id) %}
+                    <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
+                        <h2 class="accordion-header" id="navSecHeading{{ sec.id }}">
+                            <button class="accordion-button {% if not is_current_sec %}collapsed{% endif %} py-2 px-3 fw-semibold small" type="button" data-bs-toggle="collapse" data-bs-target="#navSecCollapse{{ sec.id }}" aria-expanded="{{ 'true' if is_current_sec else 'false' }}" aria-controls="navSecCollapse{{ sec.id }}">
+                                <span class="text-truncate me-2">{{ sec.title }}</span>
+                                <span class="badge bg-light text-muted border ms-auto font-monospace small" style="font-size: 0.7rem;">
+                                    {{ sec_lessons|length }}
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="navSecCollapse{{ sec.id }}" class="accordion-collapse collapse {% if is_current_sec %}show{% endif %}" aria-labelledby="navSecHeading{{ sec.id }}" data-bs-parent="#lessonNavAccordion">
+                            <div class="accordion-body p-0">
+                                {% if sec_lessons %}
+                                <div class="list-group list-group-flush">
+                                    {% for l in sec_lessons %}
+                                    {% set is_active = (l.id == lesson.id) %}
+                                    {% set is_l_done = (progress and l.id in progress.completed_lesson_ids) %}
+                                    <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=l.id) }}"
+                                       class="list-group-item list-group-item-action py-2 px-3 d-flex align-items-center justify-content-between text-decoration-none small {% if is_active %}bg-primary text-white active fw-bold border-0{% else %}text-dark{% endif %}">
+                                        <div class="d-flex align-items-center text-truncate me-2">
+                                            {% if is_l_done %}
+                                            <i class="bi bi-check-circle-fill {% if is_active %}text-white{% else %}text-success{% endif %} me-2 fs-6 flex-shrink-0"></i>
+                                            {% elif is_active %}
+                                            <i class="bi bi-play-circle-fill text-white me-2 fs-6 flex-shrink-0"></i>
+                                            {% else %}
+                                            <i class="bi bi-play-circle text-muted me-2 fs-6 flex-shrink-0"></i>
+                                            {% endif %}
+                                            <span class="text-truncate">{{ l.title }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            {% if is_active %}
+                                            <span class="badge bg-white text-primary rounded-pill small" style="font-size: 0.65rem;">
+                                                Playing
+                                            </span>
+                                            {% elif is_l_done %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill small" style="font-size: 0.65rem;">
+                                                Done
+                                            </span>
+                                            {% elif l.video_provider %}
+                                            <span class="badge bg-light text-muted border text-uppercase font-monospace" style="font-size: 0.6rem;">
+                                                {{ l.video_provider }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="p-2 text-muted small text-center" style="font-size: 0.8rem;">No lessons</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

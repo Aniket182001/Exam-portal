@@ -6,15 +6,17 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    # If already logged in, redirect to admin
+    # If already logged in, redirect to portal selection
     if session.get("user_id"):
-        return redirect(url_for("admin_exams.list_exams"))
+        return redirect(url_for("main.portal_select"))
 
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
         
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(
+            (User.username == username) | (User.email == username)
+        ).first()
         
         if user and check_password_hash(user.password_hash, password):
             if not user.is_active:
@@ -24,8 +26,8 @@ def login():
             session["user_id"] = user.id
             flash("Successfully logged in.", "success")
             
-            # Redirect to originally requested page, or default to admin dashboard
-            redirect_target = session.pop("post_login_redirect", url_for("admin_exams.list_exams"))
+            # Redirect to originally requested page, or default to portal selection
+            redirect_target = session.pop("post_login_redirect", url_for("main.portal_select"))
             return redirect(redirect_target)
         else:
             flash("Invalid username or password.", "danger")

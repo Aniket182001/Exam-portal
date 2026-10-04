@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ course.title }} — AIQM LMS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="admin-header mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('lms.dashboard') }}" class="text-decoration-none">LMS</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ course.title }}</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-book text-primary me-2"></i>{{ course.title }}
+            </h3>
+            {% if course.description %}
+            <p class="text-muted small mb-0 mt-1">{{ course.description }}</p>
+            {% endif %}
+        </div>
+        <div class="admin-toolbar">
+            {% if continue_lesson %}
+            <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=continue_lesson.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale me-2">
+                <i class="bi bi-play-fill me-1"></i> Continue Learning
+            </a>
+            {% elif first_lesson %}
+            <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=first_lesson.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale me-2">
+                <i class="bi bi-play-fill me-1"></i> Start Learning
+            </a>
+            {% endif %}
+            <a href="{{ url_for('lms.dashboard') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-arrow-left me-2"></i> Back to Courses
+            </a>
+        </div>
+    </div>
+
+    <!-- Course Outline / Curriculum -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl p-4 mb-4" style="border-radius: 20px; background: #FFFFFF;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0">Course Curriculum</h5>
+                    <span class="badge bg-light text-muted border px-2 py-1 rounded-pill small font-monospace">
+                        {{ total_lessons }} published lessons
+                    </span>
+                </div>
+
+                {% if curriculum_sections and total_lessons > 0 %}
+                <div class="accordion accordion-flush" id="curriculumAccordion">
+                    {% for sec_item in curriculum_sections %}
+                    {% set section = sec_item.section %}
+                    {% set lessons = sec_item.lessons %}
+                    <div class="accordion-item border rounded-3 mb-3 overflow-hidden">
+                        <h2 class="accordion-header" id="headingSec{{ section.id }}">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSec{{ section.id }}" aria-expanded="{{ 'true' if loop.first else 'false' }}" aria-controls="collapseSec{{ section.id }}">
+                                <i class="bi bi-folder2-open text-primary me-2"></i>
+                                Section {{ loop.index }}: {{ section.title }}
+                                <span class="badge bg-light text-muted border ms-auto me-3 font-monospace small">
+                                    {{ lessons|length }} lessons
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="collapseSec{{ section.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" aria-labelledby="headingSec{{ section.id }}" data-bs-parent="#curriculumAccordion">
+                            <div class="accordion-body p-0">
+                                {% if lessons %}
+                                <div class="list-group list-group-flush">
+                                    {% for lesson in lessons %}
+                                    {% set is_les_completed = (progress and lesson.id in progress.completed_lesson_ids) %}
+                                    <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=lesson.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 text-decoration-none">
+                                        <div class="d-flex align-items-center">
+                                            {% if is_les_completed %}
+                                            <i class="bi bi-check-circle-fill text-success me-3 fs-5"></i>
+                                            {% else %}
+                                            <i class="bi bi-play-circle text-primary me-3 fs-5"></i>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-medium text-dark">{{ lesson.title }}</div>
+                                                {% if lesson.video_provider %}
+                                                <span class="badge bg-light text-muted border small text-uppercase font-monospace" style="font-size: 0.7rem;">
+                                                    {{ lesson.video_provider }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if is_les_completed %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 small fw-medium">
+                                            <i class="bi bi-check2 me-1"></i> Completed
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small fw-medium">
+                                            Watch <i class="bi bi-chevron-right ms-1"></i>
+                                        </span>
+                                        {% endif %}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="p-3 text-muted small text-center">No published lessons in this section yet.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-journal-x fs-1 text-muted d-block mb-2"></i>
+                    <h6 class="fw-bold text-dark mb-1">No Published Lessons Yet</h6>
+                    <p class="small text-muted mb-0">This course does not have any published lessons yet. Please check back later.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-xl p-4" style="border-radius: 20px; background: #FFFFFF;">
+                <h6 class="fw-bold text-dark text-uppercase small letter-wide mb-3">Course Information</h6>
+
+                {% if progress %}
+                <!-- Student Progress Box -->
+                <div class="mb-4 p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
+                        <span class="fw-semibold text-dark">Course Progress</span>
+                        <span class="fw-bold text-dark">{{ progress.percentage }}%</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px; border-radius: 10px; background-color: #E5E7EB;">
+                        <div class="progress-bar {% if progress.is_completed %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ progress.percentage }}%; border-radius: 10px;" aria-valuenow="{{ progress.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                        <span>{{ progress.completed_lessons }} of {{ progress.total_lessons }} completed</span>
+                        {% if progress.is_completed %}
+                        <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Completed</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <ul class="list-unstyled mb-4 small text-muted">
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Status</span>
+                        <span class="badge bg-success-subtle text-success text-capitalize">{{ course.status }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Sections</span>
+                        <span class="fw-bold text-dark">{{ curriculum_sections|length }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Published Lessons</span>
+                        <span class="fw-bold text-dark">{{ total_lessons }}</span>
+                    </li>
+                </ul>
+
+                {% if continue_lesson %}
+                <div class="d-grid mt-2">
+                    <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=continue_lesson.id) }}" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm hover-scale">
+                        <i class="bi bi-play-circle-fill me-2"></i> {% if progress and progress.completed_lessons > 0 %}Continue Learning{% else %}Start Learning{% endif %}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

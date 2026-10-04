@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block page_title %}{% if mode == 'create' %}Create Course{% else %}Edit Course — {{ course.title }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Breadcrumb & Header -->
+    <div class="admin-header mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_lms.dashboard') }}" class="text-decoration-none">LMS Admin</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{% if mode == 'create' %}Create Course{% else %}Edit Course{% endif %}</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-journal-plus text-primary me-2"></i>{% if mode == 'create' %}Create New Course{% else %}Edit Course{% endif %}
+            </h3>
+            <p class="text-muted small mb-0 mt-1">Configure course details, public URL identifier, and publishing lifecycle status.</p>
+        </div>
+        <div class="admin-toolbar">
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-arrow-left me-2"></i> Back to Courses
+            </a>
+            {% if mode == 'edit' and course %}
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-list-nested me-2"></i> Manage Content
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl p-4 p-md-5" style="border-radius: 20px; background: #FFFFFF;">
+                <form method="POST">
+                    <!-- Course Title -->
+                    <div class="mb-4">
+                        <label for="titleInput" class="form-label fw-bold text-dark">Course Title <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control form-control-lg rounded-3" 
+                               id="titleInput" 
+                               name="title" 
+                               placeholder="e.g., Lean Six Sigma Green Belt" 
+                               value="{% if course %}{{ course.title }}{% endif %}" 
+                               required 
+                               maxlength="200">
+                        <div class="form-text text-muted">A clear, professional title for this accreditation course.</div>
+                    </div>
+
+                    <!-- Slug (URL identifier) -->
+                    <div class="mb-4">
+                        <label for="slugInput" class="form-label fw-bold text-dark">URL Slug <span class="text-muted small fw-normal">(Optional)</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border font-monospace small">/lms/courses/</span>
+                            <input type="text" 
+                                   class="form-control font-monospace" 
+                                   id="slugInput" 
+                                   name="slug" 
+                                   placeholder="auto-generated-from-title" 
+                                   value="{% if course %}{{ course.slug }}{% endif %}">
+                        </div>
+                        <div class="form-text text-muted">Leave empty to auto-generate a clean, URL-safe slug from the title.</div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label for="descriptionInput" class="form-label fw-bold text-dark">Course Description</label>
+                        <textarea class="form-control rounded-3" 
+                                  id="descriptionInput" 
+                                  name="description" 
+                                  rows="4" 
+                                  placeholder="Provide an overview of the curriculum, prerequisites, and learning objectives...">{% if course and course.description %}{{ course.description }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Status & Display Order Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="statusSelect" class="form-label fw-bold text-dark">Publishing Status</label>
+                            <select class="form-select rounded-3" id="statusSelect" name="status">
+                                <option value="draft" {% if not course or course.status == 'draft' %}selected{% endif %}>
+                                    Draft — Hidden from students
+                                </option>
+                                <option value="published" {% if course and course.status == 'published' %}selected{% endif %}>
+                                    Published — Visible to enrolled students
+                                </option>
+                                <option value="archived" {% if course and course.status == 'archived' %}selected{% endif %}>
+                                    Archived — Retained for records, hidden from catalog
+                                </option>
+                            </select>
+                            <div class="form-text text-muted">Controls visibility in the student e-learning catalog.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="orderInput" class="form-label fw-bold text-dark">Display Order</label>
+                            <input type="number" 
+                                   class="form-control rounded-3" 
+                                   id="orderInput" 
+                                   name="display_order" 
+                                   min="1" 
+                                   value="{% if course %}{{ course.display_order }}{% else %}{{ default_order|default(1) }}{% endif %}">
+                            <div class="form-text text-muted">Determines sorting order on the student portal.</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-light rounded-pill px-4 text-muted border">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm hover-scale">
+                            {% if mode == 'create' %}
+                                <i class="bi bi-plus-circle me-1"></i> Create Course
+                            {% else %}
+                                <i class="bi bi-save-fill me-1"></i> Save Course
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

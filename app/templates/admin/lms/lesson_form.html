@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block page_title %}{% if mode == 'create' %}New Lesson — {{ section.title }}{% else %}Edit Lesson — {{ lesson.title }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Breadcrumb & Header -->
+    <div class="admin-header mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_lms.dashboard') }}" class="text-decoration-none">LMS Admin</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="text-decoration-none">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{% if mode == 'create' %}New Lesson{% else %}Edit Lesson{% endif %}</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-play-circle text-primary me-2"></i>{% if mode == 'create' %}Add New Lesson{% else %}Edit Lesson{% endif %}
+            </h3>
+            <p class="text-muted small mb-0 mt-1">Section: <strong>{{ section.title }}</strong> &bull; Course: <strong>{{ course.title }}</strong></p>
+        </div>
+        <div class="admin-toolbar">
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-arrow-left me-2"></i> Back to Content
+            </a>
+        </div>
+    </div>
+
+    <!-- Lesson Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-xl p-4 p-md-5" style="border-radius: 20px; background: #FFFFFF;">
+                <form method="POST">
+                    <!-- Lesson Title -->
+                    <div class="mb-4">
+                        <label for="lessonTitle" class="form-label fw-bold text-dark">Lesson Title <span class="text-danger">*</span></label>
+                        <input type="text" 
+                               class="form-control form-control-lg rounded-3" 
+                               id="lessonTitle" 
+                               name="title" 
+                               placeholder="e.g., Lesson 1.1 — Introduction to Six Sigma" 
+                               value="{% if lesson %}{{ lesson.title }}{% elif form_data %}{{ form_data.get('title', '') }}{% endif %}" 
+                               required 
+                               maxlength="200">
+                    </div>
+
+                    <!-- Target Section (if in edit mode with multiple sections) -->
+                    {% if mode == 'edit' and available_sections and available_sections|length > 1 %}
+                    <div class="mb-4">
+                        <label for="sectionSelect" class="form-label fw-bold text-dark">Curriculum Section</label>
+                        <select class="form-select rounded-3" id="sectionSelect" name="section_id">
+                            {% for sec in available_sections %}
+                            <option value="{{ sec.id }}" {% if lesson.section_id == sec.id %}selected{% endif %}>
+                                Section {{ loop.index }}: {{ sec.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-muted">You can move this lesson to a different section within this course.</div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Description / Summary -->
+                    <div class="mb-4">
+                        <label for="lessonDescription" class="form-label fw-bold text-dark">Lesson Summary / Instructions <span class="text-muted small fw-normal">(Optional)</span></label>
+                        <textarea class="form-control rounded-3" 
+                                  id="lessonDescription" 
+                                  name="description" 
+                                  rows="3" 
+                                  placeholder="Key takeaways, instructions, or reading overview for this lesson...">{% if lesson and lesson.description %}{{ lesson.description }}{% elif form_data %}{{ form_data.get('description', '') }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Video Platform Configuration -->
+                    <div class="card border border-light-subtle rounded-xl p-4 mb-4 bg-light bg-opacity-50" style="border-radius: 16px;">
+                        <h6 class="fw-bold text-dark mb-3 d-flex align-items-center">
+                            <i class="bi bi-camera-reels-fill text-primary me-2"></i>Video Source Configuration
+                        </h6>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label for="providerSelect" class="form-label fw-semibold text-dark small">Video Platform</label>
+                                {% set cur_provider = (lesson.video_provider if lesson else (form_data.get('video_provider') if form_data else 'vimeo')) %}
+                                <select class="form-select rounded-3" id="providerSelect" name="video_provider" onchange="updateProviderHint()">
+                                    <option value="" {% if not cur_provider %}selected{% endif %}>None (Text Only)</option>
+                                    {% for p_val, p_label in video_providers %}
+                                    <option value="{{ p_val }}" {% if cur_provider == p_val %}selected{% endif %}>
+                                        {{ p_label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-7">
+                                <label for="videoUrlInput" class="form-label fw-semibold text-dark small">Video URL / Share Link</label>
+                                <input type="url" 
+                                       class="form-control rounded-3 font-monospace small" 
+                                       id="videoUrlInput" 
+                                       name="video_url" 
+                                       placeholder="https://vimeo.com/..." 
+                                       value="{% if lesson and lesson.video_url %}{{ lesson.video_url }}{% elif form_data %}{{ form_data.get('video_url', '') }}{% endif %}">
+                            </div>
+                        </div>
+
+                        <!-- Provider-Specific Guidance Box -->
+                        <div id="providerHintBox" class="alert alert-light border small text-muted mb-0" style="border-radius: 12px;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <span id="providerHintText">Enter a Vimeo video link (e.g., https://vimeo.com/123456789 or unlisted link).</span>
+                        </div>
+                    </div>
+
+                    <!-- Status & Order Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="lessonStatusSelect" class="form-label fw-bold text-dark">Publishing Status</label>
+                            {% set cur_status = (lesson.status if lesson else (form_data.get('status') if form_data else 'draft')) %}
+                            <select class="form-select rounded-3" id="lessonStatusSelect" name="status">
+                                <option value="draft" {% if cur_status == 'draft' %}selected{% endif %}>
+                                    Draft — Hidden from students
+                                </option>
+                                <option value="published" {% if cur_status == 'published' %}selected{% endif %}>
+                                    Published — Visible to students
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="lessonOrderInput" class="form-label fw-bold text-dark">Display Order</label>
+                            <input type="number" 
+                                   class="form-control rounded-3" 
+                                   id="lessonOrderInput" 
+                                   name="display_order" 
+                                   min="1" 
+                                   value="{% if lesson %}{{ lesson.display_order }}{% elif form_data %}{{ form_data.get('display_order', default_order|default(1)) }}{% else %}{{ default_order|default(1) }}{% endif %}">
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Actions -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-light rounded-pill px-4 text-muted border">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-sm hover-scale">
+                            {% if mode == 'create' %}
+                                <i class="bi bi-plus-circle me-1"></i> Create Lesson
+                            {% else %}
+                                <i class="bi bi-save-fill me-1"></i> Save Lesson
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+function updateProviderHint() {
+    var sel = document.getElementById('providerSelect');
+    var hint = document.getElementById('providerHintText');
+    var input = document.getElementById('videoUrlInput');
+    var val = sel ? sel.value : '';
+
+    if (val === 'vimeo') {
+        hint.innerHTML = 'Enter a valid Vimeo video link (e.g., <code>https://vimeo.com/123456789</code> or unlisted privacy URL).';
+        input.placeholder = 'https://vimeo.com/123456789';
+    } else if (val === 'youtube') {
+        hint.innerHTML = 'Enter a YouTube video URL or share link (e.g., <code>https://www.youtube.com/watch?v=...</code> or <code>https://youtu.be/...</code>).';
+        input.placeholder = 'https://www.youtube.com/watch?v=...';
+    } else if (val === 'drive') {
+        hint.innerHTML = 'Enter a Google Drive file link (e.g., <code>https://drive.google.com/file/d/.../view</code>). <br><strong class="text-warning-emphasis"><i class="bi bi-exclamation-triangle me-1"></i>Important:</strong> Ensure the file sharing permissions in Google Drive are set to <em>"Anyone with the link can view"</em> for students to access it.';
+        input.placeholder = 'https://drive.google.com/file/d/.../view';
+    } else if (val === 'loom') {
+        hint.innerHTML = 'Enter a Loom video share URL (e.g., <code>https://www.loom.com/share/...</code>).';
+        input.placeholder = 'https://www.loom.com/share/...';
+    } else if (val === 'custom') {
+        hint.innerHTML = 'Enter a direct, secure HTTP or HTTPS link. <strong class="text-danger"><i class="bi bi-shield-x me-1"></i>Security Notice:</strong> Raw HTML and &lt;iframe&gt; code are strictly prohibited to prevent XSS vulnerabilities.';
+        input.placeholder = 'https://example.com/video.mp4';
+    } else {
+        hint.innerHTML = 'No video URL required. The lesson will be delivered as a reading or textual resource.';
+        input.placeholder = 'Optional';
+    }
+}
+document.addEventListener('DOMContentLoaded', updateProviderHint);
+</script>
+{% endblock %}
+
+{% endblock %}
