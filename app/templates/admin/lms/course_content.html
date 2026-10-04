@@ -34,18 +34,18 @@
             <p class="text-muted small mb-0 mt-1">Curriculum organization: Add sections, lessons, and configure video sources.</p>
         </div>
 
-        <div class="admin-toolbar">
-            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-arrow-left me-1"></i> All Courses
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-arrow-left"></i> All Courses
             </a>
-            <a href="{{ url_for('admin_lms.edit_course', course_id=course.id) }}" class="btn btn-sm btn-light border rounded-pill px-3 shadow-sm fw-medium d-inline-flex align-items-center">
-                <i class="bi bi-pencil me-1"></i> Edit Details
+            <a href="{{ url_for('admin_lms.edit_course', course_id=course.id) }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-pencil"></i> Edit Details
             </a>
-            <a href="{{ url_for('admin_lms.course_materials', course_id=course.id) }}" class="btn btn-sm btn-light border rounded-pill px-3 shadow-sm fw-medium d-inline-flex align-items-center">
-                <i class="bi bi-paperclip me-1"></i> Materials
+            <a href="{{ url_for('admin_lms.course_materials', course_id=course.id) }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-paperclip"></i> Materials
             </a>
-            <button type="button" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" data-bs-toggle="modal" data-bs-target="#addSectionModal">
-                <i class="bi bi-plus-circle-fill me-1"></i> Add Section
+            <button type="button" class="btn-lms-action btn-lms-primary" data-bs-toggle="modal" data-bs-target="#addSectionModal">
+                <i class="bi bi-plus-circle-fill"></i> Add Section
             </button>
         </div>
     </div>

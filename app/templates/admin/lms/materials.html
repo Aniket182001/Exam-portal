@@ -25,12 +25,12 @@
             <p class="text-muted small mb-0 mt-1">Upload and manage downloadable guides, templates, and resources for this course.</p>
         </div>
 
-        <div class="admin-toolbar">
-            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-arrow-left me-1"></i> Syllabus
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-arrow-left"></i> Syllabus
             </a>
-            <button type="button" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
-                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Material
+            <button type="button" class="btn-lms-action btn-lms-primary" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                <i class="bi bi-cloud-arrow-up-fill"></i> Upload Material
             </button>
         </div>
     </div>

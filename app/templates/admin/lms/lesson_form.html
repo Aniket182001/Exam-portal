@@ -21,9 +21,9 @@
             </h3>
             <p class="text-muted small mb-0 mt-1">Section: <strong>{{ section.title }}</strong> &bull; Course: <strong>{{ course.title }}</strong></p>
         </div>
-        <div class="admin-toolbar">
-            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-arrow-left me-2"></i> Back to Content
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Content
             </a>
         </div>
     </div>

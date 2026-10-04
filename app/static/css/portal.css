@@ -47,7 +47,7 @@
     --aiqm-border:         var(--aiqm-gray-200);
 
     /* Navbar */
-    --navbar-height:       70px;
+    --navbar-height:       84px;
     --navbar-bg:           #FFFFFF;
 
     /* Shadows */
@@ -168,8 +168,8 @@ a:hover {
 }
 
 .aiqm-navbar .navbar-brand .brand-logo {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
     background: var(--aiqm-peach);
     border-radius: 12px;
     display: flex;
@@ -235,15 +235,21 @@ a:hover {
     transition: transform 0.18s ease;
 }
 
-.aiqm-navbar .nav-link:hover::after,
-.aiqm-navbar .nav-link.active::after {
+.aiqm-navbar .nav-link:hover::after {
     transform: scaleX(1);
 }
 
-.aiqm-navbar .nav-link:hover,
-.aiqm-navbar .nav-link.active {
+.aiqm-navbar .nav-link:hover {
     color: #0A1628 !important;
     background-color: transparent;
+}
+
+.aiqm-navbar .nav-link.active {
+    color: var(--aiqm-gray-900) !important;
+    background-color: rgba(249, 115, 22, 0.08) !important; /* Subtle warm orange/amber tint */
+}
+.aiqm-navbar .nav-link.active i {
+    color: var(--aiqm-primary) !important;
 }
 
 .aiqm-navbar .navbar-toggler {
@@ -1988,3 +1994,142 @@ button:disabled, .btn:disabled, .btn.disabled {
 .aiqm-toast-danger .aiqm-toast-icon { color: var(--aiqm-danger); }
 .aiqm-toast-warning .aiqm-toast-icon { color: var(--aiqm-warning); }
 .aiqm-toast-info .aiqm-toast-icon { color: var(--aiqm-primary); }
+
+/* ================================================================
+   LMS POLISH STYLES — Phase 5 UI Improvements
+   ================================================================ */
+
+/* LMS Action Controls (Compact Rectangular Navigation Buttons) */
+.btn-lms-action,
+.btn-card-action,
+.btn-header-primary,
+.btn-header-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 34px;
+    padding: 0 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease, transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.btn-lms-primary,
+.btn-card-primary,
+.btn-header-primary {
+    background-color: var(--aiqm-primary);
+    color: #FFFFFF !important;
+    border: 1px solid var(--aiqm-primary);
+    box-shadow: 0 1px 2px rgba(249, 115, 22, 0.18);
+}
+
+.btn-lms-primary:hover,
+.btn-card-primary:hover,
+.btn-header-primary:hover {
+    background-color: var(--aiqm-primary-dark);
+    border-color: var(--aiqm-primary-dark);
+    color: #FFFFFF !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.28);
+}
+
+.btn-lms-primary i,
+.btn-card-primary i,
+.btn-header-primary i {
+    color: #FFFFFF;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+.btn-lms-secondary,
+.btn-card-secondary,
+.btn-header-secondary {
+    background-color: #FFFFFF;
+    color: var(--aiqm-gray-700) !important;
+    border: 1px solid var(--aiqm-gray-300);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.btn-lms-secondary:hover,
+.btn-card-secondary:hover,
+.btn-header-secondary:hover {
+    background-color: var(--aiqm-gray-50);
+    border-color: var(--aiqm-gray-400);
+    color: var(--aiqm-gray-900) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-lms-secondary i,
+.btn-card-secondary i,
+.btn-header-secondary i {
+    color: var(--aiqm-gray-500);
+    font-size: 0.82rem;
+    line-height: 1;
+    transition: color var(--dur-fast) ease;
+}
+
+.btn-lms-secondary:hover i,
+.btn-card-secondary:hover i,
+.btn-header-secondary:hover i {
+    color: var(--aiqm-gray-800);
+}
+
+/* LMS Dashboard — Course Card Title */
+.course-card-title {
+    color: var(--aiqm-gray-900) !important;
+    transition: color var(--dur-fast) ease;
+}
+
+.course-card-title:hover {
+    color: var(--aiqm-primary) !important;
+}
+
+/* Lesson Player — Course Content Sidebar */
+.lesson-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    color: var(--aiqm-gray-800);
+    background-color: transparent;
+    transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+    border: 1px solid transparent;
+}
+
+.lesson-nav-item:hover:not(.active) {
+    background-color: var(--aiqm-gray-100);
+    color: var(--aiqm-gray-900);
+}
+
+.lesson-nav-item.active {
+    background-color: #0D6EFD !important; /* Preserves the established blue active state */
+    color: #FFFFFF !important;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.22);
+}
+
+.lesson-nav-item.active .badge.bg-white {
+    color: #0D6EFD !important;
+}
+
+/* Course Syllabus — Course Resources */
+.resource-card {
+    background-color: #F8FAFC;
+    border: 1px solid var(--aiqm-gray-200);
+    transition: transform var(--dur-fast) ease, border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.resource-card:hover {
+    border-color: var(--aiqm-accent);
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}

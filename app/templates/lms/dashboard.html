@@ -18,13 +18,13 @@
             </h3>
             <p class="text-muted small mb-0 mt-1">Access your enrolled courses, lectures and learning modules.</p>
         </div>
-        <div class="admin-toolbar">
-            <a href="{{ url_for('main.home') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-file-earmark-check me-2"></i> Exam Portal
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('main.home') }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-file-earmark-check"></i> Exam Portal
             </a>
             {% if current_user and current_user.role == 'admin' %}
-            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-gear-fill me-2"></i> LMS Admin Panel
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn-lms-action btn-lms-primary">
+                <i class="bi bi-gear-fill"></i> LMS Admin Panel
             </a>
             {% endif %}
         </div>
@@ -57,7 +57,11 @@
                                 {{ progress.percentage }}%
                             </span>
                         </div>
-                        <h5 class="fw-bold text-dark mb-2">{{ course.title }}</h5>
+                        <h5 class="fw-bold mb-2">
+                            <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="course-card-title text-decoration-none">
+                                {{ course.title }}
+                            </a>
+                        </h5>
                         {% if course.description %}
                         <p class="text-muted small mb-3" style="line-height: 1.5;">
                             {{ course.description[:130] }}{% if course.description|length > 130 %}...{% endif %}
@@ -74,23 +78,24 @@
                                 <div class="progress-bar {% if progress.is_completed %}bg-success{% else %}bg-primary{% endif %}" role="progressbar" style="width: {{ progress.percentage }}%; border-radius: 10px;" aria-valuenow="{{ progress.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                         </div>
+
+                        <!-- Section Count Meta -->
+                        <div class="d-flex align-items-center text-muted small mt-2">
+                            <i class="bi bi-collection me-1 text-secondary"></i>
+                            <span>{{ item.total_sections }} Section{% if item.total_sections != 1 %}s{% endif %}</span>
+                        </div>
                     </div>
 
-                    <div class="pt-3 border-top mt-3 d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="small text-muted text-decoration-none hover-primary">
-                            <i class="bi bi-collection me-1"></i> {{ item.total_sections }} Sections
+                    <!-- Card Actions: Course Overview (Secondary) + Continue Learning (Primary) -->
+                    <div class="pt-3 border-top mt-3 d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="btn-lms-action btn-lms-secondary flex-grow-1" title="View Course Curriculum & Overview">
+                            <i class="bi bi-book me-1"></i> Course Overview
                         </a>
-                        <div class="d-flex gap-2">
-                            {% if continue_lesson %}
-                            <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=continue_lesson.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-bold shadow-sm hover-scale">
-                                Continue Learning <i class="bi bi-arrow-right ms-1"></i>
-                            </a>
-                            {% else %}
-                            <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-bold">
-                                View Course <i class="bi bi-chevron-right ms-1"></i>
-                            </a>
-                            {% endif %}
-                        </div>
+                        {% if continue_lesson %}
+                        <a href="{{ url_for('lms.view_lesson', slug=course.slug, lesson_id=continue_lesson.id) }}" class="btn-lms-action btn-lms-primary flex-grow-1" title="Resume Next Incomplete Lesson">
+                            Continue Learning <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

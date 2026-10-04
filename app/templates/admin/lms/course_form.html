@@ -20,13 +20,13 @@
             </h3>
             <p class="text-muted small mb-0 mt-1">Configure course details, public URL identifier, and publishing lifecycle status.</p>
         </div>
-        <div class="admin-toolbar">
-            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-arrow-left me-2"></i> Back to Courses
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Courses
             </a>
             {% if mode == 'edit' and course %}
-            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-list-nested me-2"></i> Manage Content
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn-lms-action btn-lms-primary">
+                <i class="bi bi-list-nested"></i> Manage Content
             </a>
             {% endif %}
         </div>

@@ -57,28 +57,28 @@
 
                 <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
                     <li class="nav-item">
-                        <a class="nav-link px-3 py-1 rounded-pill {% if is_exam and not is_portal %}active fw-bold text-primary bg-primary bg-opacity-10{% endif %}"
+                        <a class="nav-link px-3 py-1 rounded-pill {% if is_exam and not is_portal %}active fw-bold{% endif %}"
                            href="{{ url_for('main.home') }}">
                             <i class="bi bi-file-earmark-check me-1"></i>Exam Portal
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link px-3 py-1 rounded-pill {% if is_lms %}active fw-bold text-primary bg-primary bg-opacity-10{% endif %}"
+                        <a class="nav-link px-3 py-1 rounded-pill {% if is_lms %}active fw-bold{% endif %}"
                            href="{{ url_for('lms.dashboard') }}">
                             <i class="bi bi-mortarboard me-1"></i>LMS
                         </a>
                     </li>
 
                     {% if session.get('user_id') %}
+                        {% if current_user and current_user.role == 'admin' %}
                         <li class="nav-item">
-                            <a class="nav-link px-3 py-1 rounded-pill {% if is_portal %}active fw-bold text-primary bg-primary bg-opacity-10{% endif %}"
+                            <a class="nav-link px-3 py-1 rounded-pill {% if is_portal %}active fw-bold{% endif %}"
                                href="{{ url_for('main.portal_select') }}">
                                 <i class="bi bi-grid-fill me-1"></i>Portal Hub
                             </a>
                         </li>
-                        {% if current_user and current_user.role == 'admin' %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle px-3 py-1 rounded-pill {% if current_bp in ['admin_exams', 'admin_questions', 'admin_bp', 'admin_backup', 'admin_lms'] %}fw-bold text-dark{% endif %}"
+                            <a class="nav-link dropdown-toggle px-3 py-1 rounded-pill {% if current_bp in ['admin_exams', 'admin_questions', 'admin_bp', 'admin_backup', 'admin_lms'] %}fw-bold text-dark active{% endif %}"
                                href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-shield-lock me-1"></i>Admin
                             </a>

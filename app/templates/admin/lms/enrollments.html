@@ -39,12 +39,12 @@
             </h3>
             <p class="text-muted small mb-0 mt-1">Manage student course enrollments, track learning completion progress, and administer access.</p>
         </div>
-        <div class="admin-toolbar">
-            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
-                <i class="bi bi-mortarboard-fill me-2"></i> Manage Courses
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('admin_lms.dashboard') }}" class="btn-lms-action btn-lms-secondary">
+                <i class="bi bi-gear-fill"></i> Manage Courses
             </a>
-            <button type="button" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
-                <i class="bi bi-person-plus-fill me-2"></i> Enroll Student
+            <button type="button" class="btn-lms-action btn-lms-primary" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                <i class="bi bi-person-plus-fill"></i> Enroll Student
             </button>
         </div>
     </div>
@@ -229,12 +229,31 @@
                         <td class="pe-4 text-end">
                             <div class="d-inline-flex gap-1">
                                 {% if enr.status == 'active' %}
-                                <form method="POST" action="{{ url_for('admin_lms.change_enrollment_status', enrollment_id=enr.id) }}" class="d-inline" onsubmit="return confirm('Withdraw this student from the course?');">
-                                    <input type="hidden" name="status" value="withdrawn">
-                                    <button type="submit" class="btn btn-outline-warning btn-sm rounded-pill px-2 py-1 small fw-semibold" title="Withdraw student">
-                                        Withdraw
-                                    </button>
-                                </form>
+                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-2 py-1 small fw-semibold" title="Withdraw student" data-bs-toggle="modal" data-bs-target="#withdrawModal{{ enr.id }}">
+                                    Withdraw
+                                </button>
+
+                                <!-- Withdraw Modal -->
+                                <div class="modal fade text-start" id="withdrawModal{{ enr.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 rounded-xl p-3 shadow-lg" style="border-radius: 20px;">
+                                            <div class="modal-header border-0 pb-0">
+                                                <h5 class="modal-title fw-bold text-danger">Withdraw Student</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body py-3">
+                                                <p class="text-dark mb-2">Are you sure you want to withdraw this student from this course?</p>
+                                            </div>
+                                            <div class="modal-footer border-0 pt-0">
+                                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="POST" action="{{ url_for('admin_lms.change_enrollment_status', enrollment_id=enr.id) }}">
+                                                    <input type="hidden" name="status" value="withdrawn">
+                                                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Withdraw</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 {% elif enr.status == 'withdrawn' %}
                                 <form method="POST" action="{{ url_for('admin_lms.change_enrollment_status', enrollment_id=enr.id) }}" class="d-inline">
                                     <input type="hidden" name="status" value="active">
@@ -319,8 +338,10 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top pt-3">
-                    <button type="button" class="btn btn-light rounded-pill px-3 fw-medium" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-apple-primary rounded-pill px-4 fw-bold">Enroll Student</button>
+                    <button type="button" class="btn-lms-action btn-lms-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn-lms-action btn-lms-primary">
+                        <i class="bi bi-person-plus-fill"></i> Enroll Student
+                    </button>
                 </div>
             </form>
         </div>
