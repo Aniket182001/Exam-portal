@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, abort, redirect, url_for, g, flash, request
+from flask import Blueprint, render_template, abort, redirect, url_for, g, flash, request, send_file
 from app.extensions import db
 from app.utils.auth import login_required
-from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress
+from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress, CourseMaterial
 from app.services.lms_service import (
     get_student_course_curriculum,
     get_lesson_navigation,
@@ -10,6 +10,7 @@ from app.services.lms_service import (
     mark_lesson_complete,
     update_last_accessed_lesson,
     get_continue_learning_lesson,
+    get_material_for_download,
 )
 
 lms_bp = Blueprint("lms", __name__, url_prefix="/lms")
@@ -126,6 +127,11 @@ def course_detail(slug):
     if not continue_lesson:
         continue_lesson = curriculum["first_lesson"]
 
+    course_materials = CourseMaterial.query.filter_by(
+        course_id=course.id,
+        lesson_id=None
+    ).order_by(CourseMaterial.created_at.asc()).all()
+
     return render_template(
         "lms/course_detail.html",
         course=course,
@@ -135,6 +141,7 @@ def course_detail(slug):
         curriculum_sections=curriculum["sections"],
         first_lesson=curriculum["first_lesson"],
         total_lessons=curriculum["total_published_lessons"],
+        course_materials=course_materials,
     )
 
 
@@ -189,6 +196,10 @@ def view_lesson(slug, lesson_id):
     nav_info = get_lesson_navigation(course.id, lesson.id)
     curriculum = get_student_course_curriculum(course.id)
 
+    lesson_materials = CourseMaterial.query.filter_by(
+        lesson_id=lesson.id
+    ).order_by(CourseMaterial.created_at.asc()).all()
+
     return render_template(
         "lms/lesson.html",
         course=course,
@@ -201,6 +212,7 @@ def view_lesson(slug, lesson_id):
         nav_info=nav_info,
         curriculum_sections=curriculum["sections"],
         total_lessons=curriculum["total_published_lessons"],
+        lesson_materials=lesson_materials,
     )
 
 
@@ -270,3 +282,23 @@ def redirect_lesson(lesson_id):
     return redirect(url_for("lms.view_lesson", slug=course.slug, lesson_id=lesson.id))
 
 
+@lms_bp.route("/materials/<int:material_id>/download")
+@login_required
+def download_material(material_id):
+    """Secure, enrollment-authorized download of course and lesson materials."""
+    material, physical_path, error = get_material_for_download(material_id, g.current_user)
+
+    if error in ["not_found", "forbidden"]:
+        abort(404)
+    elif error == "invalid_path":
+        abort(400)
+    elif error == "file_missing":
+        flash("The requested material file is currently unavailable on storage.", "danger")
+        abort(404)
+
+    return send_file(
+        physical_path,
+        as_attachment=True,
+        download_name=material.original_filename,
+        mimetype=material.mime_type
+    )

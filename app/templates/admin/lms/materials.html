@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block page_title %}Course Materials — {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Breadcrumb & Header -->
+    <div class="admin-header mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_lms.dashboard') }}" class="text-decoration-none">LMS Admin</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="text-decoration-none">{{ course.title }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Materials</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2">
+                <h3 class="fw-bold text-dark mb-0">Course Materials</h3>
+                <span class="badge bg-light text-dark border rounded-pill px-3 py-1 fw-medium">
+                    {{ course.title }}
+                </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">Upload and manage downloadable guides, templates, and resources for this course.</p>
+        </div>
+
+        <div class="admin-toolbar">
+            <a href="{{ url_for('admin_lms.course_content', course_id=course.id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale">
+                <i class="bi bi-arrow-left me-1"></i> Syllabus
+            </a>
+            <button type="button" class="btn btn-sm btn-apple-primary rounded-pill px-3 shadow-sm fw-bold d-inline-flex align-items-center transition-all hover-scale" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Material
+            </button>
+        </div>
+    </div>
+
+    <!-- Materials Overview Bar -->
+    <div class="card border-0 shadow-sm rounded-xl p-3 mb-4 bg-white" style="border-radius: 16px;">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-4">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold letter-wide d-block">Total Materials</span>
+                    <span class="fw-bold fs-5 text-dark">{{ materials|length }}</span>
+                </div>
+                <div class="vr my-1"></div>
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold letter-wide d-block">Course-Wide</span>
+                    <span class="fw-bold fs-5 text-dark">{{ materials|selectattr('lesson_id', 'none')|list|length }}</span>
+                </div>
+                <div class="vr my-1"></div>
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold letter-wide d-block">Lesson-Attached</span>
+                    <span class="fw-bold fs-5 text-dark">{{ materials|rejectattr('lesson_id', 'none')|list|length }}</span>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('lms.course_detail', slug=course.slug) }}" class="btn btn-sm btn-light border rounded-pill px-3 text-muted fw-medium" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> View Course Page
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materials List Table -->
+    {% if materials %}
+    <div class="card border-0 shadow-sm rounded-xl overflow-hidden bg-white mb-4" style="border-radius: 18px;">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 text-uppercase small text-muted fw-semibold">Resource Name</th>
+                        <th class="text-uppercase small text-muted fw-semibold">Scope</th>
+                        <th class="text-uppercase small text-muted fw-semibold">File Type & Size</th>
+                        <th class="text-uppercase small text-muted fw-semibold">Uploaded</th>
+                        <th class="pe-4 text-end text-uppercase small text-muted fw-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in materials %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #F1F5F9; color: #475569;">
+                                    {% if m.file_extension in ['pdf'] %}
+                                        <i class="bi bi-filetype-pdf fs-5 text-danger"></i>
+                                    {% elif m.file_extension in ['doc', 'docx'] %}
+                                        <i class="bi bi-filetype-docx fs-5 text-primary"></i>
+                                    {% elif m.file_extension in ['xls', 'xlsx', 'csv'] %}
+                                        <i class="bi bi-filetype-xlsx fs-5 text-success"></i>
+                                    {% elif m.file_extension in ['ppt', 'pptx'] %}
+                                        <i class="bi bi-filetype-pptx fs-5 text-warning"></i>
+                                    {% elif m.file_extension in ['zip'] %}
+                                        <i class="bi bi-file-earmark-zip fs-5 text-secondary"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark-text fs-5 text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">{{ m.display_name }}</h6>
+                                    <span class="text-muted small font-monospace">{{ m.original_filename }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if m.lesson %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
+                                    <i class="bi bi-play-circle me-1"></i> Lesson: {{ m.lesson.title }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3 py-1">
+                                    <i class="bi bi-mortarboard me-1"></i> Course-wide
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="text-dark small fw-medium text-uppercase">{{ m.file_extension }}</div>
+                            <div class="text-muted small">{{ m.formatted_size }}</div>
+                        </td>
+                        <td>
+                            <span class="text-muted small">{{ m.created_at.strftime('%b %d, %Y') }}</span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-inline-flex align-items-center gap-1">
+                                <a href="{{ url_for('lms.download_material', material_id=m.id) }}" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Download File">
+                                    <i class="bi bi-download text-dark"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-light border text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" data-bs-toggle="modal" data-bs-target="#deleteMaterialModal{{ m.id }}" title="Delete Material">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+
+                            <!-- Delete Material Modal -->
+                            <div class="modal fade text-start" id="deleteMaterialModal{{ m.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 rounded-xl p-3 shadow-lg" style="border-radius: 20px;">
+                                        <div class="modal-header border-0 pb-0">
+                                            <h5 class="modal-title fw-bold text-danger">Delete Material</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body py-3">
+                                            <p class="text-dark mb-1">Are you sure you want to delete <strong>{{ m.display_name }}</strong>?</p>
+                                            <p class="text-muted small mb-0">Original file: <code>{{ m.original_filename }}</code>. The file will be permanently removed from storage.</p>
+                                        </div>
+                                        <div class="modal-footer border-0 pt-0">
+                                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="POST" action="{{ url_for('admin_lms.delete_material', material_id=m.id) }}">
+                                                <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Delete Material</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card border-0 shadow-sm rounded-xl text-center py-5 px-4 my-4 bg-white" style="border-radius: 24px;">
+        <div class="card-body py-5">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 72px; height: 72px; background-color: #EFF6FF; color: #2563EB;">
+                <i class="bi bi-cloud-arrow-up fs-2"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">No Materials Uploaded Yet</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width: 480px; font-size: 1.05rem;">
+                Upload downloadable resources such as worksheets, templates, slide decks, or reference guides for students enrolled in this course.
+            </p>
+            <button type="button" class="btn btn-apple-primary rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Upload First Material
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upload Material Modal -->
+    <div class="modal fade" id="uploadMaterialModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-xl p-3 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-dark">Upload Course Material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin_lms.upload_course_material', course_id=course.id) }}" enctype="multipart/form-data">
+                    <div class="modal-body py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small">Display Name <span class="text-danger">*</span></label>
+                            <input type="text" name="display_name" class="form-control rounded-3" placeholder="e.g. DMAIC Project Charter Template" required maxlength="255">
+                            <div class="form-text small">Student-facing title displayed on the course and lesson pages.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small">Attach To (Scope)</label>
+                            <select name="lesson_id" class="form-select rounded-3">
+                                <option value="">Course-wide (General Resource)</option>
+                                {% for section in sections %}
+                                    {% if section.lessons %}
+                                    <optgroup label="Section: {{ section.title }}">
+                                        {% for lesson in section.lessons %}
+                                        <option value="{{ lesson.id }}">{{ lesson.title }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small">Select a specific lesson to attach this resource, or leave as Course-wide.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small">File <span class="text-danger">*</span></label>
+                            <input type="file" name="file" class="form-control rounded-3" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" required>
+                            <div class="form-text small">
+                                Supported formats: PDF, Word (.docx, .doc), Excel (.xlsx, .xls, .csv), PowerPoint (.pptx, .ppt), Text (.txt), ZIP (.zip). Max 50 MB.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

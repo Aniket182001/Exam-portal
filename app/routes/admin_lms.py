@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.extensions import db
 from app.utils.auth import admin_required
 from app.models.user import User
-from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress
+from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress, CourseMaterial
 from app.services.lms_service import (
     generate_unique_slug,
     validate_video_url,
@@ -13,6 +13,8 @@ from app.services.lms_service import (
     calculate_course_progress,
     enroll_student_in_course,
     update_enrollment_status,
+    save_course_material,
+    delete_course_material,
     SUPPORTED_VIDEO_PROVIDERS,
     COURSE_STATUSES,
     LESSON_STATUSES,
@@ -224,6 +226,11 @@ def delete_course(course_id):
         return redirect(url_for("admin_lms.dashboard"))
 
     course_title = course.title
+
+    # Clean up physical files for all materials attached to this course
+    for material in list(course.materials):
+        delete_course_material(material.id)
+
     db.session.delete(course)
     db.session.commit()
 
@@ -357,6 +364,11 @@ def delete_section(section_id):
     if has_learning_records:
         flash(f"Cannot delete section '{sec_title}' because its lessons contain student progress history.", "danger")
         return redirect(url_for("admin_lms.course_content", course_id=course_id))
+
+    # Clean up physical material files on disk for lessons in this section
+    for lesson in list(section.lessons):
+        for material in list(lesson.materials):
+            delete_course_material(material.id)
 
     db.session.delete(section)
     db.session.commit()
@@ -592,6 +604,10 @@ def delete_lesson(lesson_id):
         flash(f"Cannot delete lesson '{les_title}' because students have progress records for it. Please set its status to Draft instead.", "danger")
         return redirect(url_for("admin_lms.course_content", course_id=course_id))
 
+    # Clean up physical material files on disk for this lesson
+    for material in list(lesson.materials):
+        delete_course_material(material.id)
+
     db.session.delete(lesson)
     db.session.commit()
 
@@ -684,4 +700,82 @@ def change_enrollment_status(enrollment_id):
         flash(msg, "danger")
 
     return redirect(url_for("admin_lms.enrollments_list"))
+
+
+# ── Course Materials Management ──────────────────────────────────────────────
+
+@admin_lms_bp.route("/courses/<int:course_id>/materials")
+def course_materials(course_id):
+    """View and manage downloadable materials for a course."""
+    course = db.session.get(Course, course_id)
+    if not course:
+        abort(404)
+
+    materials = CourseMaterial.query.filter_by(course_id=course.id).order_by(
+        CourseMaterial.created_at.desc()
+    ).all()
+
+    sections = CourseSection.query.filter_by(course_id=course.id).order_by(
+        CourseSection.display_order.asc(),
+        CourseSection.id.asc()
+    ).all()
+
+    return render_template(
+        "admin/lms/materials.html",
+        course=course,
+        materials=materials,
+        sections=sections,
+    )
+
+
+@admin_lms_bp.route("/courses/<int:course_id>/materials/upload", methods=["POST"])
+def upload_course_material(course_id):
+    """Upload a new course or lesson material."""
+    course = db.session.get(Course, course_id)
+    if not course:
+        abort(404)
+
+    display_name = request.form.get("display_name", "").strip()
+    lesson_id_str = request.form.get("lesson_id", "").strip()
+    file = request.files.get("file")
+
+    lesson_id = None
+    if lesson_id_str:
+        try:
+            cand_id = int(lesson_id_str)
+            cand_lesson = db.session.get(Lesson, cand_id)
+            if cand_lesson and cand_lesson.section and cand_lesson.section.course_id == course.id:
+                lesson_id = cand_id
+            else:
+                flash("Selected lesson does not belong to this course.", "danger")
+                return redirect(url_for("admin_lms.course_materials", course_id=course.id))
+        except ValueError:
+            pass
+
+    material, msg = save_course_material(course.id, lesson_id, file, display_name)
+    if material:
+        flash(msg, "success")
+    else:
+        flash(msg, "danger")
+
+    return redirect(url_for("admin_lms.course_materials", course_id=course.id))
+
+
+@admin_lms_bp.route("/materials/<int:material_id>/delete", methods=["POST"])
+def delete_material(material_id):
+    """Delete a course material and remove its physical file from disk."""
+    material = db.session.get(CourseMaterial, material_id)
+    if not material:
+        abort(404)
+
+    course_id = material.course_id
+    display_name = material.display_name
+
+    success, msg = delete_course_material(material.id)
+    if success:
+        flash(f"Material '{display_name}' was deleted successfully.", "success")
+    else:
+        flash(msg, "danger")
+
+    return redirect(url_for("admin_lms.course_materials", course_id=course_id))
 

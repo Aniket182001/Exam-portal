@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from app.extensions import db
 
@@ -27,6 +28,13 @@ class Course(db.Model):
         cascade='all, delete-orphan',
         lazy=True,
         order_by='CourseSection.display_order.asc()'
+    )
+    materials = db.relationship(
+        'CourseMaterial',
+        backref='course',
+        cascade='all, delete-orphan',
+        lazy=True,
+        order_by='CourseMaterial.created_at.asc()'
     )
 
     @property
@@ -95,6 +103,15 @@ class Lesson(db.Model):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False
+    )
+
+    # Relationships
+    materials = db.relationship(
+        'CourseMaterial',
+        backref='lesson',
+        cascade='all, delete-orphan',
+        lazy=True,
+        order_by='CourseMaterial.created_at.asc()'
     )
 
     def __repr__(self):
@@ -182,4 +199,77 @@ class LessonProgress(db.Model):
 
     def __repr__(self):
         return f"<LessonProgress id={self.id} enrollment_id={self.enrollment_id} lesson_id={self.lesson_id} completed={self.completed}>"
+
+
+class CourseMaterial(db.Model):
+    __tablename__ = 'course_materials'
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(
+        db.Integer,
+        db.ForeignKey('courses.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
+    lesson_id = db.Column(
+        db.Integer,
+        db.ForeignKey('lessons.id', ondelete='CASCADE'),
+        nullable=True,
+        index=True
+    )
+    display_name = db.Column(db.String(200), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), unique=True, nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)  # Size in bytes
+    mime_type = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    @property
+    def formatted_size(self) -> str:
+        """Human-readable file size string."""
+        size = self.file_size or 0
+        if size < 1024:
+            return f"{size} B"
+        elif size < 1024 * 1024:
+            return f"{size / 1024:.1f} KB"
+        else:
+            return f"{size / (1024 * 1024):.1f} MB"
+
+    @property
+    def formatted_file_size(self) -> str:
+        return self.formatted_size
+
+    @property
+    def file_extension(self) -> str:
+        """Returns the lowercase file extension without dot, e.g. 'pdf', 'xlsx'."""
+        if "." in self.original_filename:
+            return self.original_filename.rsplit(".", 1)[-1].lower()
+        return ""
+
+    def __repr__(self):
+        return f"<CourseMaterial id={self.id} course_id={self.course_id} display_name='{self.display_name}'>"
+
+
+@db.event.listens_for(CourseMaterial, "after_delete")
+def _cleanup_course_material_file(mapper, connection, target):
+    """
+    Guarantees physical file cleanup whenever a CourseMaterial record is deleted,
+    including through SQLAlchemy cascading (e.g. course or lesson direct ORM deletion).
+    """
+    if target and getattr(target, "stored_filename", None):
+        try:
+            from app.services.lms_service import get_material_upload_dir
+            upload_dir = get_material_upload_dir()
+            physical_path = os.path.abspath(os.path.join(upload_dir, target.stored_filename))
+            if physical_path.startswith(upload_dir) and os.path.exists(physical_path):
+                os.remove(physical_path)
+        except Exception:
+            pass
 

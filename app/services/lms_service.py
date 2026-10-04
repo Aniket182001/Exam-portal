@@ -1,10 +1,15 @@
 import re
+import os
+import uuid
+import mimetypes
 import logging
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+from flask import current_app
+from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models.user import User
-from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress
+from app.models.course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress, CourseMaterial
 
 logger = logging.getLogger(__name__)
 
@@ -779,3 +784,250 @@ def update_enrollment_status(enrollment_id: int, new_status: str) -> tuple[bool,
     return True, f"Enrollment status updated to '{new_status}'."
 
 
+# ── Course Materials Management ──────────────────────────────────────────────
+
+DEFAULT_ALLOWED_MATERIAL_EXTENSIONS = {
+    "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip"
+}
+
+DANGEROUS_MATERIAL_EXTENSIONS = {
+    "exe", "bat", "cmd", "sh", "py", "php", "js", "html", "htm", "vbs", "ps1", "dll", "so", "bin"
+}
+
+
+def get_material_upload_dir() -> str:
+    """Return the absolute path to the LMS course materials upload directory."""
+    try:
+        upload_dir = current_app.config.get("LMS_MATERIAL_UPLOAD_DIR")
+    except RuntimeError:
+        from config import Config
+        upload_dir = Config.LMS_MATERIAL_UPLOAD_DIR
+
+    os.makedirs(upload_dir, exist_ok=True)
+    return os.path.abspath(upload_dir)
+
+
+def validate_material_file(file_storage, max_size_bytes: int | None = None) -> tuple[bool, str, str, str, int]:
+    """
+    Validates an uploaded material file:
+    - Non-empty filename
+    - Sanitizes original filename
+    - Extension check (reject dangerous extensions, allow supported extensions)
+    - File size check
+    - MIME type detection
+    Returns: (is_valid, error_msg, sanitized_filename, mime_type, file_size)
+    """
+    if not file_storage or not getattr(file_storage, "filename", None):
+        return False, "No file selected.", "", "", 0
+
+    original_filename = secure_filename(file_storage.filename)
+    if not original_filename:
+        return False, "Invalid filename.", "", "", 0
+
+    if "." not in original_filename:
+        return False, "File must have an extension.", "", "", 0
+
+    ext = original_filename.rsplit(".", 1)[-1].lower()
+
+    if ext in DANGEROUS_MATERIAL_EXTENSIONS:
+        return False, f"File type '.{ext}' is strictly not permitted for security reasons.", "", "", 0
+
+    allowed_exts = DEFAULT_ALLOWED_MATERIAL_EXTENSIONS
+    try:
+        if current_app:
+            allowed_exts = current_app.config.get("LMS_ALLOWED_MATERIAL_EXTENSIONS", DEFAULT_ALLOWED_MATERIAL_EXTENSIONS)
+    except RuntimeError:
+        pass
+
+    if ext not in allowed_exts:
+        allowed_list = ", ".join(sorted(allowed_exts))
+        return False, f"Unsupported file type '.{ext}'. Supported types: {allowed_list}.", "", "", 0
+
+    # Check file size
+    if max_size_bytes is None:
+        try:
+            max_size_bytes = current_app.config.get("LMS_MAX_MATERIAL_SIZE_BYTES", 50 * 1024 * 1024)
+        except RuntimeError:
+            max_size_bytes = 50 * 1024 * 1024
+    if isinstance(max_size_bytes, str):
+        try:
+            max_size_bytes = int(max_size_bytes)
+        except ValueError:
+            max_size_bytes = 50 * 1024 * 1024
+
+    file_storage.seek(0, os.SEEK_END)
+    file_size = file_storage.tell()
+    file_storage.seek(0)
+
+    if file_size == 0:
+        return False, "Uploaded file is empty (0 bytes).", "", "", 0
+
+    if file_size > max_size_bytes:
+        max_mb = max_size_bytes / (1024 * 1024)
+        return False, f"File size exceeds maximum allowed limit of {max_mb:.0f} MB.", "", "", 0
+
+    mime_type, _ = mimetypes.guess_type(original_filename)
+    if not mime_type:
+        mime_type = "application/octet-stream"
+
+    return True, "", original_filename, mime_type, file_size
+
+
+def save_course_material(
+    course_id: int,
+    lesson_id: int | None,
+    arg3,
+    arg4
+) -> tuple[CourseMaterial | None, str]:
+    """
+    Saves an uploaded material for a course or specific lesson.
+    Stores file safely on disk with a unique UUID filename and records metadata in database.
+    Supports either (file_storage, display_name) or (display_name, file_storage).
+    """
+    if isinstance(arg3, str) and (not isinstance(arg4, str) or hasattr(arg4, "read") or hasattr(arg4, "filename")):
+        display_name, file_storage = arg3, arg4
+    else:
+        file_storage, display_name = arg3, arg4
+
+    clean_display_name = (display_name or "").strip()
+    if not clean_display_name:
+        return None, "Material display name is required."
+
+    course = db.session.get(Course, course_id)
+    if not course:
+        return None, "Course not found."
+
+    lesson = None
+    if lesson_id:
+        lesson = db.session.get(Lesson, lesson_id)
+        if not lesson or not lesson.section or lesson.section.course_id != course_id:
+            return None, "Selected lesson does not belong to this course."
+
+    is_valid, err_msg, orig_filename, mime_type, file_size = validate_material_file(file_storage)
+    if not is_valid:
+        return None, err_msg
+
+    ext = orig_filename.rsplit(".", 1)[-1].lower()
+    stored_filename = f"{uuid.uuid4().hex}.{ext}"
+
+    upload_dir = get_material_upload_dir()
+    safe_target_path = os.path.abspath(os.path.join(upload_dir, stored_filename))
+
+    # Path traversal protection
+    if not safe_target_path.startswith(upload_dir):
+        return None, "Invalid storage destination path."
+
+    rel_file_path = f"lms_materials/{stored_filename}"
+
+    try:
+        file_storage.save(safe_target_path)
+    except Exception as e:
+        logger.error(f"Failed to save file to disk: {e}")
+        return None, "Failed to write file to storage."
+
+    material = CourseMaterial(
+        course_id=course_id,
+        lesson_id=lesson.id if lesson else None,
+        display_name=clean_display_name,
+        original_filename=orig_filename,
+        stored_filename=stored_filename,
+        file_path=rel_file_path,
+        file_size=file_size,
+        mime_type=mime_type,
+    )
+
+    try:
+        db.session.add(material)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        # Clean up file on disk
+        if os.path.exists(safe_target_path):
+            try:
+                os.remove(safe_target_path)
+            except OSError:
+                pass
+        logger.error(f"Failed to record material in DB: {e}")
+        return None, "Database error recording course material."
+
+    return material, "Material uploaded successfully."
+
+
+def delete_course_material(material_id: int) -> tuple[bool, str]:
+    """
+    Safely deletes a course material: removes the physical file from disk and deletes the DB record.
+    Gracefully handles missing files without leaving DB in inconsistent state.
+    """
+    material = db.session.get(CourseMaterial, material_id)
+    if not material:
+        return False, "Material not found."
+
+    upload_dir = get_material_upload_dir()
+    physical_path = os.path.abspath(os.path.join(upload_dir, material.stored_filename))
+
+    try:
+        db.session.delete(material)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to delete material record from database: {e}")
+        return False, "Database error deleting material record."
+
+    # Remove physical file if present and not already removed by after_delete listener
+    if os.path.exists(physical_path):
+        try:
+            os.remove(physical_path)
+        except OSError as e:
+            logger.warning(f"Could not remove physical file {physical_path}: {e}")
+
+    return True, "Material deleted successfully."
+
+
+def get_material_for_download(material_id: int, user: User) -> tuple[CourseMaterial | None, str | None, str | None]:
+    """
+    Authorizes and resolves a material for download:
+    - User must be logged in.
+    - If user is student:
+        - Course must be active and published.
+        - User must have active or completed enrollment in course.
+        - If material belongs to lesson, lesson must be published.
+    - Physical file must exist on disk.
+    Returns (material, physical_file_path, error_code) where error_code in ('not_found', 'forbidden', 'file_missing', 'invalid_path')
+    """
+    material = db.session.get(CourseMaterial, material_id)
+    if not material:
+        return None, None, "not_found"
+
+    course = material.course
+    if not course or not course.is_active:
+        return None, None, "not_found"
+
+    is_admin = getattr(user, "role", None) == "admin"
+
+    if not is_admin:
+        if course.status != "published":
+            return None, None, "not_found"
+
+        enrollment = CourseEnrollment.query.filter_by(
+            user_id=user.id,
+            course_id=course.id
+        ).first()
+
+        if not enrollment or enrollment.status == "withdrawn":
+            return None, None, "forbidden"
+
+        if material.lesson_id:
+            lesson = material.lesson
+            if not lesson or lesson.status != "published":
+                return None, None, "not_found"
+
+    upload_dir = get_material_upload_dir()
+    physical_path = os.path.abspath(os.path.join(upload_dir, material.stored_filename))
+
+    if not physical_path.startswith(upload_dir):
+        return None, None, "invalid_path"
+
+    if not os.path.exists(physical_path):
+        return None, None, "file_missing"
+
+    return material, physical_path, None

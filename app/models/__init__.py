@@ -7,7 +7,7 @@ from .student_answer import StudentAnswer
 from .candidate_registration import CandidateRegistration
 from .evaluation import Evaluation
 from .company_group import CompanyGroup, CompanyAlias
-from .course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress
+from .course import Course, CourseSection, Lesson, CourseEnrollment, LessonProgress, CourseMaterial
 
 __all__ = [
     'User',
@@ -25,4 +25,5 @@ __all__ = [
     'Lesson',
     'CourseEnrollment',
     'LessonProgress',
+    'CourseMaterial',
 ]

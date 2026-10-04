@@ -182,6 +182,50 @@
             </div>
             {% endif %}
 
+            <!-- Lesson Resources / Downloads -->
+            {% if lesson_materials %}
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background: #FFFFFF;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="bi bi-paperclip text-primary me-2"></i>Lesson Resources
+                    </h5>
+                    <span class="badge bg-light text-muted border small">{{ lesson_materials|length }} file{% if lesson_materials|length > 1 %}s{% endif %}</span>
+                </div>
+                <div class="row g-3">
+                    {% for mat in lesson_materials %}
+                    <div class="col-12 col-md-6">
+                        <div class="p-3 rounded-3 border bg-light d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #FFFFFF;">
+                                    {% if mat.file_extension in ['pdf'] %}
+                                        <i class="bi bi-filetype-pdf text-danger fs-5"></i>
+                                    {% elif mat.file_extension in ['doc', 'docx'] %}
+                                        <i class="bi bi-filetype-docx text-primary fs-5"></i>
+                                    {% elif mat.file_extension in ['xls', 'xlsx', 'csv'] %}
+                                        <i class="bi bi-filetype-xlsx text-success fs-5"></i>
+                                    {% elif mat.file_extension in ['ppt', 'pptx'] %}
+                                        <i class="bi bi-filetype-pptx text-warning fs-5"></i>
+                                    {% elif mat.file_extension in ['zip'] %}
+                                        <i class="bi bi-file-earmark-zip text-secondary fs-5"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark-text text-muted fs-5"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="text-truncate">
+                                    <div class="fw-semibold text-dark small text-truncate" title="{{ mat.display_name }}">{{ mat.display_name }}</div>
+                                    <span class="text-muted" style="font-size: 0.72rem;">{{ mat.original_filename }} &bull; {{ mat.formatted_size }}</span>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('lms.download_material', material_id=mat.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-medium d-inline-flex align-items-center flex-shrink-0 shadow-sm" title="Download {{ mat.display_name }}">
+                                <i class="bi bi-download me-1"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
         </div>
 
         <!-- Sidebar Column: Course Curriculum Navigator -->

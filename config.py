@@ -37,3 +37,13 @@ class Config:
         "DAILY_SUMMARY_RECIPIENTS",
         EXAM_SUBMISSION_NOTIFICATION_RECIPIENTS
     )
+
+    # LMS Course Materials Upload Settings
+    LMS_MATERIAL_UPLOAD_DIR = os.getenv(
+        "LMS_MATERIAL_UPLOAD_DIR",
+        os.path.join(BASE_DIR, "instance", "lms_materials")
+    )
+    LMS_MAX_MATERIAL_SIZE_BYTES = int(os.getenv("LMS_MAX_MATERIAL_SIZE_BYTES", 50 * 1024 * 1024))  # 50 MB
+    LMS_ALLOWED_MATERIAL_EXTENSIONS = {
+        "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip"
+    }
